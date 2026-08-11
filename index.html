@@ -74,21 +74,8 @@ a{color:inherit;text-decoration:none}
   display:grid;
   place-items:center;
   background:#090909;
-  border:2px solid #222;
-  box-shadow:
-    0 0 0 5px #050505,
-    0 0 35px rgba(255,255,255,.08),
-    inset 0 0 50px #000;
+  /* frame removed */
   animation:crtTwitch .18s steps(2) infinite;
-  z-index:2;
-}
-.crt-frame::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:inset 0 0 80px #000;
-  pointer-events:none;
   z-index:2;
 }
 .crt-video{
@@ -106,20 +93,21 @@ a{color:inherit;text-decoration:none}
   box-shadow:inset 0 0 90px 30px #000;
   border-radius:5% / 4%;
 }
-.crt-signal{
+.crt-brand{
   position:absolute;
   left:50%;
-  top:50%;
+  top:38%;
   transform:translate(-50%,-50%);
   z-index:6;
-  color:rgba(255,255,255,.7);
-  font-family:monospace;
-  font-size:10px;
-  letter-spacing:4px;
+  color:rgba(255,255,255,.82);
+  font-family:Anton,sans-serif;
+  font-size:clamp(16px,3.8vw,26px);
+  letter-spacing:5px;
   text-transform:uppercase;
   mix-blend-mode:screen;
-  animation:signalFlicker .25s steps(2) infinite;
   pointer-events:none;
+  animation:signalFlicker .28s steps(2) infinite;
+  white-space:nowrap;
 }
 @keyframes crtTwitch{
   0%{transform:translate(0,0) skewX(0)}
@@ -136,11 +124,11 @@ a{color:inherit;text-decoration:none}
   100%{transform:translate(0,0)}
 }
 @keyframes signalFlicker{
-  0%,100%{opacity:.25}
-  50%{opacity:.85}
+  0%,100%{opacity:.35}
+  50%{opacity:.9}
 }
 @media(prefers-reduced-motion:reduce){
-  .crt-frame,#su404-intro::after,.crt-signal{animation:none}
+  .crt-frame,#su404-intro::after,.crt-brand{animation:none}
 }
 
 /* ===== MAIN SITE ===== */
@@ -208,7 +196,7 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
       preload="auto"
     ></video>
     <div class="crt-corners"></div>
-    <div class="crt-signal">NO SIGNAL</div>
+    <div class="crt-brand">STAYUNKNOWN</div>
   </div>
 </div>
 
