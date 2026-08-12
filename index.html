@@ -172,7 +172,6 @@ renderCart();
     deleteUser 
   } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
-  // Your Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyB39u1-5EbGimA--fZa_-FApAavayzjlBU",
     authDomain: "stayunknown-auth.firebaseapp.com",
@@ -182,23 +181,165 @@ renderCart();
     appId: "1:453624121758:web:79f2f96bc46b0fdfc4ae8f"
   };
 
-  // Initialize Firebase & Auth
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Listen for login state and update greeting
-  onAuthStateChanged(auth, (user) => {
-    const greeting = document.getElementById("welcome-greeting");
-    if (greeting) {
-      if (user) {
-        const displayName = user.displayName || "Valued Customer";
-        greeting.innerText = `Welcome back, ${displayName}!`;
+  // UI Elements
+  const greeting = document.getElementById("welcome-greeting");
+  const subtext = document.getElementById("account-subtext");
+  const authBox = document.getElementById("auth-box");
+  const userDashboard = document.getElementById("user-dashboard");
+  const nameField = document.getElementById("name-field");
+  const inputName = document.getElementById("user-name");
+  const inputEmail = document.getElementById("user-email");
+  const inputPassword = document.getElementById("user-password");
+  const btnLogin = document.getElementById("btn-login");
+  const btnSignup = document.getElementById("btn-signup");
+  const btnSignout = document.getElementById("btn-signout");
+  const btnResetPw = document.getElementById("btn-reset-pw");
+  const btnDeleteAcct = document.getElementById("btn-delete-acct");
+  const toggleAuthMode = document.getElementById("toggle-auth-mode");
+  const forgotPwLink = document.getElementById("forgot-password-link");
+  const statusMsg = document.getElementById("auth-status-msg");
+
+  let isSignupMode = false;
+
+  function showMsg(msg, isError = false) {
+    statusMsg.style.color = isError ? "#d9534f" : "#5cb85c";
+    statusMsg.innerText = msg;
+  }
+
+  // Toggle between Sign In and Sign Up views
+  if (toggleAuthMode) {
+    toggleAuthMode.addEventListener("click", () => {
+      statusMsg.innerText = "";
+      isSignupMode = !isSignupMode;
+      if (isSignupMode) {
+        nameField.style.display = "block";
+        btnSignup.style.display = "block";
+        btnLogin.style.display = "none";
+        toggleAuthMode.innerText = "Already have an account? Sign In";
       } else {
-        greeting.innerText = "Welcome to Stay Unknown";
+        nameField.style.display = "none";
+        btnSignup.style.display = "none";
+        btnLogin.style.display = "block";
+        toggleAuthMode.innerText = "Need an account? Sign Up";
       }
+    });
+  }
+
+  // Create Account
+  if (btnSignup) {
+    btnSignup.addEventListener("click", async () => {
+      statusMsg.innerText = "";
+      const name = inputName.value.trim();
+      const email = inputEmail.value.trim();
+      const password = inputPassword.value;
+
+      if (!name || !email || !password) return showMsg("Please fill in all fields.", true);
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(cred.user, { displayName: name });
+        showMsg("Account created successfully!");
+      } catch (err) {
+        showMsg(err.message.replace("Firebase: ", ""), true);
+      }
+    });
+  }
+
+  // Sign In
+  if (btnLogin) {
+    btnLogin.addEventListener("click", async () => {
+      statusMsg.innerText = "";
+      const email = inputEmail.value.trim();
+      const password = inputPassword.value;
+
+      if (!email || !password) return showMsg("Please enter email and password.", true);
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showMsg("Signed in successfully!");
+      } catch (err) {
+        showMsg("Invalid email or password.", true);
+      }
+    });
+  }
+
+  // Listen for Auth Changes (Updates UI automatically)
+  onAuthStateChanged(auth, (user) => {
+    statusMsg.innerText = "";
+    if (user) {
+      const displayName = user.displayName || "Valued Customer";
+      greeting.innerText = `Welcome back, ${displayName}!`;
+      subtext.innerText = `Signed in as ${user.email}`;
+      authBox.style.display = "none";
+      userDashboard.style.display = "block";
+    } else {
+      greeting.innerText = "Welcome to Stay Unknown";
+      subtext.innerText = "Sign in to save your details or continue browsing as a guest.";
+      authBox.style.display = "block";
+      userDashboard.style.display = "none";
+      inputEmail.value = "";
+      inputPassword.value = "";
+      if (inputName) inputName.value = "";
     }
   });
+
+  // Sign Out
+  if (btnSignout) {
+    btnSignout.addEventListener("click", () => signOut(auth));
+  }
+
+  // Forgot Password / Password Reset Link
+  if (forgotPwLink) {
+    forgotPwLink.addEventListener("click", async () => {
+      statusMsg.innerText = "";
+      const email = inputEmail.value.trim();
+      if (!email) return showMsg("Enter your email address above first.", true);
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMsg(`Password reset link sent to ${email}`);
+      } catch (err) {
+        showMsg(err.message.replace("Firebase: ", ""), true);
+      }
+    });
+  }
+
+  if (btnResetPw) {
+    btnResetPw.addEventListener("click", async () => {
+      statusMsg.innerText = "";
+      const user = auth.currentUser;
+      if (user && user.email) {
+        try {
+          await sendPasswordResetEmail(auth, user.email);
+          showMsg(`Password reset link sent to ${user.email}`);
+        } catch (err) {
+          showMsg(err.message.replace("Firebase: ", ""), true);
+        }
+      }
+    });
+  }
+
+  // Delete Account
+  if (btnDeleteAcct) {
+    btnDeleteAcct.addEventListener("click", async () => {
+      statusMsg.innerText = "";
+      if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+        const user = auth.currentUser;
+        if (user) {
+          try {
+            await deleteUser(user);
+            alert("Your account has been deleted.");
+          } catch (err) {
+            showMsg("Please log out and log back in before deleting your account.", true);
+          }
+        }
+      }
+    });
+  }
 </script>
+
 
 </body>
 </html>
