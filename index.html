@@ -188,8 +188,149 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   .grid{grid-template-columns:1fr}.product .image{height:300px}.hero h1{font-size:76px}
 }
 </style>
-</head>
 
+<style>
+:root{--bg:#0d0d0d;--panel:#151515;--panel2:#1b1b1b;--text:#f3f3f0;--muted:#8e8e8e;--line:#292929;--white:#f3f3f0}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+body.intro-active{overflow:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 5%;background:rgba(13,13,13,.8);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
+.logo{font-family:Anton,sans-serif;letter-spacing:1px;font-size:25px}
+.links{display:flex;gap:28px;font-size:12px;text-transform:uppercase;font-weight:800}
+.nav-right{display:flex;align-items:center;gap:24px}
+.cart-btn{border:0;background:none;color:var(--text);cursor:pointer;text-transform:uppercase;font-size:12px;font-weight:800}
+.cart-count{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:5px;border-radius:50%;background:var(--white);color:#111;font-size:10px}
+.menu{display:none;background:none;border:0;color:white;font-size:22px}
+.hero{min-height:100vh;display:grid;place-items:center;padding:120px 7% 70px;background:radial-gradient(circle at 75% 25%,#303030 0,#1a1a1a 24%,#111 62%)}
+.hero-inner{max-width:1100px;width:100%}
+.eyebrow{text-transform:uppercase;letter-spacing:5px;font-size:10px;color:#aaa}
+.hero h1{font-family:Anton,sans-serif;font-size:clamp(70px,15vw,190px);line-height:.82;margin:20px 0;text-transform:uppercase;letter-spacing:-2px}
+.hero h1 span{display:block;color:#888}
+.hero p{max-width:520px;color:#aaa;line-height:1.7}
+.btn{display:inline-block;margin-top:20px;padding:15px 24px;background:var(--white);color:#111;border:1px solid var(--white);text-transform:uppercase;font-weight:800;font-size:11px;letter-spacing:1px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--white)}
+.section{padding:90px 7%;max-width:1400px;margin:auto}
+.section-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:30px}
+.section h2{font-family:Anton,sans-serif;font-size:46px;margin:0;text-transform:uppercase}
+.section-head span{color:var(--muted);font-size:11px;text-transform:uppercase}
+.category-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:70px}
+.category{min-height:170px;padding:22px;display:flex;align-items:flex-end;background:linear-gradient(145deg,#252525,#101010);border:1px solid var(--line);position:relative;overflow:hidden;cursor:pointer}
+.category:after{content:"";position:absolute;inset:auto -20% -50% 35%;height:150px;background:#303030;transform:rotate(-14deg)}
+.category strong{position:relative;z-index:2;font-family:Anton;font-size:30px;letter-spacing:.5px}
+.category small{position:absolute;right:16px;top:16px;z-index:2;color:#aaa}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.product{background:var(--panel);position:relative;overflow:hidden;border:1px solid #1e1e1e;transition:transform .25s,border-color .25s}
+.product:hover{transform:translateY(-4px);border-color:#444}
+.product .image{height:330px;background:linear-gradient(135deg,#2b2b2b,#111);display:grid;place-items:center;font-family:Anton;font-size:48px;color:#777;letter-spacing:3px;position:relative}
+.product .image:before{content:"";position:absolute;inset:18px;border:1px solid rgba(255,255,255,.06)}
+.product .info{padding:16px}
+.product .name{font-weight:800;text-transform:uppercase;font-size:13px}
+.product .price{color:#aaa;margin-top:7px;font-size:12px}
+.product .meta{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:13px}
+.product .view{font-size:10px;text-transform:uppercase;font-weight:800;color:#ddd}
+.tag{position:absolute;top:12px;left:12px;z-index:2;background:var(--white);color:#111;padding:7px 9px;font-size:9px;font-weight:900}
+.tag.soon{background:#292929;color:#ddd;border:1px solid #444}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 25px}
+.filter{border:1px solid var(--line);background:transparent;color:#aaa;padding:10px 14px;font-size:10px;text-transform:uppercase;font-weight:800;cursor:pointer}
+.filter.active,.filter:hover{background:var(--white);color:#111;border-color:var(--white)}
+.statement{background:#e8e8e3;color:#111;text-align:center;padding:110px 7%}
+.statement h2{font-family:Anton;font-size:clamp(55px,11vw,135px);line-height:.85;margin:0;text-transform:uppercase}
+.statement p{margin:28px auto 0;max-width:520px;line-height:1.7;color:#444}
+.about{display:grid;grid-template-columns:1fr 1fr;gap:60px}
+.about h2{font-size:70px}
+.about p{color:#aaa;line-height:1.9}
+.contact{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.contact a{display:block;padding:20px 0;border-bottom:1px solid var(--line);font-weight:700;text-transform:uppercase}
+footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#777;font-size:11px;text-transform:uppercase}
+
+/* product modal */
+.modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}
+.modal-card{width:min(900px,100%);max-height:92vh;overflow:auto;background:#151515;border:1px solid #333;display:grid;grid-template-columns:1fr 1fr}
+.modal-image{min-height:520px;background:linear-gradient(145deg,#292929,#101010);display:grid;place-items:center;font-family:Anton;font-size:70px;color:#777}
+.modal-copy{padding:34px}
+.modal-copy h3{font-family:Anton;font-size:42px;margin:0 0 10px;text-transform:uppercase}
+.modal-price{color:#aaa;margin-bottom:28px}
+.close{position:absolute;right:20px;top:18px;border:0;background:none;color:white;font-size:28px;cursor:pointer}
+.option-label{font-size:10px;text-transform:uppercase;font-weight:800;margin:24px 0 9px;color:#aaa}
+.options{display:flex;gap:7px;flex-wrap:wrap}
+.option{border:1px solid #393939;background:transparent;color:#eee;padding:10px 13px;font-size:11px;cursor:pointer}
+.option.selected{background:var(--white);color:#111;border-color:var(--white)}
+.option:disabled{opacity:.3;cursor:not-allowed}
+.add-btn{width:100%;margin-top:28px;padding:16px;background:var(--white);border:0;color:#111;font-weight:900;text-transform:uppercase;cursor:pointer}
+.add-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* cart drawer */
+.drawer{position:fixed;inset:0;z-index:400;display:none}
+.drawer.open{display:block}
+.drawer-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7)}
+.drawer-panel{position:absolute;right:0;top:0;height:100%;width:min(450px,92vw);background:#121212;border-left:1px solid #333;padding:25px;overflow:auto}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:18px}
+.drawer-head h3{font-family:Anton;font-size:32px;margin:0}
+.icon-btn{background:none;border:0;color:white;font-size:25px;cursor:pointer}
+.cart-item{display:grid;grid-template-columns:76px 1fr auto;gap:12px;padding:18px 0;border-bottom:1px solid var(--line)}
+.cart-thumb{height:76px;background:linear-gradient(135deg,#2b2b2b,#111);display:grid;place-items:center;font-family:Anton;color:#777;font-size:20px}
+.cart-name{font-size:12px;font-weight:800;text-transform:uppercase}
+.cart-details{color:#888;font-size:10px;margin-top:5px;line-height:1.7}
+.qty{display:flex;align-items:center;gap:9px;margin-top:10px}
+.qty button{width:24px;height:24px;border:1px solid #444;background:transparent;color:#fff;cursor:pointer}
+.remove{background:none;border:0;color:#777;font-size:10px;text-transform:uppercase;cursor:pointer}
+.cart-bottom{padding-top:20px}
+.total{display:flex;justify-content:space-between;font-weight:900;text-transform:uppercase}
+.checkout-btn{display:block;width:100%;text-align:center;padding:16px;background:var(--white);color:#111;font-size:11px;font-weight:900;text-transform:uppercase;margin-top:18px}
+.empty{color:#777;padding:40px 0;text-align:center;text-transform:uppercase;font-size:11px}
+
+/* checkout */
+.checkout{display:none;background:#f0f0eb;color:#111;min-height:100vh;padding:120px 7% 80px}
+.checkout.open{display:block}
+.checkout-wrap{max-width:1000px;margin:auto}
+.checkout h2{font-family:Anton;font-size:70px;margin:0 0 35px;text-transform:uppercase}
+.checkout-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:50px}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:10px;text-transform:uppercase;font-weight:800;margin-bottom:7px}
+.form-group input,.form-group select{width:100%;padding:14px;border:1px solid #ccc;background:#fff;color:#111;font:inherit}
+.checkout-summary{border-left:1px solid #ccc;padding-left:35px}
+.checkout-summary h3{font-family:Anton;font-size:30px;margin-top:0}
+.checkout-line{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #ddd;font-size:12px}
+.pay-note{margin-top:25px;padding:15px;background:#ddd;font-size:11px;line-height:1.6}
+.back-shop{border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;font-size:11px;text-transform:uppercase;font-weight:800}
+
+/* intro is preserved from user's file */
+#su404-intro{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#050505;overflow:hidden;opacity:1;transition:opacity .8s ease,visibility .8s ease}
+#su404-intro.hide{opacity:0;visibility:hidden;pointer-events:none}
+#su404-intro::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.055) 0,rgba(255,255,255,.055) 1px,transparent 1px,transparent 4px);mix-blend-mode:screen;opacity:.55;pointer-events:none;z-index:3}
+#su404-intro::after{content:"";position:absolute;inset:-20%;background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);opacity:.22;animation:noise .12s steps(2) infinite;pointer-events:none;z-index:4}
+.crt-frame{width:min(88vw,520px);aspect-ratio:4/5;position:relative;display:grid;place-items:center;background:#090909;animation:crtTwitch .18s steps(2) infinite;z-index:2}
+.crt-video{width:100%;height:100%;object-fit:cover;display:block;filter:contrast(1.08) brightness(.9) saturate(.7)}
+.crt-corners{position:absolute;inset:0;z-index:5;pointer-events:none;box-shadow:inset 0 0 90px 30px #000;border-radius:5% / 4%}
+.crt-brand{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%);z-index:6;color:rgba(255,255,255,.82);font-family:Anton,sans-serif;font-size:clamp(14px,3.6vw,22px);font-weight:900;letter-spacing:4px;text-transform:uppercase;mix-blend-mode:screen;pointer-events:none;white-space:nowrap;text-shadow:0 0 1px rgba(255,255,255,.3);animation:signalFlicker .25s steps(2) infinite,brandGlitch .4s steps(1) infinite}
+@keyframes brandGlitch{0%,100%{transform:translate(-50%,-50%) skewX(0);opacity:.8}30%{transform:translate(calc(-50% - 1px),-50%) skewX(-.4deg);opacity:.65}60%{transform:translate(calc(-50% + 1px),-50%) skewX(.3deg);opacity:.85}}
+@keyframes crtTwitch{0%{transform:translate(0,0) skewX(0)}25%{transform:translate(-2px,1px) skewX(-.4deg)}50%{transform:translate(2px,-1px) skewX(.4deg)}75%{transform:translate(-1px,0) skewX(.2deg)}100%{transform:translate(0,0) skewX(0)}}
+@keyframes noise{0%{transform:translate(0,0)}25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(2%,2%)}100%{transform:translate(0,0)}}
+@keyframes signalFlicker{0%,100%{opacity:.35}50%{opacity:.9}}
+@media(prefers-reduced-motion:reduce){.crt-frame,#su404-intro::after,.crt-brand{animation:none}}
+
+@media(max-width:900px){
+ .grid{grid-template-columns:repeat(2,1fr)}.category-row{grid-template-columns:repeat(2,1fr)}
+ .checkout-grid{grid-template-columns:1fr}.checkout-summary{border-left:0;border-top:1px solid #ccc;padding:25px 0 0}
+ .modal-card{grid-template-columns:1fr}.modal-image{min-height:300px}
+}
+@media(max-width:700px){
+ .links{display:none}.menu{display:block}.grid{grid-template-columns:1fr 1fr}
+ .product .image{height:240px;font-size:34px}.about,.contact{grid-template-columns:1fr}
+ .section{padding:70px 5%}.hero{padding-left:5%;padding-right:5%}
+ footer{flex-direction:column;gap:12px}.category{min-height:135px}.category strong{font-size:24px}
+}
+@media(max-width:460px){
+ .grid{grid-template-columns:1fr}.product .image{height:300px}.hero h1{font-size:76px}
+ .category-row{grid-template-columns:1fr 1fr}.nav{padding:16px 4%}.nav-right{gap:12px}
+}
+</style>
+
+</head>
 <body class="intro-active">
 
 <!-- SU404 INTRO: silent CRT / TV-style video -->
@@ -205,83 +346,275 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
       preload="auto"
     ></video>
     <div class="crt-corners"></div>
-    <div class="crt-brand">STAYUNKNOWN</div>
-  </div>
-</div>
-
 <nav class="nav">
-<a class="logo" href="#">STAYUNKNOWN</a>
-<div class="links"><a href="#shop">Shop</a><a href="#story">Story</a><a href="#contact">Contact</a></div>
-<button class="menu" aria-label="Menu">☰</button>
+  <a class="logo" href="#home">STAYUNKNOWN</a>
+  <div class="nav-right">
+    <div class="links"><a href="#shop">Shop</a><a href="#story">Story</a><a href="#contact">Contact</a></div>
+    <button class="cart-btn" onclick="openCart()">Bag <span class="cart-count" id="cartCount">0</span></button>
+    <button class="menu" aria-label="Menu">☰</button>
+  </div>
 </nav>
 
+<main id="home">
 <header class="hero">
-<div class="hero-inner">
-<div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
-<h1>Move<br><span>In Silence.</span></h1>
-<p>STAYUNKNOWN is built for people who don't need permission to stand out. Streetwear, casual essentials and sport-inspired pieces made to move with you.</p>
-<a class="btn" href="#shop">Shop the drop</a>
-</div>
+  <div class="hero-inner">
+    <div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
+    <h1>Move<br><span>In Silence.</span></h1>
+    <p>STAYUNKNOWN is built for people who don't need permission to stand out. Streetwear, casual essentials and sport-inspired pieces made to move with you.</p>
+    <a class="btn" href="#shop">Shop the drop</a>
+  </div>
 </header>
 
 <section class="section" id="shop">
-<div class="section-head"><h2>Latest Drop</h2><span>01 / 04</span></div>
-<div class="grid">
-<article class="product"><div class="tag">NEW</div><div class="image">SU / 01</div><div class="info"><div class="name">Unknown Oversized Tee</div><div class="price">₦ —</div></div></article>
-<article class="product"><div class="image">SU / 02</div><div class="info"><div class="name">Silence Hoodie</div><div class="price">₦ —</div></div></article>
-<article class="product"><div class="image">SU / 03</div><div class="info"><div class="name">Unknown Track Pants</div><div class="price">₦ —</div></div></article>
-</div>
+  <div class="section-head"><h2>Newly Dropped</h2><span>01 / 04</span></div>
+  <div class="grid" id="newGrid"></div>
+</section>
+
+<section class="section" id="categories">
+  <div class="section-head"><h2>Shop By Category</h2><span>STAYUNKNOWN / 04</span></div>
+  <div class="category-row">
+    <button class="category" onclick="filterCategory('sports')"><small>01</small><strong>SPORTS</strong></button>
+    <button class="category" onclick="filterCategory('casual')"><small>02</small><strong>CASUAL</strong></button>
+    <button class="category" onclick="filterCategory('street')"><small>03</small><strong>STREET</strong></button>
+    <button class="category" onclick="filterCategory('hoodie')"><small>04</small><strong>HOODIES</strong></button>
+  </div>
+
+  <div class="section-head"><h2>All Clothing</h2><span id="productCount">12 pieces</span></div>
+  <div class="filters">
+    <button class="filter active" data-filter="all" onclick="filterCategory('all',this)">All</button>
+    <button class="filter" data-filter="sports" onclick="filterCategory('sports',this)">Sports</button>
+    <button class="filter" data-filter="casual" onclick="filterCategory('casual',this)">Casual</button>
+    <button class="filter" data-filter="street" onclick="filterCategory('street',this)">Street</button>
+    <button class="filter" data-filter="hoodie" onclick="filterCategory('hoodie',this)">Hoodies</button>
+  </div>
+  <div class="grid" id="productGrid"></div>
 </section>
 
 <section class="statement">
-<h2>Stay<br>Unknown.</h2>
-<p>Your name doesn't have to be loud. Your presence does. Wear the mindset.</p>
+  <h2>Stay<br>Unknown.</h2>
+  <p>Your name doesn't have to be loud. Your presence does. Wear the mindset.</p>
 </section>
 
 <section class="section about" id="story">
-<div><div class="eyebrow">The story</div><h2>BUILT<br>DIFFERENT.</h2></div>
-<div>
-<p>STAYUNKNOWN is a Nigerian streetwear label created around individuality, movement and quiet confidence.</p>
-<p>From everyday casual pieces to sport-inspired silhouettes, every collection is designed to feel bold without trying too hard.</p>
-<a class="btn" href="#contact">Join the movement</a>
-</div>
+  <div><div class="eyebrow">The story</div><h2>BUILT<br>DIFFERENT.</h2></div>
+  <div>
+    <p>STAYUNKNOWN is a Nigerian streetwear label created around individuality, movement and quiet confidence.</p>
+    <p>From everyday casual pieces to sport-inspired silhouettes, every collection is designed to feel bold without trying too hard.</p>
+    <a class="btn" href="#contact">Join the movement</a>
+  </div>
 </section>
 
 <section class="section contact" id="contact">
-<div><div class="eyebrow">Stay connected</div><h2>Contact</h2></div>
-<div>
-<a href="mailto:hello@stayunknown.com">Email ↗</a>
-<a href="#">Instagram ↗</a>
-<a href="#">TikTok ↗</a>
-</div>
+  <div><div class="eyebrow">Stay connected</div><h2>Contact</h2></div>
+  <div>
+    <a href="mailto:hello@stayunknown.com">Email ↗</a>
+    <a href="#">Instagram ↗</a>
+    <a href="#">TikTok ↗</a>
+    <a href="#">X ↗</a>
+  </div>
 </section>
+</main>
+
+<section class="checkout" id="checkout">
+  <div class="checkout-wrap">
+    <button class="back-shop" onclick="closeCheckout()">← Back to shop</button>
+    <h2>Checkout</h2>
+    <div class="checkout-grid">
+      <form id="checkoutForm">
+        <div class="form-group"><label>Full name</label><input required id="customerName" placeholder="Your name"></div>
+        <div class="form-group"><label>Email</label><input required type="email" id="customerEmail" placeholder="you@example.com"></div>
+        <div class="form-group"><label>Phone</label><input required type="tel" id="customerPhone" placeholder="+234"></div>
+        <div class="form-group"><label>Delivery address</label><input required id="customerAddress" placeholder="Street address"></div>
+        <div class="form-group"><label>City</label><input required id="customerCity" placeholder="City"></div>
+        <div class="form-group"><label>State</label><input required id="customerState" placeholder="State"></div>
+        <div class="form-group"><label>Country</label><select id="customerCountry"><option>Nigeria</option><option>Ghana</option><option>United Kingdom</option><option>United States</option><option>Canada</option></select></div>
+        <button class="add-btn" type="submit">Continue to payment</button>
+        <div class="pay-note">Payment integration will be connected in the next stage. For now, this checkout collects the order and delivery details without charging the customer.</div>
+      </form>
+      <div class="checkout-summary">
+        <h3>Your bag</h3>
+        <div id="checkoutItems"></div>
+        <div class="checkout-line"><strong>Total</strong><strong id="checkoutTotal">₦0</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="modal" id="productModal" aria-hidden="true">
+  <button class="close" onclick="closeProduct()" aria-label="Close">×</button>
+  <div class="modal-card">
+    <div class="modal-image" id="modalImage">SU / 01</div>
+    <div class="modal-copy">
+      <div class="eyebrow" id="modalCategory">STREET</div>
+      <h3 id="modalName">Unknown Tee</h3>
+      <div class="modal-price" id="modalPrice">₦45,000</div>
+      <div class="option-label">Size</div>
+      <div class="options" id="sizeOptions"></div>
+      <div class="option-label" id="colorLabel">Colour</div>
+      <div class="options" id="colorOptions"></div>
+      <button class="add-btn" id="modalAdd">Add to bag</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer" id="cartDrawer">
+  <div class="drawer-backdrop" onclick="closeCart()"></div>
+  <aside class="drawer-panel">
+    <div class="drawer-head"><h3>Your Bag</h3><button class="icon-btn" onclick="closeCart()">×</button></div>
+    <div id="cartItems"></div>
+    <div class="cart-bottom">
+      <div class="total"><span>Subtotal</span><span id="cartTotal">₦0</span></div>
+      <a class="checkout-btn" href="#checkout" onclick="closeCart();openCheckout()">Checkout</a>
+    </div>
+  </aside>
+</div>
 
 <footer><span>© 2026 STAYUNKNOWN</span><span>MOVE IN SILENCE</span></footer>
 
 <script>
+const products = [
+ {id:1,name:"404 Oversized Tee",price:45000,cat:"street",code:"SU / 01",colors:["Black","White"],sizes:["S","M","L","XL"],new:true,available:true},
+ {id:2,name:"Move In Silence Tee",price:42000,cat:"casual",code:"SU / 02",colors:["Black","Grey"],sizes:["S","M","L","XL"],new:true,available:true},
+ {id:3,name:"Unknown Heavy Hoodie",price:68000,cat:"hoodie",code:"SU / 03",colors:["Black","Charcoal"],sizes:["M","L","XL","XXL"],new:true,available:true},
+ {id:4,name:"404 Track Pants",price:59000,cat:"sports",code:"SU / 04",colors:["Black","Grey"],sizes:["S","M","L","XL"],new:true,available:true},
+ {id:5,name:"Unknown Sports Jersey",price:52000,cat:"sports",code:"SU / 05",colors:["Black","White"],sizes:["S","M","L","XL"],new:false,available:true},
+ {id:6,name:"Silence Zip Hoodie",price:72000,cat:"hoodie",code:"SU / 06",colors:["Black"],sizes:["M","L","XL","XXL"],new:false,available:false},
+ {id:7,name:"Unknown Cargo Pants",price:65000,cat:"street",code:"SU / 07",colors:["Black","Olive"],sizes:["S","M","L","XL"],new:false,available:false},
+ {id:8,name:"STAYUNKNOWN Basic Tee",price:38000,cat:"casual",code:"SU / 08",colors:["White","Black","Grey"],sizes:["S","M","L","XL","XXL"],new:false,available:true},
+ {id:9,name:"404 Varsity Jacket",price:95000,cat:"street",code:"SU / 09",colors:["Black"],sizes:["M","L","XL"],new:false,available:false},
+ {id:10,name:"Unknown Training Shorts",price:39000,cat:"sports",code:"SU / 10",colors:["Black","Grey"],sizes:["S","M","L","XL"],new:false,available:true},
+ {id:11,name:"Move Quiet Crewneck",price:61000,cat:"hoodie",code:"SU / 11",colors:["Charcoal","Black"],sizes:["M","L","XL","XXL"],new:false,available:false},
+ {id:12,name:"Unknown Long Sleeve",price:48000,cat:"casual",code:"SU / 12",colors:["Black","White"],sizes:["S","M","L","XL"],new:false,available:false}
+];
+
+let cart = JSON.parse(localStorage.getItem("stayunknown_cart") || "[]");
+let activeProduct = null;
+let selectedSize = null;
+let selectedColor = null;
+
+const money = n => "₦" + n.toLocaleString("en-NG");
+
+function productCard(p){
+  return `<article class="product">
+    ${p.new ? '<div class="tag">NEW</div>' : ''}${!p.available ? '<div class="tag soon">COMING SOON</div>' : ''}
+    <button style="all:unset;display:block;width:100%;cursor:pointer" onclick="openProduct(${p.id})">
+      <div class="image">${p.code}</div>
+      <div class="info">
+        <div class="name">${p.name}</div>
+        <div class="price">${p.available ? money(p.price) : "COMING SOON"}</div>
+        <div class="meta"><span class="view">View product ↗</span><span>${p.cat}</span></div>
+      </div>
+    </button>
+  </article>`;
+}
+
+function render(){
+  document.getElementById("newGrid").innerHTML = products.filter(p=>p.new).map(productCard).join("");
+  renderProducts("all");
+  renderCart();
+}
+
+function renderProducts(cat){
+  const list = cat==="all" ? products : products.filter(p=>p.cat===cat);
+  document.getElementById("productGrid").innerHTML = list.map(productCard).join("");
+  document.getElementById("productCount").textContent = list.length + " pieces";
+}
+
+function filterCategory(cat, button){
+  renderProducts(cat);
+  document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));
+  const b = button || document.querySelector(`.filter[data-filter="${cat}"]`);
+  if(b) b.classList.add("active");
+  document.getElementById("categories").scrollIntoView({behavior:"smooth"});
+}
+
+function openProduct(id){
+  activeProduct = products.find(p=>p.id===id);
+  selectedSize = activeProduct.sizes[Math.min(1,activeProduct.sizes.length-1)];
+  selectedColor = activeProduct.colors[0];
+  document.getElementById("modalImage").textContent = activeProduct.code;
+  document.getElementById("modalCategory").textContent = activeProduct.cat;
+  document.getElementById("modalName").textContent = activeProduct.name;
+  document.getElementById("modalPrice").textContent = activeProduct.available ? money(activeProduct.price) : "COMING SOON";
+  document.getElementById("sizeOptions").innerHTML = activeProduct.sizes.map(s=>`<button class="option ${s===selectedSize?"selected":""}" ${!activeProduct.available?"disabled":""} onclick="chooseSize('${s}',this)">${s}</button>`).join("");
+  document.getElementById("colorOptions").innerHTML = activeProduct.colors.map(c=>`<button class="option ${c===selectedColor?"selected":""}" ${!activeProduct.available?"disabled":""} onclick="chooseColor('${c}',this)">${c}</button>`).join("");
+  document.getElementById("modalAdd").disabled = !activeProduct.available;
+  document.getElementById("modalAdd").textContent = activeProduct.available ? "Add to bag" : "Coming soon";
+  document.getElementById("modalAdd").onclick = ()=>addToCart(activeProduct.id);
+  document.getElementById("productModal").classList.add("open");
+}
+function closeProduct(){document.getElementById("productModal").classList.remove("open")}
+function chooseSize(s,b){selectedSize=s;document.querySelectorAll("#sizeOptions .option").forEach(x=>x.classList.remove("selected"));b.classList.add("selected")}
+function chooseColor(c,b){selectedColor=c;document.querySelectorAll("#colorOptions .option").forEach(x=>x.classList.remove("selected"));b.classList.add("selected")}
+
+function addToCart(id){
+  const p=products.find(x=>x.id===id);
+  if(!p.available)return;
+  const key=id+"-"+selectedSize+"-"+selectedColor;
+  const found=cart.find(x=>x.key===key);
+  if(found) found.qty++;
+  else cart.push({key,id,size:selectedSize,color:selectedColor,qty:1});
+  saveCart(); closeProduct(); openCart();
+}
+function saveCart(){localStorage.setItem("stayunknown_cart",JSON.stringify(cart));renderCart()}
+function renderCart(){
+  const count=cart.reduce((a,x)=>a+x.qty,0);
+  document.getElementById("cartCount").textContent=count;
+  const items=document.getElementById("cartItems");
+  if(!cart.length){items.innerHTML='<div class="empty">Your bag is empty.</div>';document.getElementById("cartTotal").textContent="₦0";return}
+  let total=0;
+  items.innerHTML=cart.map((item,i)=>{
+    const p=products.find(x=>x.id===item.id); total+=p.price*item.qty;
+    return `<div class="cart-item">
+      <div class="cart-thumb">${p.code}</div>
+      <div><div class="cart-name">${p.name}</div><div class="cart-details">Size: ${item.size}<br>Colour: ${item.color}<br>${money(p.price)}</div>
+      <div class="qty"><button onclick="changeQty(${i},-1)">−</button><span>${item.qty}</span><button onclick="changeQty(${i},1)">+</button></div></div>
+      <button class="remove" onclick="removeItem(${i})">Remove</button>
+    </div>`;
+  }).join("");
+  document.getElementById("cartTotal").textContent=money(total);
+}
+function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);saveCart()}
+function removeItem(i){cart.splice(i,1);saveCart()}
+function openCart(){document.getElementById("cartDrawer").classList.add("open")}
+function closeCart(){document.getElementById("cartDrawer").classList.remove("open")}
+
+function openCheckout(){
+  if(!cart.length){openCart();return}
+  document.getElementById("checkout").classList.add("open");
+  document.querySelector("main").style.display="none";
+  document.querySelector("footer").style.display="none";
+  renderCheckout();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function closeCheckout(){
+  document.getElementById("checkout").classList.remove("open");
+  document.querySelector("main").style.display="";
+  document.querySelector("footer").style.display="";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function renderCheckout(){
+  let total=0;
+  document.getElementById("checkoutItems").innerHTML=cart.map(item=>{
+    const p=products.find(x=>x.id===item.id); total+=p.price*item.qty;
+    return `<div class="checkout-line"><span>${p.name} × ${item.qty}<br><small>${item.size} / ${item.color}</small></span><strong>${money(p.price*item.qty)}</strong></div>`;
+  }).join("");
+  document.getElementById("checkoutTotal").textContent=money(total);
+}
+document.getElementById("checkoutForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  alert("Checkout details saved. Payment integration is the next step.");
+});
+
 (function(){
-  const intro = document.getElementById('su404-intro');
-  const video = document.getElementById('su404-video');
-  const finish = () => {
-    if (intro.classList.contains('hide')) return;
-    intro.classList.add('hide');
-    document.body.classList.remove('intro-active');
-    setTimeout(() => intro.remove(), 900);
-  };
-
-  // Keep the intro completely silent and start it automatically.
-  video.muted = true;
-  video.setAttribute('muted','');
-  video.play().catch(() => {
-    // If iOS delays autoplay, the video can still be started by the browser.
-  });
-
-  // Normally transition when the video finishes.
-  video.addEventListener('ended', finish);
-
-  // Safety fallback so a failed/blocked video never traps visitors.
-  setTimeout(finish, 12000);
+  const intro=document.getElementById("su404-intro"), video=document.getElementById("su404-video");
+  const finish=()=>{if(intro.classList.contains("hide"))return;intro.classList.add("hide");document.body.classList.remove("intro-active");setTimeout(()=>intro.remove(),900)};
+  video.muted=true;video.setAttribute("muted","");
+  video.play().catch(()=>{});
+  video.addEventListener("ended",finish);
+  setTimeout(finish,12000);
 })();
+render();
 </script>
 
 </body>
