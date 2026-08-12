@@ -117,5 +117,47 @@ setInterval(()=>slide(1),5000);
 (function(){const intro=document.getElementById("su404-intro"),video=document.getElementById("su404-video");const finish=()=>{intro.classList.add("hide");document.body.classList.remove("intro-active");setTimeout(()=>intro.remove(),600)};video.muted=true;video.play().catch(()=>{});video.addEventListener("ended",finish);setTimeout(finish,6000)})();
 renderCart();
 </script>
+  <!-- FIREBASE AUTHENTICATION SCRIPT -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    updateProfile, 
+    onAuthStateChanged, 
+    signOut, 
+    sendPasswordResetEmail, 
+    deleteUser 
+  } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+
+  // Your Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyB39u1-5EbGimA--fZa_-FApAavayzjlBU",
+    authDomain: "stayunknown-auth.firebaseapp.com",
+    projectId: "stayunknown-auth",
+    storageBucket: "stayunknown-auth.firebasestorage.app",
+    messagingSenderId: "453624121758",
+    appId: "1:453624121758:web:79f2f96bc46b0fdfc4ae8f"
+  };
+
+  // Initialize Firebase & Auth
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Listen for login state and update greeting
+  onAuthStateChanged(auth, (user) => {
+    const greeting = document.getElementById("welcome-greeting");
+    if (greeting) {
+      if (user) {
+        const displayName = user.displayName || "Valued Customer";
+        greeting.innerText = `Welcome back, ${displayName}!`;
+      } else {
+        greeting.innerText = "Welcome to Stay Unknown";
+      }
+    }
+  });
+</script>
+
 </body>
 </html>
