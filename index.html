@@ -2,163 +2,383 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STAYUNKNOWN — Move in Silence</title>
 <meta name="description" content="STAYUNKNOWN — independent streetwear. Move in silence.">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
+
 <style>
-:root{--bg:#0d0d0d;--panel:#151515;--text:#f3f3f0;--muted:#8e8e8e;--line:#292929;--white:#f3f3f0}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}body.intro-active{overflow:hidden}a{color:inherit;text-decoration:none}button{font:inherit}
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:17px 5%;background:rgba(13,13,13,.82);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
-.logo{font-family:Anton,sans-serif;font-size:25px;letter-spacing:1px}.nav-right{display:flex;align-items:center;gap:20px}.bag-icon{width:31px;height:31px;border:1px solid #777;border-radius:5px 5px 8px 8px;background:transparent;color:#fff;position:relative;cursor:pointer;font-family:Anton;font-size:9px;display:grid;place-items:center}.bag-icon:before{content:"";position:absolute;top:-7px;left:8px;width:13px;height:9px;border:1px solid #777;border-bottom:0;border-radius:8px 8px 0 0}.bag-count{position:absolute;right:-7px;top:-7px;background:#fff;color:#111;border-radius:50%;min-width:16px;height:16px;display:grid;place-items:center;font:800 9px Inter}.menu{border:0;background:none;color:#fff;font-size:25px;line-height:1;cursor:pointer;padding:3px}
-main{min-height:100vh}.hero{min-height:100vh;display:grid;place-items:center;padding:120px 7% 70px;background:radial-gradient(circle at 75% 25%,#303030 0,#1a1a1a 24%,#111 62%)}.hero-inner{max-width:1100px;width:100%}.eyebrow{text-transform:uppercase;letter-spacing:4px;font-size:10px;color:#aaa}.hero h1{font-family:Anton;font-size:clamp(76px,15vw,190px);line-height:.82;margin:20px 0;text-transform:uppercase;letter-spacing:-2px}.hero h1 span{color:#888}.hero p{max-width:500px;color:#aaa;line-height:1.7}.btn{display:inline-block;margin-top:20px;padding:15px 24px;background:var(--white);color:#111;border:0;text-transform:uppercase;font-size:11px;font-weight:900;letter-spacing:1px;cursor:pointer}
-.section{padding:75px 7%;max-width:1400px;margin:auto}.section-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:25px}.section h2{font-family:Anton;font-size:48px;margin:0;text-transform:uppercase}.section-head span{font-size:10px;color:#777;text-transform:uppercase}
-.feature{position:relative;min-height:62vh;overflow:hidden;background:#161616;border:1px solid var(--line);display:flex;align-items:flex-end}.feature-slide{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .6s;background:linear-gradient(135deg,#292929,#0c0c0c)}.feature-slide.active{opacity:1}.feature-slide .visual{font-family:Anton;font-size:clamp(120px,24vw,300px);color:#666;line-height:1}.feature-slide .caption{position:absolute;left:28px;bottom:25px}.feature-slide .caption strong{font-family:Anton;font-size:32px;display:block}.feature-slide .caption small{color:#aaa;text-transform:uppercase;font-size:9px;letter-spacing:2px}.feature-arrow{position:absolute;right:25px;bottom:25px;z-index:4;display:flex;gap:7px}.feature-arrow button{width:38px;height:38px;background:rgba(0,0,0,.5);color:#fff;border:1px solid #555;cursor:pointer}.dots{position:absolute;right:25px;top:25px;z-index:4;display:flex;gap:6px}.dot{width:7px;height:7px;border-radius:50%;background:#555}.dot.active{background:#fff}.feature-shop{position:absolute;right:28px;bottom:25px;z-index:5}
-.drop-shop{display:flex;justify-content:center;padding:18px 0 0}.drop-shop .btn{min-width:220px;text-align:center}.best{display:grid;grid-template-columns:1fr 1fr;gap:14px}.best-copy{background:#151515;border:1px solid var(--line);padding:45px;display:flex;flex-direction:column;justify-content:center}.best-copy h2{font-family:Anton;font-size:clamp(55px,8vw,105px);line-height:.84;margin:15px 0}.best-copy p{color:#999;line-height:1.7;max-width:450px}.best-image{min-height:430px;border:1px solid var(--line);background:linear-gradient(145deg,#2a2a2a,#0f0f0f);display:grid;place-items:center;cursor:pointer}.best-image span{font-family:Anton;font-size:clamp(120px,18vw,220px);color:#666}
-.statement{background:#e8e8e3;color:#111;text-align:center;padding:100px 7%}.statement h2{font-family:Anton;font-size:clamp(60px,11vw,140px);line-height:.84;margin:0}.statement p{max-width:520px;margin:25px auto 0;line-height:1.7;color:#444}.about{display:grid;grid-template-columns:1fr 1fr;gap:55px}.about h2{font-family:Anton;font-size:70px;margin:15px 0}.about p{color:#aaa;line-height:1.9}.contact{display:grid;grid-template-columns:1fr 1fr;gap:30px;border-top:1px solid var(--line)}.contact h2{font-family:Anton;font-size:70px}.contact a{display:block;padding:19px 0;border-bottom:1px solid var(--line);font-weight:800;text-transform:uppercase;font-size:12px}footer{padding:32px 7%;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#666;font-size:10px;text-transform:uppercase}
-.shop-page{display:none;padding-top:110px;min-height:100vh}.shop-page.open{display:block}.filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:25px}.filter{border:1px solid var(--line);background:none;color:#aaa;padding:10px 14px;font-size:10px;text-transform:uppercase;font-weight:800;cursor:pointer}.filter.active,.filter:hover{background:#fff;color:#111;border-color:#fff}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.product{background:var(--panel);border:1px solid #202020;position:relative;overflow:hidden}.product-image{height:330px;background:linear-gradient(135deg,#292929,#101010);display:grid;place-items:center;font-family:Anton;font-size:46px;color:#666}.product-info{padding:15px}.product-name{font-size:12px;font-weight:900;text-transform:uppercase}.product-price{font-size:12px;color:#999;margin-top:6px}.product-meta{font-size:9px;color:#777;text-transform:uppercase;margin-top:12px}.tag{position:absolute;left:10px;top:10px;background:#fff;color:#111;padding:6px 8px;font-size:8px;font-weight:900;z-index:2}.tag.soon{background:#282828;color:#bbb;border:1px solid #444}
-.drawer{position:fixed;inset:0;z-index:500;display:none}.drawer.open{display:block}.drawer-back{position:absolute;inset:0;background:rgba(0,0,0,.7)}.drawer-panel{position:absolute;right:0;top:0;height:100%;width:min(430px,92vw);background:#111;border-left:1px solid #333;padding:25px;overflow:auto}.drawer-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px}.drawer-head h3{font-family:Anton;font-size:31px;margin:0}.close{border:0;background:none;color:#fff;font-size:26px;cursor:pointer}.cart-item{display:grid;grid-template-columns:70px 1fr auto;gap:12px;padding:17px 0;border-bottom:1px solid var(--line)}.thumb{height:70px;background:#222;display:grid;place-items:center;font-family:Anton;color:#666}.cart-name{font-size:11px;font-weight:900;text-transform:uppercase}.cart-detail{font-size:9px;color:#777;line-height:1.7;margin-top:5px}.qty{display:flex;gap:7px;align-items:center;margin-top:9px}.qty button{width:23px;height:23px;background:none;color:#fff;border:1px solid #444;cursor:pointer}.remove{background:none;border:0;color:#777;font-size:9px;text-transform:uppercase;cursor:pointer}.total{display:flex;justify-content:space-between;margin-top:20px;font-weight:900;text-transform:uppercase}.checkout-btn{display:block;margin-top:18px;text-align:center;background:#fff;color:#111;padding:16px;font-size:10px;font-weight:900;text-transform:uppercase}.empty{padding:45px 0;text-align:center;color:#777;font-size:10px;text-transform:uppercase}
-.modal{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.8);display:none;place-items:center;padding:20px}.modal.open{display:grid}.modal-card{width:min(850px,100%);background:#151515;display:grid;grid-template-columns:1fr 1fr;max-height:90vh;overflow:auto}.modal-image{min-height:500px;background:linear-gradient(145deg,#292929,#101010);display:grid;place-items:center;font-family:Anton;font-size:70px;color:#666}.modal-copy{padding:35px}.modal-copy h3{font-family:Anton;font-size:43px;margin:15px 0 8px;text-transform:uppercase}.price{color:#aaa}.label{font-size:9px;color:#888;text-transform:uppercase;font-weight:900;margin:25px 0 8px}.options{display:flex;gap:7px;flex-wrap:wrap}.option{background:none;border:1px solid #444;color:#fff;padding:10px 13px;font-size:10px;cursor:pointer}.option.selected{background:#fff;color:#111}.option:disabled{opacity:.35}.add{width:100%;margin-top:25px;background:#fff;color:#111;border:0;padding:16px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}.add:disabled{opacity:.4}
-.menu-drawer{position:fixed;inset:0;z-index:700;display:none}.menu-drawer.open{display:block}.menu-bg{position:absolute;inset:0;background:rgba(0,0,0,.72)}.menu-panel{position:absolute;right:0;top:0;height:100%;width:min(420px,92vw);background:#111;border-left:1px solid #333;padding:25px;display:flex;flex-direction:column}.menu-title{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:20px;font-family:Anton;font-size:25px}.menu-links{margin-top:12px}.menu-links button,.menu-links a{display:flex;justify-content:space-between;width:100%;padding:18px 0;border:0;border-bottom:1px solid #242424;background:none;color:#fff;text-transform:uppercase;font-size:12px;font-weight:900;cursor:pointer;text-align:left}.menu-links span{color:#777}.category-sub{display:none;padding:0 0 8px 15px}.category-sub.open{display:block}.category-sub button{border:0;background:none;color:#aaa;display:block;padding:10px 0;font-size:11px;text-transform:uppercase;cursor:pointer}.menu-foot{margin-top:auto;color:#555;font-size:9px;letter-spacing:3px}
-.account{position:fixed;inset:0;z-index:800;display:none;place-items:center;padding:20px}.account.open{display:grid}.account-bg{position:absolute;inset:0;background:rgba(0,0,0,.8)}.account-card{position:relative;z-index:2;width:min(500px,100%);background:#151515;border:1px solid #333;padding:35px}.account-card h2{font-family:Anton;font-size:55px;margin:12px 0}.account-card p{color:#999;font-size:11px;line-height:1.7}.account-card input{width:100%;padding:14px;margin:7px 0;background:#101010;color:#fff;border:1px solid #333}.account-status{font-size:10px;color:#999;margin-top:12px}
-.checkout{display:none;background:#f0f0eb;color:#111;min-height:100vh;padding:120px 7% 80px}.checkout.open{display:block}.checkout-wrap{max-width:1000px;margin:auto}.checkout h2{font-family:Anton;font-size:70px;margin:10px 0 35px}.checkout-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:50px}.form-group{margin-bottom:16px}.form-group label{display:block;font-size:9px;font-weight:900;text-transform:uppercase;margin-bottom:6px}.form-group input,.form-group select{width:100%;padding:14px;border:1px solid #ccc;background:#fff;color:#111}.checkout-summary{border-left:1px solid #ccc;padding-left:30px}.checkout-line{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #ddd;font-size:11px}.pay-note{background:#ddd;padding:14px;margin-top:20px;font-size:10px;line-height:1.6}.back{border:0;background:none;text-decoration:underline;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}
-#su404-intro{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#050505;overflow:hidden;opacity:1;transition:opacity .55s ease,visibility .55s ease}.hide{opacity:0!important;visibility:hidden;pointer-events:none}.crt-frame{width:min(90vw,560px);aspect-ratio:4/5;position:relative;overflow:hidden;background:#090909}.crt-video{width:100%;height:100%;object-fit:cover;display:block;filter:contrast(1.06) brightness(.9) saturate(.72)}.crt-frame:before{content:"";position:absolute;inset:0;z-index:2;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.045) 0,rgba(255,255,255,.045) 1px,transparent 1px,transparent 4px);mix-blend-mode:screen;pointer-events:none}.crt-frame:after{content:"";position:absolute;inset:0;z-index:5;background:linear-gradient(90deg,rgba(0,0,0,.3),transparent 12%,transparent 88%,rgba(0,0,0,.3));box-shadow:inset 0 0 85px 28px #000;pointer-events:none}.crt-brand,.crt-welcome{position:absolute;left:50%;transform:translateX(-50%);z-index:6;font-family:monospace,monospace;font-weight:900;color:#e9e9e9;text-transform:uppercase;white-space:nowrap;text-align:center;letter-spacing:3px;text-shadow:2px 0 #7b8b8f,-2px 0 #8d5555;mix-blend-mode:screen}.crt-brand{top:22%;font-size:clamp(15px,3.5vw,24px);animation:brandGlitch 1.7s steps(2) infinite}.crt-welcome{top:77%;font-size:clamp(9px,2vw,13px);letter-spacing:4px;opacity:.48;animation:welcomeFlicker 2.4s steps(2) infinite}.crt-corners{position:absolute;inset:0;z-index:7;pointer-events:none}@keyframes brandGlitch{0%,82%,100%{opacity:.82;transform:translateX(-50%) skewX(0)}84%{opacity:.58;transform:translateX(calc(-50% + 2px)) skewX(-5deg)}86%{opacity:.95;transform:translateX(calc(-50% - 2px)) skewX(4deg)}88%{opacity:.68;transform:translateX(-50%) skewX(0)}}@keyframes welcomeFlicker{0%,100%{opacity:.38}48%{opacity:.3}51%{opacity:.55}54%{opacity:.32}80%{opacity:.44}}@media(prefers-reduced-motion:reduce){.crt-brand,.crt-welcome{animation:none}}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.best{grid-template-columns:1fr}.checkout-grid{grid-template-columns:1fr}.checkout-summary{border-left:0;border-top:1px solid #ccc;padding:25px 0 0}.modal-card{grid-template-columns:1fr}.modal-image{min-height:300px}}
-@media(max-width:600px){.section{padding:65px 5%}.hero{padding:105px 5% 55px}.hero h1{font-size:78px}.feature{min-height:58vh}.best-copy{padding:30px}.about,.contact{grid-template-columns:1fr}.contact h2{font-size:55px}.grid{grid-template-columns:1fr 1fr}.product-image{height:230px}.logo{font-size:22px}.nav{padding:16px 4%}.nav-right{gap:13px}}
-@media(max-width:430px){.grid{grid-template-columns:1fr}.product-image{height:300px}.drop-shop .btn{min-width:190px}.feature-slide .caption{left:18px;bottom:18px}.feature-arrow{right:18px;bottom:70px}}
+:root{--bg:#111;--panel:#181818;--text:#f3f3f0;--muted:#999;--line:#2b2b2b}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+body.intro-active{overflow:hidden}
+a{color:inherit;text-decoration:none}
+
+/* ===== SU404 CRT / GLITCH INTRO ===== */
+#su404-intro{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:grid;
+  place-items:center;
+  background:#050505;
+  overflow:hidden;
+  opacity:1;
+  transition:opacity .8s ease, visibility .8s ease;
+  cursor:pointer;
+}
+#su404-intro.hide{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+/* CRT Scanline Effect */
+#su404-intro::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.07) 0px,
+      rgba(255,255,255,.07) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  mix-blend-mode:screen;
+  opacity:.6;
+  pointer-events:none;
+  z-index:3;
+}
+/* Static Noise Effect */
+#su404-intro::after{
+  content:"";
+  position:absolute;
+  inset:-20%;
+  background:
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      rgba(255,255,255,.04) 0 1px,
+      transparent 1px 3px
+    );
+  opacity:.3;
+  animation:noise .12s steps(2) infinite;
+  pointer-events:none;
+  z-index:4;
+}
+.crt-frame{
+  width:min(90vw,500px);
+  padding:40px 20px;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:#080808;
+  border-radius:8px;
+  box-shadow:inset 0 0 100px 40px #000, 0 0 30px rgba(0,0,0,0.8);
+  animation:crtTwitch .18s steps(2) infinite;
+  z-index:2;
+  text-align:center;
+}
+.crt-brand{
+  color:#f3f3f0;
+  font-family:'VT323', monospace, sans-serif;
+  font-size:clamp(20px,5vw,32px);
+  letter-spacing:6px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+  animation: signalFlicker .25s steps(2) infinite, brandGlitch .4s steps(1) infinite;
+}
+.crt-404{
+  font-family:'Anton', sans-serif;
+  font-size:clamp(90px,25vw,170px);
+  line-height:.8;
+  color:#e0e0e0;
+  letter-spacing:4px;
+  margin:10px 0;
+  text-shadow: 2px 0 0 rgba(255,0,0,0.4), -2px 0 0 rgba(0,255,255,0.4);
+  animation: brandGlitch .3s steps(1) infinite;
+}
+.crt-tagline{
+  font-family:'VT323', monospace, sans-serif;
+  font-size:clamp(18px,4.5vw,28px);
+  letter-spacing:4px;
+  color:#d0d0d0;
+  text-transform:uppercase;
+  margin-top:10px;
+  animation: signalFlicker .3s steps(2) infinite;
+}
+.crt-welcome{
+  font-family:'Inter', sans-serif;
+  font-size:clamp(11px,2.5vw,13px);
+  letter-spacing:2px;
+  color:#888;
+  text-transform:uppercase;
+  margin-top:20px;
+  border-top:1px dashed #333;
+  padding-top:15px;
+  width:80%;
+  font-weight:600;
+}
+
+@keyframes brandGlitch{
+  0%,100%{ transform:translate(0,0) skewX(0); opacity:.9; }
+  30%{ transform:translate(-2px,1px) skewX(-1deg); opacity:.75; }
+  60%{ transform:translate(2px,-1px) skewX(1deg); opacity:.95; }
+}
+@keyframes crtTwitch{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(-1px,1px)}
+  50%{transform:translate(1px,-1px)}
+  75%{transform:translate(-1px,0)}
+  100%{transform:translate(0,0)}
+}
+@keyframes noise{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(-2%,1%)}
+  50%{transform:translate(1%,-2%)}
+  75%{transform:translate(2%,2%)}
+  100%{transform:translate(0,0)}
+}
+@keyframes signalFlicker{
+  0%,100%{opacity:.5}
+  50%{opacity:1}
+}
+
+/* ===== MAIN SITE NAV & DRAWER ===== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 5%;background:rgba(17,17,17,.85);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
+.logo{font-family:Anton,sans-serif;letter-spacing:1px;font-size:25px}
+.links{display:flex;gap:28px;font-size:13px;text-transform:uppercase;font-weight:700}
+.menu-btn{background:none;border:0;color:white;font-size:24px;cursor:pointer}
+
+/* SLIDE-OUT MENU OVERLAY */
+#side-drawer{
+  position:fixed;
+  top:0;
+  right:-100%;
+  width:100%;
+  max-width:400px;
+  height:100vh;
+  background:#0d0d0d;
+  z-index:1000;
+  transition:right 0.3s ease;
+  padding:30px 25px;
+  box-sizing:border-box;
+  overflow-y:auto;
+  border-left:1px solid #222;
+}
+#side-drawer.open{ right:0; }
+.drawer-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
+.drawer-header .logo{ font-size:22px; }
+.close-drawer{ background:none; border:none; color:#fff; font-size:24px; cursor:pointer; }
+.menu-nav-links{ display:flex; flex-direction:column; gap:20px; font-weight:800; text-transform:uppercase; font-size:16px; border-bottom:1px solid #222; padding-bottom:20px; margin-bottom:20px; }
+.menu-nav-item{ display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+
+/* HERO SECTION */
+.hero{min-height:100vh;display:grid;place-items:center;padding:110px 7% 60px;background:radial-gradient(circle at 75% 25%,#303030 0,#1a1a1a 24%,#111 62%)}
+.hero-inner{max-width:1100px;width:100%}
+.eyebrow{text-transform:uppercase;letter-spacing:5px;font-size:11px;color:#aaa}
+#hero-user-greeting{font-size:14px;letter-spacing:2px;color:#fff;margin-top:8px;text-transform:uppercase;font-weight:800;display:none;}
+.hero h1{font-family:Anton,sans-serif;font-size:clamp(70px,15vw,190px);line-height:.82;margin:20px 0;text-transform:uppercase;letter-spacing:-2px}
+.hero h1 span{display:block;color:#888}
+.hero p{max-width:520px;color:#aaa;line-height:1.7}
+.btn{display:inline-block;margin-top:20px;padding:15px 24px;background:#f3f3f0;color:#111;text-transform:uppercase;font-weight:800;font-size:12px;letter-spacing:1px}
+
+/* GRID & SECTIONS */
+.section{padding:90px 7%;max-width:1300px;margin:auto}
+.section-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:30px}
+.section h2{font-family:Anton,sans-serif;font-size:46px;margin:0;text-transform:uppercase}
+.section-head span{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.product{background:var(--panel);min-height:430px;position:relative;overflow:hidden}
+.product .image{height:330px;background:linear-gradient(135deg,#2b2b2b,#111);display:grid;place-items:center;font-family:Anton;font-size:54px;color:#777;letter-spacing:3px}
+.product .info{padding:18px}
+.product .name{font-weight:800;text-transform:uppercase}
+.product .price{color:#999;margin-top:6px;font-size:13px}
+.tag{position:absolute;top:14px;left:14px;background:#f3f3f0;color:#111;padding:7px 9px;font-size:10px;font-weight:800}
+
+.statement{background:#e8e8e3;color:#111;text-align:center;padding:110px 7%}
+.statement h2{font-family:Anton;font-size:clamp(55px,11vw,135px);line-height:.85;margin:0;text-transform:uppercase}
+.statement p{margin:28px auto 0;max-width:520px;line-height:1.7;color:#444}
+
+.about{display:grid;grid-template-columns:1fr 1fr;gap:60px}
+.about h2{font-size:70px}
+.about p{color:#aaa;line-height:1.9}
+.contact{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.contact a{display:block;padding:20px 0;border-bottom:1px solid var(--line);font-weight:700;text-transform:uppercase}
+
+footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#777;font-size:11px;text-transform:uppercase}
+
+@media(max-width:700px){
+  .links{display:none}.grid{grid-template-columns:1fr 1fr}
+  .product{min-height:320px}.product .image{height:230px;font-size:34px}
+  .about,.contact{grid-template-columns:1fr}.section{padding:70px 5%}
+  .hero{padding-left:5%;padding-right:5%}footer{flex-direction:column;gap:12px}
+}
+@media(max-width:460px){
+  .grid{grid-template-columns:1fr}.product .image{height:300px}.hero h1{font-size:76px}
+}
 </style>
 </head>
+
 <body class="intro-active">
 
-<div id="su404-intro"><div class="crt-frame">
-<video id="su404-video" class="crt-video" src="stayunknown404_crt_intro.mp4" autoplay muted playsinline preload="auto"></video>
-<div class="crt-brand">STAYUNKNOWN</div><div class="crt-welcome">WELCOME</div><div class="crt-corners"></div>
-</div></div>
-
-<nav class="nav"><a class="logo" href="#home">STAYUNKNOWN</a><div class="nav-right">
-<button class="bag-icon" onclick="openCart()" aria-label="Open bag"><span>404</span><b class="bag-count" id="cartCount">0</b></button>
-<button class="menu" onclick="openMenu()" aria-label="Open menu">☰</button></div></nav>
-
-<main id="home">
-<section class="hero"><div class="hero-inner"><div class="eyebrow">Independent streetwear · Lagos · Worldwide</div><h1>Move<br><span>In Silence.</span></h1><p>STAYUNKNOWN is built around individuality, movement and quiet confidence.</p></div></section>
-
-<section class="section" id="drop"><div class="section-head"><h2>Newly Dropped</h2><span>STAYUNKNOWN / NEW</span></div>
-<div class="feature">
-<div class="feature-slide active"><div class="visual">404</div><div class="caption"><strong>404 OVERSIZED TEE</strong><small>NEW DROP · BLACK</small></div></div>
-<div class="feature-slide"><div class="visual">SU</div><div class="caption"><strong>MOVE IN SILENCE TEE</strong><small>NEW DROP · GREY</small></div></div>
-<div class="feature-slide"><div class="visual">404</div><div class="caption"><strong>UNKNOWN HEAVY HOODIE</strong><small>NEW DROP · CHARCOAL</small></div></div>
-<div class="dots"><i class="dot active"></i><i class="dot"></i><i class="dot"></i></div>
-<div class="feature-arrow"><button onclick="slide(-1)">‹</button><button onclick="slide(1)">›</button></div>
-</div><div class="drop-shop"><button class="btn" onclick="openShop('all')">Shop the drop</button></div></section>
-
-<section class="section best"><div class="best-copy"><div class="eyebrow">STAYUNKNOWN / BEST SELLER</div><h2>404<br>OVERSIZED TEE</h2><p>The piece that carries the signal. A clean everyday silhouette with the STAYUNKNOWN attitude.</p><button class="btn" onclick="openProduct(1)">Shop best seller</button></div><div class="best-image" onclick="openProduct(1)"><span>404</span></div></section>
-
-<section class="statement"><h2>Stay<br>Unknown.</h2><p>Your name doesn't have to be loud. Your presence does. Wear the mindset.</p></section>
-<section class="section about" id="story"><div><div class="eyebrow">The story</div><h2>BUILT<br>DIFFERENT.</h2></div><div><p>STAYUNKNOWN is a Nigerian streetwear label created around individuality, movement and quiet confidence.</p><p>From casual essentials to sport-inspired silhouettes, every collection is designed to feel bold without trying too hard.</p></div></section>
-<section class="section contact" id="contact"><div><div class="eyebrow">Stay connected</div><h2>CONTACT</h2></div><div><a href="mailto:hello@stayunknown.com">Email ↗</a><a href="#">Instagram ↗</a><a href="#">TikTok ↗</a><a href="#">X ↗</a></div></section>
-</main>
-
-<section class="shop-page" id="shopPage"><div class="section"><button class="back" onclick="closeShop()">← Back home</button><div class="section-head" style="margin-top:20px"><h2>Shop</h2><span id="productCount">12 pieces</span></div><div class="filters">
-<button class="filter active" data-cat="all" onclick="filterCategory('all',this)">All</button><button class="filter" data-cat="sports" onclick="filterCategory('sports',this)">Sports</button><button class="filter" data-cat="casual" onclick="filterCategory('casual',this)">Casual</button><button class="filter" data-cat="street" onclick="filterCategory('street',this)">Street</button><button class="filter" data-cat="hoodie" onclick="filterCategory('hoodie',this)">Hoodies</button></div><div class="grid" id="productGrid"></div></div></section>
-<footer><span>© 2026 STAYUNKNOWN</span><span>MOVE IN SILENCE</span></footer>
-
-<div class="drawer" id="cartDrawer"><div class="drawer-back" onclick="closeCart()"></div><aside class="drawer-panel"><div class="drawer-head"><h3>404</h3><button class="close" onclick="closeCart()">×</button></div><div id="cartItems"></div><div class="total"><span>Subtotal</span><span id="cartTotal">₦0</span></div><a class="checkout-btn" href="#checkout" onclick="openCheckout()">Checkout</a></aside></div>
-
-<div class="modal" id="productModal"><div class="modal-card"><div class="modal-image" id="modalImage">404</div><div class="modal-copy"><button class="close" onclick="closeProduct()">×</button><div class="eyebrow" id="modalCat">STREET</div><h3 id="modalName">404 Oversized Tee</h3><div class="price" id="modalPrice">₦45,000</div><div class="label">Size</div><div class="options" id="sizeOptions"></div><div class="label">Colour</div><div class="options" id="colorOptions"></div><button class="add" id="modalAdd">Add to bag</button></div></div></div>
-
-<div class="menu-drawer" id="menuDrawer"><div class="menu-bg" onclick="closeMenu()"></div><aside class="menu-panel"><div class="menu-title"><span>STAYUNKNOWN</span><button class="close" onclick="closeMenu()">×</button></div><div class="menu-links">
-<a href="#drop" onclick="closeMenu()">New Drop <span>↘</span></a><button onclick="toggleCategories()">Shop <span id="shopChevron">+</span></button>
-<div class="category-sub" id="categorySub"><button onclick="openShop('all')">All Clothing</button><button onclick="openShop('sports')">Sports</button><button onclick="openShop('casual')">Casual</button><button onclick="openShop('street')">Street</button><button onclick="openShop('hoodie')">Hoodies</button></div>
-<button onclick="openAccount()">Account <span>↗</span></button><button onclick="openCart();closeMenu()">404 Bag <span>↗</span></button><a href="#story" onclick="closeMenu()">About <span>↗</span></a><a href="#contact" onclick="closeMenu()">Contact <span>↗</span></a></div><div class="menu-foot">MOVE IN SILENCE</div></aside></div>
-
-<div class="account" id="account"><div class="account-bg" onclick="closeAccount()"></div><div class="account-card"><button class="close" onclick="closeAccount()">×</button><div class="eyebrow">STAYUNKNOWN / ACCOUNT</div><h2>CREATE<br>ACCOUNT</h2><p>For now, your details are saved on this device. Secure sign-in and orders can be connected later.</p><input id="accountName" placeholder="Name"><input id="accountEmail" type="email" placeholder="Email"><button class="btn" onclick="saveAccount()">Save account</button><div class="account-status" id="accountStatus"></div></div></div>
-
-<section class="checkout" id="checkout"><div class="checkout-wrap"><button class="back" onclick="closeCheckout()">← Back to shop</button><h2>Checkout</h2><div class="checkout-grid"><form id="checkoutForm"><div class="form-group"><label>Full name</label><input required id="customerName"></div><div class="form-group"><label>Email</label><input required type="email" id="customerEmail"></div><div class="form-group"><label>Phone</label><input required id="customerPhone"></div><div class="form-group"><label>Delivery address</label><input required id="customerAddress"></div><div class="form-group"><label>City</label><input required id="customerCity"></div><div class="form-group"><label>State</label><input required id="customerState"></div><div class="form-group"><label>Country</label><select id="customerCountry"><option>Nigeria</option><option>Ghana</option><option>United Kingdom</option><option>United States</option><option>Canada</option></select></div><button class="add" type="submit">Continue to payment</button><div class="pay-note">Payment processing will be connected after the storefront is fully tested.</div></form><div class="checkout-summary"><h3>Your order</h3><div id="checkoutItems"></div><div class="checkout-line"><strong>Total</strong><strong id="checkoutTotal">₦0</strong></div></div></div></div></section>
-
-<script>
-const products=[
-{id:1,name:"404 Oversized Tee",price:45000,cat:"street",code:"404",colors:["Black","White"],sizes:["S","M","L","XL"],new:true,available:true},
-{id:2,name:"Move In Silence Tee",price:42000,cat:"casual",code:"SU",colors:["Black","Grey"],sizes:["S","M","L","XL"],new:true,available:true},
-{id:3,name:"Unknown Heavy Hoodie",price:68000,cat:"hoodie",code:"404",colors:["Black","Charcoal"],sizes:["M","L","XL","XXL"],new:true,available:true},
-{id:4,name:"404 Track Pants",price:59000,cat:"sports",code:"SU",colors:["Black","Grey"],sizes:["S","M","L","XL"],available:true},
-{id:5,name:"Unknown Sports Jersey",price:52000,cat:"sports",code:"SU",colors:["Black","White"],sizes:["S","M","L","XL"],available:true},
-{id:6,name:"Silence Zip Hoodie",price:72000,cat:"hoodie",code:"404",colors:["Black"],sizes:["M","L","XL","XXL"],available:false},
-{id:7,name:"Unknown Cargo Pants",price:65000,cat:"street",code:"SU",colors:["Black","Olive"],sizes:["S","M","L","XL"],available:false},
-{id:8,name:"STAYUNKNOWN Basic Tee",price:38000,cat:"casual",code:"SU",colors:["White","Black","Grey"],sizes:["S","M","L","XL","XXL"],available:true},
-{id:9,name:"404 Varsity Jacket",price:95000,cat:"street",code:"404",colors:["Black"],sizes:["M","L","XL"],available:false},
-{id:10,name:"Unknown Training Shorts",price:39000,cat:"sports",code:"SU",colors:["Black","Grey"],sizes:["S","M","L","XL"],available:true},
-{id:11,name:"Move Quiet Crewneck",price:61000,cat:"hoodie",code:"404",colors:["Charcoal","Black"],sizes:["M","L","XL","XXL"],available:false},
-{id:12,name:"Unknown Long Sleeve",price:48000,cat:"casual",code:"SU",colors:["Black","White"],sizes:["S","M","L","XL"],available:false}];
-let cart=JSON.parse(localStorage.getItem("stayunknown_cart")||"[]"),activeProduct=null,selectedSize=null,selectedColor=null,currentSlide=0;
-const money=n=>"₦"+n.toLocaleString("en-NG");
-function productCard(p){return `<article class="product">${p.new?'<div class="tag">NEW</div>':''}${!p.available?'<div class="tag soon">COMING SOON</div>':''}<button style="all:unset;width:100%;cursor:pointer" onclick="openProduct(${p.id})"><div class="product-image">${p.code}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-price">${p.available?money(p.price):"COMING SOON"}</div><div class="product-meta">${p.cat} · view product ↗</div></div></button></article>`}
-function renderProducts(cat="all"){const list=cat==="all"?products:products.filter(p=>p.cat===cat);document.getElementById("productGrid").innerHTML=list.map(productCard).join("");document.getElementById("productCount").textContent=list.length+" pieces"}
-function openShop(cat="all"){document.getElementById("home").style.display="none";document.getElementById("shopPage").classList.add("open");renderProducts(cat);document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.cat===cat));window.scrollTo({top:0,behavior:"smooth"});closeMenu()}
-function closeShop(){document.getElementById("shopPage").classList.remove("open");document.getElementById("home").style.display="";window.scrollTo({top:0,behavior:"smooth"})}
-function filterCategory(cat,b){renderProducts(cat);document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
-function openProduct(id){activeProduct=products.find(p=>p.id===id);selectedSize=activeProduct.sizes[0];selectedColor=activeProduct.colors[0];document.getElementById("modalImage").textContent=activeProduct.code;document.getElementById("modalCat").textContent=activeProduct.cat;document.getElementById("modalName").textContent=activeProduct.name;document.getElementById("modalPrice").textContent=activeProduct.available?money(activeProduct.price):"COMING SOON";document.getElementById("sizeOptions").innerHTML=activeProduct.sizes.map(s=>`<button class="option ${s===selectedSize?"selected":""}" ${!activeProduct.available?"disabled":""} onclick="chooseSize('${s}',this)">${s}</button>`).join("");document.getElementById("colorOptions").innerHTML=activeProduct.colors.map(c=>`<button class="option ${c===selectedColor?"selected":""}" ${!activeProduct.available?"disabled":""} onclick="chooseColor('${c}',this)">${c}</button>`).join("");document.getElementById("modalAdd").disabled=!activeProduct.available;document.getElementById("modalAdd").textContent=activeProduct.available?"Add to bag":"Coming soon";document.getElementById("modalAdd").onclick=()=>addToCart(id);document.getElementById("productModal").classList.add("open")}
-function closeProduct(){document.getElementById("productModal").classList.remove("open")}
-function chooseSize(s,b){selectedSize=s;document.querySelectorAll("#sizeOptions .option").forEach(x=>x.classList.remove("selected"));b.classList.add("selected")}
-function chooseColor(c,b){selectedColor=c;document.querySelectorAll("#colorOptions .option").forEach(x=>x.classList.remove("selected"));b.classList.add("selected")}
-function addToCart(id){const p=products.find(x=>x.id===id);if(!p.available)return;const key=id+"-"+selectedSize+"-"+selectedColor;const f=cart.find(x=>x.key===key);if(f)f.qty++;else cart.push({key,id,size:selectedSize,color:selectedColor,qty:1});saveCart();closeProduct();openCart()}
-function saveCart(){localStorage.setItem("stayunknown_cart",JSON.stringify(cart));renderCart()}
-function renderCart(){document.getElementById("cartCount").textContent=cart.reduce((a,x)=>a+x.qty,0);let total=0;const el=document.getElementById("cartItems");if(!cart.length){el.innerHTML='<div class="empty">Your 404 bag is empty.</div>';document.getElementById("cartTotal").textContent="₦0";return}el.innerHTML=cart.map((x,i)=>{const p=products.find(y=>y.id===x.id);total+=p.price*x.qty;return `<div class="cart-item"><div class="thumb">${p.code}</div><div><div class="cart-name">${p.name}</div><div class="cart-detail">Size: ${x.size}<br>Colour: ${x.color}<br>${money(p.price)}</div><div class="qty"><button onclick="changeQty(${i},-1)">−</button><span>${x.qty}</span><button onclick="changeQty(${i},1)">+</button></div></div><button class="remove" onclick="removeItem(${i})">Remove</button></div>`}).join("");document.getElementById("cartTotal").textContent=money(total)}
-function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);saveCart()}function removeItem(i){cart.splice(i,1);saveCart()}function openCart(){document.getElementById("cartDrawer").classList.add("open")}function closeCart(){document.getElementById("cartDrawer").classList.remove("open")}
-function openMenu(){document.getElementById("menuDrawer").classList.add("open")}function closeMenu(){document.getElementById("menuDrawer").classList.remove("open")}function toggleCategories(){const s=document.getElementById("categorySub");s.classList.toggle("open");document.getElementById("shopChevron").textContent=s.classList.contains("open")?"−":"+"}
-function openAccount(){closeMenu();document.getElementById("account").classList.add("open")}function closeAccount(){document.getElementById("account").classList.remove("open")}function saveAccount(){const n=document.getElementById("accountName").value.trim(),e=document.getElementById("accountEmail").value.trim();document.getElementById("accountStatus").textContent=n&&e?"Account details saved on this device. Secure sign-in will be connected later.":"Enter your name and email."}
-function openCheckout(){if(!cart.length){openCart();return}closeCart();document.getElementById("home").style.display="none";document.getElementById("shopPage").classList.remove("open");document.getElementById("checkout").classList.add("open");renderCheckout();window.scrollTo({top:0,behavior:"smooth"})}
-function closeCheckout(){document.getElementById("checkout").classList.remove("open");document.getElementById("home").style.display="";window.scrollTo({top:0,behavior:"smooth"})}
-function renderCheckout(){let t=0;document.getElementById("checkoutItems").innerHTML=cart.map(x=>{const p=products.find(y=>y.id===x.id);t+=p.price*x.qty;return `<div class="checkout-line"><span>${p.name} × ${x.qty}<br><small>${x.size} / ${x.color}</small></span><strong>${money(p.price*x.qty)}</strong></div>`}).join("");document.getElementById("checkoutTotal").textContent=money(t)}
-document.getElementById("checkoutForm").addEventListener("submit",e=>{e.preventDefault();alert("Checkout details saved. Payment integration is the next step.")});
-function slide(d){const slides=document.querySelectorAll(".feature-slide"),dots=document.querySelectorAll(".dot");currentSlide=(currentSlide+d+slides.length)%slides.length;slides.forEach((s,i)=>s.classList.toggle("active",i===currentSlide));dots.forEach((x,i)=>x.classList.toggle("active",i===currentSlide))}
-setInterval(()=>slide(1),5000);
-(function(){const intro=document.getElementById("su404-intro"),video=document.getElementById("su404-video");const finish=()=>{intro.classList.add("hide");document.body.classList.remove("intro-active");setTimeout(()=>intro.remove(),600)};video.muted=true;video.play().catch(()=>{});video.addEventListener("ended",finish);setTimeout(finish,6000)})();
-renderCart();
-</script> 
-  <!-- ACCOUNT MODAL / OVERLAY -->
-<div id="account-modal" style="max-width: 400px; margin: 20px auto; padding: 20px; background: #fff; color: #000; border-radius: 8px; font-family: sans-serif;">
-  <h2 id="welcome-greeting">Welcome to Stay Unknown</h2>
-  <p id="account-subtext" style="font-size: 14px; color: #666;">Sign in to save your details or continue browsing as a guest.</p>
-
-  <!-- LOGGED OUT VIEW -->
-  <div id="auth-box">
-    <div id="name-field" style="display: none; margin-bottom: 10px;">
-      <label style="display: block; font-size: 12px; margin-bottom: 4px;">NAME</label>
-      <input type="text" id="user-name" placeholder="John Doe" style="width: 100%; padding: 8px; box-sizing: border-box;">
-    </div>
-    
-    <div style="margin-bottom: 10px;">
-      <label style="display: block; font-size: 12px; margin-bottom: 4px;">EMAIL</label>
-      <input type="email" id="user-email" placeholder="you@example.com" style="width: 100%; padding: 8px; box-sizing: border-box;">
-    </div>
-
-    <div style="margin-bottom: 12px;">
-      <label style="display: block; font-size: 12px; margin-bottom: 4px;">PASSWORD</label>
-      <input type="password" id="user-password" placeholder="••••••••" style="width: 100%; padding: 8px; box-sizing: border-box;">
-    </div>
-
-    <button id="btn-login" style="width: 100%; padding: 10px; background: #000; color: #fff; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px;">SIGN IN</button>
-    <button id="btn-signup" style="display: none; width: 100%; padding: 10px; background: #000; color: #fff; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px;">CREATE ACCOUNT</button>
-
-    <div style="display: flex; justify-content: space-between; font-size: 12px;">
-      <span id="toggle-auth-mode" style="cursor: pointer; text-decoration: underline;">Need an account? Sign Up</span>
-      <span id="forgot-password-link" style="cursor: pointer; text-decoration: underline;">Forgot Password?</span>
-    </div>
+<!-- SU404 CRT INTRO OVERLAY -->
+<div id="su404-intro" aria-label="STAYUNKNOWN intro">
+  <div class="crt-frame">
+    <div class="crt-brand">STAYUNKNOWN</div>
+    <div class="crt-404">404</div>
+    <div class="crt-tagline">MOVE IN SILENCE.</div>
+    <div class="crt-welcome">WELCOME TO STAYUNKNOWN</div>
   </div>
-
-  <!-- LOGGED IN DASHBOARD -->
-  <div id="user-dashboard" style="display: none; margin-top: 15px;">
-    <button id="btn-reset-pw" style="width: 100%; padding: 8px; background: #eee; border: 1px solid #ccc; margin-bottom: 8px; cursor: pointer;">Send Password Reset Link</button>
-    <button id="btn-signout" style="width: 100%; padding: 8px; background: #eee; border: 1px solid #ccc; margin-bottom: 8px; cursor: pointer;">Sign Out</button>
-    <button id="btn-delete-acct" style="width: 100%; padding: 8px; background: #d9534f; color: #fff; border: none; margin-top: 10px; cursor: pointer;">Delete Account</button>
-  </div>
-
-  <div id="auth-status-msg" style="margin-top: 10px; font-size: 13px; font-weight: bold;"></div>
 </div>
 
-  <!-- FIREBASE AUTHENTICATION SCRIPT -->
+<!-- TOP NAV BAR -->
+<nav class="nav">
+  <a class="logo" href="#">STAYUNKNOWN</a>
+  <div class="links">
+    <a href="#shop">Shop</a>
+    <a href="#story">Story</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <button class="menu-btn" id="open-menu-btn" aria-label="Menu">☰</button>
+</nav>
+
+<!-- SLIDE-OUT NAV DRAWER -->
+<div id="side-drawer">
+  <div class="drawer-header">
+    <span class="logo">STAYUNKNOWN</span>
+    <button class="close-drawer" id="close-menu-btn">✕</button>
+  </div>
+  
+  <div class="menu-nav-links">
+    <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>NEW DROP</span> <span>↗</span></a>
+    <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>SHOP</span> <span>+</span></a>
+    <div class="menu-nav-item" id="nav-account-toggle"><span>ACCOUNT</span> <span>↗</span></div>
+    
+    <!-- ACCOUNT FORM MODAL (INSIDE MENU) -->
+    <div id="account-modal" style="display: none; padding: 15px; background: #151515; border-radius: 6px; margin: 10px 0; border: 1px solid #222;">
+      <h3 id="welcome-greeting" style="font-size: 16px; margin: 0 0 5px 0;">Welcome to Stay Unknown</h3>
+      <p id="account-subtext" style="font-size: 12px; color: #888; margin: 0 0 15px 0;">Sign in to save your details or continue browsing as a guest.</p>
+
+      <!-- LOGGED OUT VIEW -->
+      <div id="auth-box">
+        <div id="name-field" style="display: none; margin-bottom: 10px;">
+          <label style="display: block; font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; color: #888;">NAME</label>
+          <input type="text" id="user-name" placeholder="Habeeb" style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: #fff; box-sizing: border-box;">
+        </div>
+        
+        <div style="margin-bottom: 10px;">
+          <label style="display: block; font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; color: #888;">EMAIL</label>
+          <input type="email" id="user-email" placeholder="you@example.com" style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: #fff; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; color: #888;">PASSWORD</label>
+          <input type="password" id="user-password" placeholder="••••••••" style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: #fff; box-sizing: border-box;">
+        </div>
+
+        <button id="btn-login" style="width: 100%; padding: 10px; background: #fff; color: #000; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px;">SIGN IN</button>
+        <button id="btn-signup" style="display: none; width: 100%; padding: 10px; background: #fff; color: #000; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px;">CREATE ACCOUNT</button>
+
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #ccc;">
+          <span id="toggle-auth-mode" style="cursor: pointer; text-decoration: underline;">Need an account? Sign Up</span>
+          <span id="forgot-password-link" style="cursor: pointer; text-decoration: underline;">Forgot Password?</span>
+        </div>
+      </div>
+
+      <!-- LOGGED IN DASHBOARD -->
+      <div id="user-dashboard" style="display: none; margin-top: 10px;">
+        <button id="btn-reset-pw" style="width: 100%; padding: 8px; background: #222; color: #fff; border: 1px solid #444; margin-bottom: 8px; cursor: pointer;">Send Password Reset Link</button>
+        <button id="btn-signout" style="width: 100%; padding: 8px; background: #222; color: #fff; border: 1px solid #444; margin-bottom: 8px; cursor: pointer;">Sign Out</button>
+        <button id="btn-delete-acct" style="width: 100%; padding: 8px; background: #d9534f; color: #fff; border: none; margin-top: 10px; cursor: pointer;">Delete Account</button>
+      </div>
+
+      <div id="auth-status-msg" style="margin-top: 10px; font-size: 11px; font-weight: bold;"></div>
+    </div>
+
+    <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>404 BAG</span> <span>↗</span></a>
+    <a class="menu-nav-item" href="#story" onclick="closeDrawer()"><span>ABOUT</span> <span>↗</span></a>
+    <a class="menu-nav-item" href="#contact" onclick="closeDrawer()"><span>CONTACT</span> <span>↗</span></a>
+  </div>
+</div>
+
+<!-- HERO SECTION -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
+    <div id="hero-user-greeting"></div>
+    <h1>Move<br><span>In Silence.</span></h1>
+    <p>STAYUNKNOWN is built for people who don't need permission to stand out. Streetwear, casual essentials and sport-inspired pieces made to move with you.</p>
+    <a class="btn" href="#shop">Shop the drop</a>
+  </div>
+</header>
+
+<section class="section" id="shop">
+  <div class="section-head"><h2>Latest Drop</h2><span>01 / 04</span></div>
+  <div class="grid">
+    <article class="product"><div class="tag">NEW</div><div class="image">SU / 01</div><div class="info"><div class="name">Unknown Oversized Tee</div><div class="price">₦ —</div></div></article>
+    <article class="product"><div class="image">SU / 02</div><div class="info"><div class="name">Silence Hoodie</div><div class="price">₦ —</div></div></article>
+    <article class="product"><div class="image">SU / 03</div><div class="info"><div class="name">Unknown Track Pants</div><div class="price">₦ —</div></div></article>
+  </div>
+</section>
+
+<section class="statement">
+  <h2>Stay<br>Unknown.</h2>
+  <p>Your name doesn't have to be loud. Your presence does. Wear the mindset.</p>
+</section>
+
+<section class="section about" id="story">
+  <div><div class="eyebrow">The story</div><h2>BUILT<br>DIFFERENT.</h2></div>
+  <div>
+    <p>STAYUNKNOWN is a Nigerian streetwear label created around individuality, movement and quiet confidence.</p>
+    <p>From everyday casual pieces to sport-inspired silhouettes, every collection is designed to feel bold without trying too hard.</p>
+    <a class="btn" href="#contact">Join the movement</a>
+  </div>
+</section>
+
+<section class="section contact" id="contact">
+  <div><div class="eyebrow">Stay connected</div><h2>Contact</h2></div>
+  <div>
+    <a href="mailto:hello@stayunknown.com">Email ↗</a>
+    <a href="#">Instagram ↗</a>
+    <a href="#">TikTok ↗</a>
+  </div>
+</section>
+
+<footer><span>© 2026 STAYUNKNOWN</span><span>MOVE IN SILENCE</span></footer>
+
+<!-- INTRO SCRIPT -->
+<script>
+(function(){
+  const intro = document.getElementById('su404-intro');
+  const finish = () => {
+    if (intro.classList.contains('hide')) return;
+    intro.classList.add('hide');
+    document.body.classList.remove('intro-active');
+    setTimeout(() => intro.remove(), 900);
+  };
+
+  // Click anywhere on the intro to dismiss early
+  intro.addEventListener('click', finish);
+
+  // Auto-dismiss after 3.5 seconds
+  setTimeout(finish, 3500);
+})();
+
+// Drawer Navigation Controls
+const sideDrawer = document.getElementById('side-drawer');
+document.getElementById('open-menu-btn').addEventListener('click', () => sideDrawer.classList.add('open'));
+document.getElementById('close-menu-btn').addEventListener('click', () => sideDrawer.classList.remove('open'));
+window.closeDrawer = () => sideDrawer.classList.remove('open');
+</script>
+
+<!-- FIREBASE AUTHENTICATION SCRIPT -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
   import { 
@@ -184,9 +404,10 @@ renderCart();
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // UI Elements
+  // DOM Elements
   const greeting = document.getElementById("welcome-greeting");
   const subtext = document.getElementById("account-subtext");
+  const heroGreeting = document.getElementById("hero-user-greeting");
   const authBox = document.getElementById("auth-box");
   const userDashboard = document.getElementById("user-dashboard");
   const nameField = document.getElementById("name-field");
@@ -201,6 +422,8 @@ renderCart();
   const toggleAuthMode = document.getElementById("toggle-auth-mode");
   const forgotPwLink = document.getElementById("forgot-password-link");
   const statusMsg = document.getElementById("auth-status-msg");
+  const accountModal = document.getElementById("account-modal");
+  const navAccountToggle = document.getElementById("nav-account-toggle");
 
   let isSignupMode = false;
 
@@ -209,7 +432,14 @@ renderCart();
     statusMsg.innerText = msg;
   }
 
-  // Toggle between Sign In and Sign Up views
+  // Toggle Account Panel inside Menu
+  if (navAccountToggle) {
+    navAccountToggle.addEventListener("click", () => {
+      accountModal.style.display = (accountModal.style.display === "none" || !accountModal.style.display) ? "block" : "none";
+    });
+  }
+
+  // Toggle Sign In vs Sign Up
   if (toggleAuthMode) {
     toggleAuthMode.addEventListener("click", () => {
       statusMsg.innerText = "";
@@ -266,15 +496,20 @@ renderCart();
     });
   }
 
-  // Listen for Auth Changes (Updates UI automatically)
+  // Listen for Auth Changes
   onAuthStateChanged(auth, (user) => {
     statusMsg.innerText = "";
     if (user) {
-      const displayName = user.displayName || "Valued Customer";
+      const displayName = user.displayName || "VALUED CUSTOMER";
       greeting.innerText = `Welcome back, ${displayName}!`;
       subtext.innerText = `Signed in as ${user.email}`;
       authBox.style.display = "none";
       userDashboard.style.display = "block";
+
+      if (heroGreeting) {
+        heroGreeting.innerText = `WELCOME BACK, ${displayName}`;
+        heroGreeting.style.display = "block";
+      }
     } else {
       greeting.innerText = "Welcome to Stay Unknown";
       subtext.innerText = "Sign in to save your details or continue browsing as a guest.";
@@ -283,6 +518,11 @@ renderCart();
       inputEmail.value = "";
       inputPassword.value = "";
       if (inputName) inputName.value = "";
+
+      if (heroGreeting) {
+        heroGreeting.innerText = "";
+        heroGreeting.style.display = "none";
+      }
     }
   });
 
@@ -291,7 +531,7 @@ renderCart();
     btnSignout.addEventListener("click", () => signOut(auth));
   }
 
-  // Forgot Password / Password Reset Link
+  // Forgot Password
   if (forgotPwLink) {
     forgotPwLink.addEventListener("click", async () => {
       statusMsg.innerText = "";
@@ -339,7 +579,6 @@ renderCart();
     });
   }
 </script>
-
 
 </body>
 </html>
