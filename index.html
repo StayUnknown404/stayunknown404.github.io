@@ -116,7 +116,48 @@ function slide(d){const slides=document.querySelectorAll(".feature-slide"),dots=
 setInterval(()=>slide(1),5000);
 (function(){const intro=document.getElementById("su404-intro"),video=document.getElementById("su404-video");const finish=()=>{intro.classList.add("hide");document.body.classList.remove("intro-active");setTimeout(()=>intro.remove(),600)};video.muted=true;video.play().catch(()=>{});video.addEventListener("ended",finish);setTimeout(finish,6000)})();
 renderCart();
-</script>
+</script> 
+  <!-- ACCOUNT MODAL / OVERLAY -->
+<div id="account-modal" style="max-width: 400px; margin: 20px auto; padding: 20px; background: #fff; color: #000; border-radius: 8px; font-family: sans-serif;">
+  <h2 id="welcome-greeting">Welcome to Stay Unknown</h2>
+  <p id="account-subtext" style="font-size: 14px; color: #666;">Sign in to save your details or continue browsing as a guest.</p>
+
+  <!-- LOGGED OUT VIEW -->
+  <div id="auth-box">
+    <div id="name-field" style="display: none; margin-bottom: 10px;">
+      <label style="display: block; font-size: 12px; margin-bottom: 4px;">NAME</label>
+      <input type="text" id="user-name" placeholder="John Doe" style="width: 100%; padding: 8px; box-sizing: border-box;">
+    </div>
+    
+    <div style="margin-bottom: 10px;">
+      <label style="display: block; font-size: 12px; margin-bottom: 4px;">EMAIL</label>
+      <input type="email" id="user-email" placeholder="you@example.com" style="width: 100%; padding: 8px; box-sizing: border-box;">
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; margin-bottom: 4px;">PASSWORD</label>
+      <input type="password" id="user-password" placeholder="••••••••" style="width: 100%; padding: 8px; box-sizing: border-box;">
+    </div>
+
+    <button id="btn-login" style="width: 100%; padding: 10px; background: #000; color: #fff; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px;">SIGN IN</button>
+    <button id="btn-signup" style="display: none; width: 100%; padding: 10px; background: #000; color: #fff; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px;">CREATE ACCOUNT</button>
+
+    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+      <span id="toggle-auth-mode" style="cursor: pointer; text-decoration: underline;">Need an account? Sign Up</span>
+      <span id="forgot-password-link" style="cursor: pointer; text-decoration: underline;">Forgot Password?</span>
+    </div>
+  </div>
+
+  <!-- LOGGED IN DASHBOARD -->
+  <div id="user-dashboard" style="display: none; margin-top: 15px;">
+    <button id="btn-reset-pw" style="width: 100%; padding: 8px; background: #eee; border: 1px solid #ccc; margin-bottom: 8px; cursor: pointer;">Send Password Reset Link</button>
+    <button id="btn-signout" style="width: 100%; padding: 8px; background: #eee; border: 1px solid #ccc; margin-bottom: 8px; cursor: pointer;">Sign Out</button>
+    <button id="btn-delete-acct" style="width: 100%; padding: 8px; background: #d9534f; color: #fff; border: none; margin-top: 10px; cursor: pointer;">Delete Account</button>
+  </div>
+
+  <div id="auth-status-msg" style="margin-top: 10px; font-size: 13px; font-weight: bold;"></div>
+</div>
+
   <!-- FIREBASE AUTHENTICATION SCRIPT -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
