@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#111;--panel:#181818;--text:#f3f3f0;--muted:#999;--line:#2b2b2b}*{box-sizing:border-box}html{scroll-behavior:smooth}
+:root{--bg:#0a0a0a;--panel:#141414;--text:#ffffff;--muted:#888888;--line:#222222}*{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}body.intro-active{overflow:hidden}a{color:inherit;text-decoration:none}button,input{font:inherit}
 
 /* 1. INTRO OVERLAY (STEADY CRT - NO FLICKER) */
@@ -22,26 +22,27 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,san
 .crt-tagline{font:clamp(18px,4.5vw,28px) 'VT323',monospace;letter-spacing:4px;color:#d0d0d0;margin-top:10px}
 .crt-welcome{font-size:clamp(11px,2.5vw,13px);letter-spacing:2px;color:#888;text-transform:uppercase;margin-top:20px;border-top:1px dashed #333;padding-top:15px;width:80%;font-weight:600}
 
-/* 2. HEADER & NAVIGATION */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 4%;background:rgba(17,17,17,.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
-.logo{font:25px Anton,sans-serif;letter-spacing:1px}
-.links{display:flex;gap:28px;font-size:13px;text-transform:uppercase;font-weight:700}
-.nav-actions{display:flex;align-items:center;gap:10px}
-.profile-btn,.cart-btn,.search-btn,.menu-btn{background:none;border:1px solid #3a3a3a;color:#fff;cursor:pointer;display:grid;place-items:center}
-.profile-btn{padding:10px 16px;font-size:12px;font-weight:800;border-radius:4px;height:42px}
-.cart-btn{position:relative;width:48px;height:42px;border-radius:7px;font-weight:800;font-size:13px}
-.cart-count{position:absolute;top:-8px;right:-7px;width:22px;height:22px;border-radius:50%;background:#f3f3f0;color:#111;display:grid;place-items:center;font-size:10px;font-weight:800}
-.search-btn,.menu-btn{width:42px;height:42px;border:1px solid #3a3a3a;border-radius:4px;font-size:18px}
-
-/* HEADER USER WELCOME BAR */
-.header-welcome-text{font-size:12px;letter-spacing:2px;font-weight:800;color:var(--muted);text-transform:uppercase;padding:0 4%;margin-top:80px}
+/* 2. HEADER & NAVIGATION MATCHING IMAGE EXACTLY */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:flex-start;justify-content:space-between;padding:24px 5% 18px;background:rgba(10,10,10,.85);backdrop-filter:blur(12px)}
+.brand-group{display:flex;flex-direction:column;gap:6px}
+.logo{font:32px Anton,sans-serif;letter-spacing:1px;line-height:1;color:#fff}
+.header-welcome-text{font-size:11px;letter-spacing:2.5px;font-weight:700;color:#999;text-transform:uppercase}
 .header-welcome-text span{color:#fff}
+
+.nav-actions{display:flex;align-items:center;gap:22px;margin-top:2px}
+.icon-btn{background:none;border:none;color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;position:relative}
+.icon-btn svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* CUSTOM 404 BAG ICON */
+.bag-icon-wrap{position:relative;width:34px;height:38px;display:flex;align-items:center;justify-content:center}
+.bag-svg{width:32px!important;height:36px!important}
+.cart-count{position:absolute;top:-4px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:#fff;color:#000;display:grid;place-items:center;font-size:10px;font-weight:900;border:1px solid #0a0a0a}
 
 /* DRAWERS & PANELS */
 #side-drawer,#cart-panel{position:fixed;top:0;right:-100%;width:100%;max-width:420px;height:100vh;background:#0d0d0d;z-index:1000;transition:right .3s ease;padding:30px 25px;overflow-y:auto;border-left:1px solid #222}
 #side-drawer.open,#cart-panel.open{right:0}
 .drawer-header,.cart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
-.drawer-header .logo{font-size:22px}
+.drawer-header .logo{font-size:24px}
 .close-drawer,.cart-close{background:none;border:0;color:#fff;font-size:24px;cursor:pointer}
 .menu-nav-links{display:flex;flex-direction:column;gap:20px;font-weight:800;text-transform:uppercase;font-size:16px;border-bottom:1px solid #222;padding-bottom:20px}
 .menu-nav-item{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
@@ -63,7 +64,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,san
 #user-dashboard{display:none;margin-top:10px}
 
 /* 4. SEARCH PANEL */
-#search-panel{position:fixed;top:78px;left:0;right:0;z-index:900;background:#0d0d0d;border-bottom:1px solid #292929;padding:18px 5%;display:none}
+#search-panel{position:fixed;top:80px;left:0;right:0;z-index:900;background:#0d0d0d;border-bottom:1px solid #292929;padding:18px 5%;display:none}
 #search-panel.open{display:block}
 .search-wrap{max-width:900px;margin:auto;display:flex;gap:10px}
 .search-wrap input{flex:1;background:#171717;color:#fff;border:1px solid #333;padding:14px;outline:0;border-radius:4px}
@@ -79,16 +80,20 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,san
 .cart-total{display:flex;justify-content:space-between;margin-top:20px;font-weight:800}
 .checkout-btn{width:100%;margin-top:16px;padding:14px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer;border-radius:4px}
 
-/* HERO SECTION */
-.hero{min-height:90vh;display:grid;place-items:center;padding:40px 5% 60px;background:radial-gradient(circle at 75% 25%,#303030 0,#1a1a1a 24%,#111 62%)}
-.hero-inner{max-width:1100px;width:100%}
-.eyebrow{text-transform:uppercase;letter-spacing:5px;font-size:11px;color:#aaa}
-.hero h1{font:clamp(70px,15vw,190px)/.82 Anton,sans-serif;margin:20px 0;text-transform:uppercase;letter-spacing:-2px}
-.hero h1 span{display:block;color:#888}
-.hero p{max-width:520px;color:#aaa;line-height:1.7}
-.btn{display:inline-block;margin-top:20px;padding:15px 24px;background:#f3f3f0;color:#111;text-transform:uppercase;font-weight:800;font-size:12px;letter-spacing:1px;border-radius:4px}
+/* HERO SECTION - SLEEK MATCHING SCREENSHOT */
+.hero{min-height:100vh;display:flex;align-items:flex-end;padding:0 6% 80px;background:radial-gradient(ellipse at 50% 30%, #202020 0%, #0a0a0a 70%)}
+.hero-inner{max-width:900px;width:100%}
+.eyebrow{text-transform:uppercase;letter-spacing:4px;font-size:12px;color:#aaa;font-weight:500;margin-bottom:28px}
+.hero h1{font:clamp(75px,18vw,180px)/.80 Anton,sans-serif;margin:0 0 28px;text-transform:uppercase;letter-spacing:1px}
+.hero h1 .text-white{color:#ffffff;display:block}
+.hero h1 .text-gray{color:#777777;display:block}
+.hero p{max-width:540px;color:#b0b0b0;line-height:1.6;font-size:16px;margin:0 0 32px}
 
-/* 6. LATEST DROP (SWIPABLE CAROUSEL FOR MOBILE) */
+/* OUTLINED CTA BUTTON MATCHING SCREENSHOT */
+.btn-outline{display:inline-block;padding:16px 28px;background:transparent;color:#ffffff;border:1px solid rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700;font-size:11px;letter-spacing:2px;border-radius:0;transition:all .2s ease}
+.btn-outline:hover{background:#ffffff;color:#000000;border-color:#ffffff}
+
+/* 6. LATEST DROP (SWIPABLE CAROUSEL) */
 .section{padding:90px 7%;max-width:1300px;margin:auto}
 .section-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:30px}
 .section h2{font:46px Anton,sans-serif;margin:0;text-transform:uppercase}
@@ -118,9 +123,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,san
 .social-link{display:flex!important;justify-content:space-between}
 footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#777;font-size:11px;text-transform:uppercase}
 
-@media(max-width:850px){.links{display:none}}
-@media(max-width:700px){.about,.contact{grid-template-columns:1fr}.section{padding:70px 5%}.hero{padding-left:5%;padding-right:5%}footer{flex-direction:column;gap:12px}}
-@media(max-width:460px){.hero h1{font-size:76px}}
+@media(max-width:700px){.about,.contact{grid-template-columns:1fr}.section{padding:70px 5%}.hero{padding-left:6%;padding-right:6%;padding-bottom:60px}footer{flex-direction:column;gap:12px}}
+@media(max-width:460px){.hero h1{font-size:80px}}
 </style>
 </head>
 <body class="intro-active">
@@ -135,26 +139,44 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   </div>
 </div>
 
-<!-- 2. NAVIGATION HEADER -->
+<!-- 2. NAVIGATION HEADER (MATCHING SCREENSHOT) -->
 <nav class="nav">
-  <a class="logo" href="#">STAYUNKNOWN</a>
-  <div class="links">
-    <a href="#shop">Shop</a>
-    <a href="#story">Story</a>
-    <a href="#contact">Contact</a>
+  <div class="brand-group">
+    <a class="logo" href="#">STAYUNKNOWN</a>
+    <div class="header-welcome-text" id="header-welcome-text" style="display:none;">
+      WELCOME, <span id="header-user-name">GUEST</span>
+    </div>
   </div>
+
   <div class="nav-actions">
-    <button class="profile-btn" id="profile-top-btn" title="Account">PROFILE</button>
-    <button class="cart-btn" id="cart-btn" title="Cart">404<span class="cart-count" id="cart-count">0</span></button>
-    <button class="search-btn" id="search-btn" aria-label="Search">⌕</button>
-    <button class="menu-btn" id="open-menu-btn" aria-label="Menu">☰</button>
+    <!-- PROFILE ICON -->
+    <button class="icon-btn" id="profile-top-btn" aria-label="Account">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+    </button>
+    
+    <!-- 404 BAG ICON WITH FLOATING BADGE -->
+    <button class="icon-btn" id="cart-btn" aria-label="Cart">
+      <div class="bag-icon-wrap">
+        <svg class="bag-svg" viewBox="0 0 36 40">
+          <path d="M8 12 L28 12 L30 36 L6 36 Z" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M13 12 C13 7, 23 7, 23 12" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+          <text x="18" y="27" font-family="Inter, sans-serif" font-weight="900" font-size="9" fill="#ffffff" text-anchor="middle">404</text>
+        </svg>
+        <span class="cart-count" id="cart-count">0</span>
+      </div>
+    </button>
+
+    <!-- SEARCH ICON -->
+    <button class="icon-btn" id="search-btn" aria-label="Search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    </button>
+
+    <!-- MENU HAMBURGER ICON -->
+    <button class="icon-btn" id="open-menu-btn" aria-label="Menu">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
+    </button>
   </div>
 </nav>
-
-<!-- LOGGED IN WELCOME BAR -->
-<div class="header-welcome-text" id="header-welcome-text" style="display:none;">
-  WELCOME, <span id="header-user-name">GUEST</span>
-</div>
 
 <!-- 4. SEARCH PANEL -->
 <div id="search-panel">
@@ -238,13 +260,16 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   <button class="checkout-btn" id="checkout-btn">CHECKOUT (GUEST READY)</button>
 </div>
 
-<!-- HERO SECTION -->
+<!-- HERO SECTION MATCHING SCREENSHOT EXACTLY -->
 <header class="hero">
   <div class="hero-inner">
-    <div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
-    <h1>Move<br><span>In Silence.</span></h1>
+    <div class="eyebrow">INDEPENDENT STREETWEAR · LAGOS · WORLDWIDE</div>
+    <h1>
+      <span class="text-white">MOVE</span>
+      <span class="text-gray">IN SILENCE.</span>
+    </h1>
     <p>STAYUNKNOWN is built around individuality, movement and quiet confidence.</p>
-    <a class="btn" href="#shop">Shop the drop</a>
+    <a class="btn-outline" href="#shop">SHOP THE DROP</a>
   </div>
 </header>
 
@@ -296,7 +321,7 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   <div>
     <p>STAYUNKNOWN is a Nigerian streetwear label created around individuality, movement and quiet confidence.</p>
     <p>From everyday casual pieces to sport-inspired silhouettes, every collection is designed to feel bold without trying too hard.</p>
-    <a class="btn" href="#contact">Join the movement</a>
+    <a class="btn-outline" href="#contact" style="color:#000; border-color:#000;">Join the movement</a>
   </div>
 </section>
 
