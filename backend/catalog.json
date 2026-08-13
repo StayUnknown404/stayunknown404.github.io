@@ -78,7 +78,7 @@
     "category": "Hoodies",
     "price": 72500,
     "sizes": ["M", "L", "XL", "XXL"],
-    "colors": ["Black", Grey"],
+    "colors": ["Black", "Grey"],
     "comingSoon": false
   },
   {
@@ -170,7 +170,7 @@
     "category": "Jackets",
     "price": 90000,
     "sizes": ["M", "L", "XL"],
-    "colors": ["Black", Charcoal],
+    "colors": ["Black", "Charcoal"],
     "comingSoon": false
   },
   {
