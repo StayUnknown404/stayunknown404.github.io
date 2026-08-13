@@ -309,6 +309,7 @@ body{background:#101010}
 .coming-soon-tag{position:absolute;top:14px;right:14px;background:#222;color:#ddd;border:1px solid #444;padding:7px 9px;font-size:10px;font-weight:800;letter-spacing:.5px}
 .add-cart.coming-soon{opacity:.5;cursor:not-allowed}
 </style>
+<script src="https://js.paystack.co/v2/inline.js"></script>
 </head>
 <body class="intro-active">
 
@@ -471,7 +472,7 @@ body{background:#101010}
           <label class="auth-label" for="checkout-note">ORDER NOTE (OPTIONAL)</label>
           <textarea id="checkout-note" class="checkout-textarea"></textarea>
         </div>
-        <button class="checkout-submit" type="submit">CONTINUE AS GUEST</button>
+        <button class="checkout-submit" type="submit">PAY WITH PAYSTACK</button>
         <div class="checkout-status" id="checkout-status" aria-live="polite"></div>
       </form>
 
@@ -479,7 +480,7 @@ body{background:#101010}
         <h3>ORDER SUMMARY</h3>
         <div id="checkout-summary-items"></div>
         <div class="checkout-summary-total"><span>TOTAL</span><span id="checkout-summary-total">₦0</span></div>
-        <p class="checkout-note">Account creation is optional. You can complete this checkout as a guest.</p>
+        <p class="checkout-note">Account creation is optional. You can complete this checkout as a guest. PAYSTACK TEST MODE is currently enabled.</p>
       </div>
     </div>
   </div>
@@ -979,14 +980,73 @@ body{background:#101010}
     },{passive:true});
   });
 
-  checkoutForm.addEventListener('submit',e=>{
+  /* ---------- PAYSTACK TEST CHECKOUT ---------- */
+  const PAYSTACK_PUBLIC_KEY='pk_test_eb28f56e7813cff0fdc9300831053730ac425d48';
+  let paystackBusy=false;
+
+  checkoutForm.addEventListener('submit',async e=>{
     e.preventDefault();
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
-    const orderId=`SU-${Date.now().toString().slice(-8)}`,customerName=document.getElementById('checkout-name').value.trim();
-    const order={id:orderId,customer:customerName,email:document.getElementById('checkout-email').value.trim(),phone:document.getElementById('checkout-phone').value.trim(),address:document.getElementById('checkout-address').value.trim(),note:document.getElementById('checkout-note').value.trim(),items:cart.map(i=>({...i})),total:cartSubtotal(),createdAt:new Date().toISOString()};
-    localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
-    checkoutStatus.innerHTML=`<div class="checkout-success"><strong>ORDER RECEIVED — ${escapeHTML(orderId)}</strong><br>Thanks, ${escapeHTML(customerName)}. Your guest order details are saved on this device.</div>`;
-    cart=[];renderCart();checkoutForm.reset();
+
+    const customerName=document.getElementById('checkout-name').value.trim();
+    const email=document.getElementById('checkout-email').value.trim();
+    const phone=document.getElementById('checkout-phone').value.trim();
+    const address=document.getElementById('checkout-address').value.trim();
+    const note=document.getElementById('checkout-note').value.trim();
+
+    if(!customerName || !email || !phone || !address){
+      checkoutStatus.textContent='Please complete the required checkout fields.';
+      return;
+    }
+    if(paystackBusy)return;
+    paystackBusy=true;
+    checkoutStatus.textContent='Opening secure Paystack checkout...';
+
+    try{
+      const popup=new PaystackPop();
+      const totalNaira=cartSubtotal();
+      const reference=`SU-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+
+      popup.newTransaction({
+        key:PAYSTACK_PUBLIC_KEY,
+        email,
+        amount:Math.round(totalNaira*100),
+        currency:'NGN',
+        reference,
+        firstName:customerName.split(' ')[0]||customerName,
+        lastName:customerName.split(' ').slice(1).join(' '),
+        phone,
+        metadata:{
+          custom_fields:[
+            {display_name:'STAYUNKNOWN Order',variable_name:'stayunknown_order',value:reference},
+            {display_name:'Delivery Address',variable_name:'delivery_address',value:address},
+            {display_name:'Order Note',variable_name:'order_note',value:note||'None'}
+          ]
+        },
+        onLoad:()=>{checkoutStatus.textContent='Paystack checkout loaded.'},
+        onCancel:()=>{paystackBusy=false;checkoutStatus.textContent='Payment cancelled. Your bag is still saved.'},
+        onError:error=>{paystackBusy=false;checkoutStatus.textContent='Payment could not be started. Please try again.';console.error(error)},
+        onSuccess:transaction=>{
+          const orderId=`SU-${Date.now().toString().slice(-8)}`;
+          const order={
+            id:orderId,
+            paymentReference:transaction.reference||reference,
+            paymentStatus:'test-success',
+            customer:customerName,email,phone,address,note,
+            items:cart.map(i=>({...i})),
+            total:totalNaira,
+            createdAt:new Date().toISOString()
+          };
+          localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
+          checkoutStatus.innerHTML=`<div class="checkout-success"><strong>PAYMENT RECEIVED — TEST MODE</strong><br>Order ${escapeHTML(orderId)} · Reference ${escapeHTML(transaction.reference||reference)}<br>Thanks, ${escapeHTML(customerName)}. Your test payment was completed.</div>`;
+          cart=[];renderCart();checkoutForm.reset();paystackBusy=false;
+        }
+      });
+    }catch(error){
+      console.error(error);
+      paystackBusy=false;
+      checkoutStatus.textContent='Paystack could not be opened. Please try again.';
+    }
   });
 
   renderCart();
