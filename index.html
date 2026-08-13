@@ -975,15 +975,104 @@ body{background:#101010}
   document.getElementById('checkout-btn').addEventListener('click',openCheckout);
   document.getElementById('checkout-close').addEventListener('click',closeCheckout);
   checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
-  checkoutForm.addEventListener('submit',e=>{
+  /* ---------- SECURE PAYSTACK CHECKOUT ---------- */
+  const BACKEND_URL='https://stayunknown-backend.onrender.com';
+
+  function savePendingOrder(reference, customer){
+    localStorage.setItem('stayunknown_pending_payment',JSON.stringify({
+      reference,
+      customer,
+      items:cart.map(i=>({...i})),
+      createdAt:new Date().toISOString()
+    }));
+  }
+
+  function showPaidOrder(order){
+    const pending=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null');
+    const customerName=pending?.customer?.name || document.getElementById('checkout-name').value.trim() || 'customer';
+    localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
+    localStorage.removeItem('stayunknown_pending_payment');
+    checkoutStatus.innerHTML=`
+      <div class="checkout-success">
+        <strong>PAYMENT SUCCESSFUL — ${escapeHTML(order.orderNumber || order.paymentReference || '')}</strong><br>
+        Thank you, ${escapeHTML(customerName)}. Your payment has been confirmed.<br>
+        <small style="color:#999">STATUS: PAID · TOTAL: ${money(order.total || cartSubtotal())}</small>
+      </div>`;
+    cart=[];
+    renderCart();
+    checkoutForm.reset();
+  }
+
+  async function verifyReturnedPayment(reference){
+    checkoutStatus.innerHTML='<div class="checkout-success">VERIFYING YOUR PAYMENT…</div>';
+    try{
+      const response=await fetch(`${BACKEND_URL}/api/paystack/verify`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({reference})
+      });
+      const data=await response.json();
+      if(!response.ok || !data.paid) throw new Error(data.error || `Payment status: ${data.status || 'unknown'}`);
+      showPaidOrder(data.order);
+      history.replaceState(null,document.title,window.location.pathname);
+    }catch(error){
+      checkoutStatus.innerHTML=`<div class="checkout-success"><strong>PAYMENT COULD NOT BE VERIFIED</strong><br>${escapeHTML(error.message || 'Please contact STAYUNKNOWN support with your payment reference.')}</div>`;
+    }
+  }
+
+  checkoutForm.addEventListener('submit',async e=>{
     e.preventDefault();
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
-    const orderId=`SU-${Date.now().toString().slice(-8)}`,customerName=document.getElementById('checkout-name').value.trim();
-    const order={id:orderId,customer:customerName,email:document.getElementById('checkout-email').value.trim(),phone:document.getElementById('checkout-phone').value.trim(),address:document.getElementById('checkout-address').value.trim(),note:document.getElementById('checkout-note').value.trim(),items:cart.map(i=>({...i})),total:cartSubtotal(),createdAt:new Date().toISOString()};
-    localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
-    checkoutStatus.innerHTML=`<div class="checkout-success"><strong>ORDER RECEIVED — ${escapeHTML(orderId)}</strong><br>Thanks, ${escapeHTML(customerName)}. Your guest order details are saved on this device.</div>`;
-    cart=[];renderCart();checkoutForm.reset();
+
+    const email=document.getElementById('checkout-email').value.trim().toLowerCase();
+    const phone=document.getElementById('checkout-phone').value.trim();
+    const customerName=document.getElementById('checkout-name').value.trim();
+
+    checkoutStatus.innerHTML='<div class="checkout-success">SECURE PAYMENT INITIALIZING…</div>';
+
+    try{
+      const response=await fetch(`${BACKEND_URL}/api/paystack/initialize`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          email,
+          phone,
+          callbackUrl:`${window.location.origin}${window.location.pathname}`,
+          items:cart.map(item=>({
+            productId:item.id,
+            quantity:item.quantity,
+            size:item.size,
+            color:item.color
+          }))
+        })
+      });
+
+      const data=await response.json();
+      if(!response.ok || !data.authorization_url) throw new Error(data.error || 'Unable to initialize payment.');
+
+      savePendingOrder(data.reference,{
+        name:customerName,
+        email,
+        phone,
+        address:document.getElementById('checkout-address').value.trim(),
+        note:document.getElementById('checkout-note').value.trim()
+      });
+
+      checkoutStatus.innerHTML='<div class="checkout-success">REDIRECTING TO SECURE PAYSTACK CHECKOUT…</div>';
+      window.location.href=data.authorization_url;
+    }catch(error){
+      checkoutStatus.innerHTML=`<div class="checkout-success"><strong>PAYMENT COULD NOT START</strong><br>${escapeHTML(error.message || 'Please try again.')}</div>`;
+    }
   });
+
+  /* Paystack returns to the storefront with a reference. Always verify
+     that reference on the secure backend before showing PAID. */
+  const returnedReference=new URLSearchParams(window.location.search).get('reference');
+  if(returnedReference){
+    checkoutOverlay.classList.add('open');
+    checkoutOverlay.setAttribute('aria-hidden','false');
+    verifyReturnedPayment(returnedReference);
+  }
 
   renderCart();
 
