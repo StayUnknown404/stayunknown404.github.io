@@ -11,7 +11,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+
+app.use((req, res, next) => {
+  if (req.path === "/api/paystack/webhook") {
+    return next();
+  }
+
+  return express.json()(req, res, next);
+});
+
 
 const catalogPath = path.join(__dirname, "catalog.json");
 const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
