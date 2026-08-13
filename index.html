@@ -72,6 +72,26 @@ button,input,textarea{font:inherit}
 .auth-link{text-decoration:underline;cursor:pointer}
 #auth-status-msg{margin-top:10px;font-size:11px;font-weight:bold;line-height:1.5}
 #user-dashboard{display:none;margin-top:10px}
+.orders-open-btn{width:100%;padding:9px;background:#f3f3f0;color:#111;border:0;margin-bottom:8px;cursor:pointer;font-weight:800;border-radius:3px}
+#order-confirmation,#order-details-modal,#orders-page{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}
+#order-confirmation.open,#order-details-modal.open,#orders-page.open{display:flex}
+.order-confirm-card{width:min(440px,100%);background:#151515;border:1px solid #444;padding:34px 24px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);cursor:pointer}
+.order-confirm-mark{width:58px;height:58px;border:1px solid #fff;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;font-size:25px}
+.order-confirm-card h2{font:42px/1 Anton,sans-serif;margin:0;text-transform:uppercase}
+.order-confirm-card p{color:#aaa;font-size:12px;line-height:1.7;margin:12px auto 0;max-width:310px}
+.order-confirm-hint{display:block;color:#777;font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-top:24px}
+.order-detail-card,.orders-card{width:min(720px,100%);max-height:92vh;overflow:auto;background:#111;border:1px solid #333;box-shadow:0 24px 80px rgba(0,0,0,.65)}
+.order-detail-head,.orders-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:22px;border-bottom:1px solid #292929;position:sticky;top:0;background:#111;z-index:2}
+.order-detail-head strong,.orders-head h2{font-family:Anton,sans-serif;text-transform:uppercase;font-size:24px;margin:0}
+.order-close,.orders-back{background:none;border:1px solid #444;color:#fff;padding:8px 11px;cursor:pointer;font-size:10px;font-weight:800;text-transform:uppercase}
+.order-detail-body,.orders-body{padding:22px}
+.order-status{display:inline-block;padding:6px 9px;border:1px solid #555;font-size:9px;font-weight:900;letter-spacing:1px}
+.order-status.paid{background:#f3f3f0;color:#111;border-color:#f3f3f0}.order-status.failed{background:#2b1717;color:#ffb0b0;border-color:#743838}.order-status.pending{background:#222;color:#ddd}
+.order-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.order-detail-box{border:1px solid #292929;padding:13px}.order-detail-box small{display:block;color:#777;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}.order-detail-box strong{font-size:12px;word-break:break-word}
+.order-items{border-top:1px solid #292929}.order-item-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 0;border-bottom:1px solid #292929}.order-item-row strong{font-size:12px}.order-item-row small{display:block;color:#777;margin-top:4px;font-size:10px}.order-total-row{display:flex;justify-content:space-between;padding:18px 0;font-weight:900}
+.orders-filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}.orders-filter{background:transparent;color:#999;border:1px solid #333;padding:8px 11px;font-size:9px;font-weight:900;cursor:pointer;text-transform:uppercase}.orders-filter.active{background:#f3f3f0;color:#111;border-color:#f3f3f0}
+.order-history-card{border:1px solid #292929;padding:15px;margin-bottom:9px;cursor:pointer}.order-history-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.order-history-name{font-size:12px;font-weight:900;text-transform:uppercase}.order-history-meta{color:#777;font-size:10px;margin-top:6px;line-height:1.6}.orders-empty{color:#777;font-size:12px;line-height:1.7;padding:30px 0;text-align:center}
+@media(max-width:600px){.order-detail-grid{grid-template-columns:1fr}.order-confirm-card h2{font-size:35px}.order-detail-card,.orders-card{max-height:95vh}.order-detail-head,.orders-head,.order-detail-body,.orders-body{padding:18px}}
 #cart-items{margin-top:10px}
 .cart-empty{color:#888;font-size:13px;line-height:1.7}
 .cart-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:15px 0;border-bottom:1px solid #222}
@@ -85,30 +105,7 @@ button,input,textarea{font:inherit}
 .cart-qty{min-width:20px;text-align:center;font-size:11px}
 .cart-total{display:flex;justify-content:space-between;margin-top:20px;font-weight:800}
 .checkout-btn{width:100%;margin-top:16px;padding:14px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer}
-#checkout-btn:disabled{opacity:.45;cursor:not-allowed}
-
-/* ORDER CONFIRMATION */
-#order-success-popup{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);padding:22px}
-#order-success-popup.open{display:flex}
-.order-success-card{width:min(92vw,430px);background:#111;border:1px solid #444;padding:34px 24px;text-align:center;box-shadow:0 20px 70px rgba(0,0,0,.55)}
-.order-success-card h2{font:clamp(34px,9vw,52px)/.9 Anton,sans-serif;margin:0 0 15px;text-transform:uppercase}
-.order-success-card p{margin:8px 0;color:#aaa;line-height:1.7;font-size:13px}
-.order-success-card .order-success-ref{margin-top:18px;color:#f3f3f0;font-size:11px;letter-spacing:1px}
-
-/* ACCOUNT ORDER HISTORY */
-#account-orders{margin:16px 0 12px;border-top:1px solid #292929;padding-top:14px}
-#account-orders h4{margin:0 0 10px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
-.account-orders-status{font-size:11px;color:#888;line-height:1.6}
-.account-order{border:1px solid #292929;background:#101010;padding:11px;margin-bottom:8px}
-.account-order-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.account-order-number{font-size:10px;font-weight:800;letter-spacing:.5px;word-break:break-all}
-.account-order-status{font-size:9px;font-weight:800;letter-spacing:1px;padding:4px 6px;border:1px solid #444;white-space:nowrap}
-.account-order-status.paid{color:#f3f3f0;border-color:#777}
-.account-order-status.failed{color:#d9534f;border-color:#6d302d}
-.account-order-status.pending{color:#aaa;border-color:#555}
-.account-order-items{font-size:10px;color:#888;line-height:1.6;margin-top:8px}
-.account-order-total{font-size:11px;font-weight:800;margin-top:8px}
-
+.checkout-btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* SEARCH */
 #search-panel{position:fixed;top:79px;left:0;right:0;z-index:900;background:#0d0d0d;border-bottom:1px solid #292929;padding:18px 5%;display:none}
@@ -422,10 +419,7 @@ body{background:#101010}
       </div>
 
       <div id="user-dashboard">
-        <div id="account-orders">
-          <h4>MY ORDERS</h4>
-          <div id="account-orders-list" class="account-orders-status">Loading your orders…</div>
-        </div>
+        <button id="btn-my-orders" class="orders-open-btn" type="button" onclick="openOrdersPage()">MY ORDERS</button>
         <button id="btn-reset-pw" class="auth-alt">Send Password Reset Link</button>
         <button id="btn-signout" class="auth-alt">Sign Out</button>
         <button id="btn-delete-acct" style="width:100%;padding:8px;background:#d9534f;color:#fff;border:0;margin-top:10px;cursor:pointer">Delete Account</button>
@@ -520,15 +514,6 @@ body{background:#101010}
   </div>
 </div>
 
-<div id="order-success-popup" aria-hidden="true">
-  <div class="order-success-card" role="dialog" aria-modal="true" aria-labelledby="order-success-title">
-    <h2 id="order-success-title">ORDER CONFIRMED</h2>
-    <p>Thank you for shopping with us.</p>
-    <p>Your payment has been confirmed and your order is now being processed.</p>
-    <div class="order-success-ref" id="order-success-ref"></div>
-  </div>
-</div>
-
 <header class="hero">
   <div class="hero-inner">
     <div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
@@ -606,6 +591,33 @@ body{background:#101010}
   <span>© 2026 STAYUNKNOWN</span>
   <span>MOVE IN SILENCE</span>
 </footer>
+
+
+<div id="order-confirmation" aria-hidden="true">
+  <div class="order-confirm-card" id="order-confirm-card" role="button" tabindex="0" aria-label="Order confirmed. Tap to view order details.">
+    <div class="order-confirm-mark">✓</div>
+    <h2>ORDER CONFIRMED</h2>
+    <p>THANK YOU FOR SHOPPING WITH US.</p>
+    <span class="order-confirm-hint">TAP TO VIEW COMPLETE ORDER DETAILS</span>
+  </div>
+</div>
+<div id="order-details-modal" aria-hidden="true">
+  <div class="order-detail-card">
+    <div class="order-detail-head"><strong>ORDER DETAILS</strong><button class="order-close" id="order-details-close" type="button">CLOSE</button></div>
+    <div class="order-detail-body" id="order-details-body"></div>
+  </div>
+</div>
+<div id="orders-page" aria-hidden="true">
+  <div class="orders-card">
+    <div class="orders-head"><h2>MY ORDERS</h2><button class="orders-back" id="orders-page-close" type="button">← BACK</button></div>
+    <div class="orders-body">
+      <div class="orders-filters" id="orders-filters">
+        <button class="orders-filter active" data-status="ALL" type="button">ALL</button><button class="orders-filter" data-status="PAID" type="button">PAID</button><button class="orders-filter" data-status="PENDING" type="button">PENDING</button><button class="orders-filter" data-status="FAILED" type="button">FAILED</button>
+      </div>
+      <div id="orders-list"><div class="orders-empty">Loading your orders…</div></div>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -690,9 +702,6 @@ body{background:#101010}
     {id:'bag-04',category:'Bags',name:'404 Mini Duffle',price:47000,tags:'bag bags duffle 404'},
     {id:'bag-05',category:'Bags',name:'Unknown Travel Pack',price:58000,tags:'bag bags backpack travel'}
   ];
-
-  // Expose PRODUCTS globally for Paystack checkout lookup
-  window.PRODUCTS = products;
 
   const SIZE_MAP = {
     'T-Shirts':['S','M','L','XL','XXL'], 'Hoodies':['S','M','L','XL','XXL'], 'Sweatshirts':['S','M','L','XL','XXL'],
@@ -1015,7 +1024,7 @@ body{background:#101010}
   document.getElementById('checkout-close').addEventListener('click',closeCheckout);
   checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
   /* ---------- SECURE PAYSTACK CHECKOUT ---------- */
-  const BACKEND_URL='https://stayunknown404-backend.onrender.com';
+  const BACKEND_URL='https://stayunknown-backend.onrender.com';
 
   function savePendingOrder(reference, customer){
     localStorage.setItem('stayunknown_pending_payment',JSON.stringify({
@@ -1027,23 +1036,18 @@ body{background:#101010}
   }
 
   function showPaidOrder(order){
-    localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
+    const pending=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null');
+    const customerName=pending?.customer?.name || document.getElementById('checkout-name').value.trim() || 'customer';
+    const enrichedOrder={...order,customer:{...(order?.customer||{}),...(pending?.customer||{}),uid:order?.customer?.uid||pending?.customer?.uid||window.__stayUnknownCurrentUser?.uid||''}};
+    localStorage.setItem('stayunknown_last_order',JSON.stringify(enrichedOrder));
     localStorage.removeItem('stayunknown_pending_payment');
-    checkoutOverlay.classList.remove('open');
-    checkoutOverlay.setAttribute('aria-hidden','true');
-    const popup=document.getElementById('order-success-popup');
-    document.getElementById('order-success-ref').textContent=`ORDER ${order.orderNumber || order.paymentReference || ''}`;
-    popup.classList.add('open');
-    popup.setAttribute('aria-hidden','false');
     cart=[];
     renderCart();
     checkoutForm.reset();
-    if(window.__stayUnknownRefreshOrders)window.__stayUnknownRefreshOrders();
-    window.setTimeout(()=>{
-      popup.classList.remove('open');
-      popup.setAttribute('aria-hidden','true');
-      showHome();
-    },3200);
+    closeCheckout();
+    showHome();
+    history.replaceState(null,document.title,window.location.pathname);
+    openOrderConfirmation(enrichedOrder,customerName);
   }
 
   async function verifyReturnedPayment(reference){
@@ -1060,11 +1064,8 @@ body{background:#101010}
       history.replaceState(null,document.title,window.location.pathname);
     }catch(error){
       checkoutStatus.innerHTML=`<div class="checkout-success"><strong>PAYMENT COULD NOT BE VERIFIED</strong><br>${escapeHTML(error.message || 'Please contact STAYUNKNOWN support with your payment reference.')}</div>`;
-      if(window.__stayUnknownRefreshOrders)window.__stayUnknownRefreshOrders();
     }
   }
-
-  window.verifyPayment = verifyReturnedPayment;
 
   checkoutForm.addEventListener('submit',async e=>{
     e.preventDefault();
@@ -1077,21 +1078,13 @@ body{background:#101010}
     checkoutStatus.innerHTML='<div class="checkout-success">SECURE PAYMENT INITIALIZING…</div>';
 
     try{
-      const currentUser=window.__stayUnknownCurrentUser;
-      const authToken=currentUser ? await currentUser.getIdToken() : '';
-      const requestHeaders={'Content-Type':'application/json'};
-      if(authToken)requestHeaders.Authorization=`Bearer ${authToken}`;
-
       const response=await fetch(`${BACKEND_URL}/api/paystack/initialize`,{
         method:'POST',
-        headers:requestHeaders,
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           email,
           phone,
-          userId:currentUser ? currentUser.uid : '',
-          customerName,
-          address:document.getElementById('checkout-address').value.trim(),
-          note:document.getElementById('checkout-note').value.trim(),
+          userId:window.__stayUnknownCurrentUser?.uid || '',
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
             productId:item.id,
@@ -1109,6 +1102,7 @@ body{background:#101010}
         name:customerName,
         email,
         phone,
+        uid:window.__stayUnknownCurrentUser?.uid || '',
         address:document.getElementById('checkout-address').value.trim(),
         note:document.getElementById('checkout-note').value.trim()
       });
@@ -1129,6 +1123,32 @@ body{background:#101010}
     verifyReturnedPayment(returnedReference);
   }
 
+  /* ---------- ORDER CONFIRMATION + ORDER HISTORY ---------- */
+  let lastOrderForDetails=null;
+  let orderHistory=[];
+  let orderHistoryFilter='ALL';
+  function formatOrderDate(value){if(!value)return 'DATE NOT AVAILABLE';const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
+  function statusClass(status){return String(status||'PENDING').toLowerCase()}
+  function renderOrderDetails(order){
+    const body=document.getElementById('order-details-body');
+    const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();
+    const items=Array.isArray(order?.items)?order.items:[];
+    const customer=order?.customer||{};
+    body.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px">ORDER NUMBER</div><strong style="font-size:14px">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-detail-grid"><div class="order-detail-box"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class="order-detail-box"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class="order-detail-box"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class="order-detail-box"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class="order-detail-box"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class="order-detail-box"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class="order-detail-box"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class="order-detail-box"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div><div style="font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">ITEMS</div><div class="order-items">${items.length?items.map(item=>`<div class="order-item-row"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class="orders-empty">No item details available.</div>'}</div><div class="order-total-row"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>`;
+  }
+  function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false')}
+  function openOrderConfirmation(order,customerName){lastOrderForDetails=order;document.getElementById('order-confirm-card').querySelector('p').textContent=`THANK YOU FOR SHOPPING WITH US${customerName?`, ${customerName.toUpperCase()}`:''}.`;document.getElementById('order-confirmation').classList.add('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','false')}
+  function closeOrderDetails(){document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true')}
+  async function fetchMyOrders(){const user=window.__stayUnknownCurrentUser;const list=document.getElementById('orders-list');if(!user){orderHistory=[];list.innerHTML='<div class="orders-empty">SIGN IN TO SEE YOUR ORDERS.</div>';return}list.innerHTML='<div class="orders-empty">LOADING YOUR ORDERS…</div>';try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load orders.');orderHistory=Array.isArray(data.orders)?data.orders:[];renderOrderHistory()}catch(error){list.innerHTML=`<div class="orders-empty">${escapeHTML(error.message||'Unable to load your orders.')}</div>`}}
+  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${itemCount} ITEM${itemCount===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card,index)=>card.addEventListener('click',()=>openOrderDetails(filtered[index])))}
+  async function openOrdersPage(){document.getElementById('order-confirmation').classList.remove('open');closeOrderDetails();document.getElementById('account-modal').style.display='none';document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
+  window.openOrdersPage=openOrdersPage;
+  document.getElementById('order-confirm-card').addEventListener('click',()=>{if(lastOrderForDetails)openOrderDetails(lastOrderForDetails)});
+  document.getElementById('order-confirm-card').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&lastOrderForDetails){e.preventDefault();openOrderDetails(lastOrderForDetails)}});
+  document.getElementById('order-details-close').addEventListener('click',closeOrderDetails);
+  document.getElementById('orders-page-close').addEventListener('click',()=>{document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true')});
+  document.querySelectorAll('.orders-filter').forEach(button=>button.addEventListener('click',()=>{orderHistoryFilter=button.dataset.status;document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b===button));renderOrderHistory()}));
+
   renderCart();
 
   /* ---------- MOBILE SWIPE BACK ---------- */
@@ -1142,9 +1162,6 @@ body{background:#101010}
 
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
-    const popup=document.getElementById('order-success-popup');
-    popup.classList.remove('open');
-    popup.setAttribute('aria-hidden','true');
     closeDrawer();closeCart();closeCheckout();closeProductOptions();
     if(searchPanel.classList.contains('open')){searchPanel.classList.remove('open');searchInput.value='';doSearch('')}
   });
@@ -1195,7 +1212,6 @@ const toggleAuth = $("toggle-auth-mode");
 const forgotPassword = $("forgot-password-link");
 const statusMessage = $("auth-status-msg");
 const accountModal = $("account-modal");
-const accountOrdersList = $("account-orders-list");
 
 let signupMode = false;
 
@@ -1336,29 +1352,6 @@ deleteButton.addEventListener('click', async () => {
   }
 });
 
-async function refreshOrders(user = auth.currentUser) {
-  if (!accountOrdersList) return;
-  if (!user) { accountOrdersList.textContent = 'Sign in to see your order history.'; return; }
-  accountOrdersList.textContent = 'Loading your orders…';
-  try {
-    const token = await user.getIdToken();
-    const response = await fetch('https://stayunknown404-backend.onrender.com/api/orders', {headers:{Authorization:`Bearer ${token}`}});
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to load orders.');
-    if (!data.orders.length) { accountOrdersList.textContent = 'No orders yet.'; return; }
-    accountOrdersList.innerHTML = data.orders.map(order => {
-      const status = String(order.paymentStatus || 'PENDING').toLowerCase();
-      const statusClass = status === 'paid' ? 'paid' : status === 'failed' ? 'failed' : 'pending';
-      const statusText = status === 'paid' ? 'PAID' : status === 'failed' ? 'NOT PAID' : 'PENDING';
-      const items = Array.isArray(order.items) ? order.items.map(item => `${escapeHTML(item.name || item.productId || 'Item')} × ${Number(item.quantity || 1)}`).join('<br>') : '';
-      const date = order.paidAt || order.updatedAt || order.createdAt || '';
-      return `<div class="account-order"><div class="account-order-top"><div class="account-order-number">${escapeHTML(order.orderNumber || order.paymentReference || order.id || '')}</div><span class="account-order-status ${statusClass}">${statusText}</span></div><div class="account-order-items">${items || 'Order details unavailable.'}</div><div class="account-order-total">${money(order.total || 0)}</div><div class="account-orders-status">${escapeHTML(date ? new Date(date).toLocaleString() : '')}</div></div>`;
-    }).join('');
-  } catch (error) { accountOrdersList.textContent = error.message || 'Unable to load your orders.'; }
-}
-
-window.__stayUnknownRefreshOrders = () => refreshOrders(auth.currentUser);
-
 function updateAccountUI(user) {
   window.__stayUnknownCurrentUser = user || null;
 
@@ -1371,7 +1364,6 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
-    refreshOrders(user);
   } else {
     greeting.textContent = 'Welcome to Stay Unknown';
     subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
@@ -1380,7 +1372,6 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = '';
     headerGreeting.classList.remove('visible');
-    if(accountOrdersList)accountOrdersList.textContent='Sign in to see your order history.';
 
     emailInput.value = '';
     passwordInput.value = '';
