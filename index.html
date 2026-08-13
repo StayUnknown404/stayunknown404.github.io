@@ -285,6 +285,21 @@ body{background:#101010}
   .catalog-card .product-visual{height:210px}.shop-view-top h2{font-size:46px}.back-btn{padding:10px 11px}
 }
 
+
+/* Product detail + checkout swipe additions; existing styling remains unchanged */
+.product-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:10000;display:none;align-items:flex-end;justify-content:center}
+.product-detail-overlay.open{display:flex}
+.product-detail-sheet{width:min(620px,100%);max-height:88vh;overflow:auto;background:#151515;border:1px solid #333;padding:22px;transform:translateY(100%);transition:transform .28s ease}
+.product-detail-overlay.open .product-detail-sheet{transform:translateY(0)}
+.product-detail-close{float:right;background:none;border:1px solid #555;color:#fff;width:36px;height:36px}
+.product-detail-title{font:34px Anton;margin:25px 0 4px;text-transform:uppercase}
+.product-detail-price{color:#aaa;margin-bottom:20px}
+.variant-label{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin:18px 0 8px}
+.variant-options{display:flex;flex-wrap:wrap;gap:8px}
+.variant-option{background:#171717;border:1px solid #444;color:#aaa;padding:10px 13px;font-size:11px;cursor:pointer}
+.variant-option.active{background:#f3f3f0;color:#111;border-color:#f3f3f0}
+.product-detail-add{width:100%;margin-top:22px}
+@media(max-width:700px){.product-detail-overlay{align-items:flex-end}.product-detail-sheet{border-left:0;border-right:0;border-bottom:0;border-radius:12px 12px 0 0}}
 </style>
 </head>
 <body class="intro-active">
@@ -408,6 +423,17 @@ body{background:#101010}
 </div>
 
 <!-- Guest checkout. No Firebase account is required. -->
+
+<div class="product-detail-overlay" id="product-detail-overlay" aria-hidden="true">
+  <div class="product-detail-sheet" id="product-detail-sheet">
+    <button class="product-detail-close" id="product-detail-close" type="button">×</button>
+    <div class="product-detail-title" id="product-detail-title"></div>
+    <div class="product-detail-price" id="product-detail-price"></div>
+    <div class="variant-label">SIZE</div><div class="variant-options" id="product-size-options"></div>
+    <div class="variant-label">COLOUR</div><div class="variant-options" id="product-colour-options"></div>
+    <button class="add-cart product-detail-add" id="product-detail-add" type="button">ADD TO BAG</button>
+  </div>
+</div>
 <div id="checkout-overlay" aria-hidden="true">
   <div class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
     <div class="checkout-header">
@@ -613,6 +639,10 @@ body{background:#101010}
     {id:'bag-05',category:'Bags',name:'Unknown Travel Pack',price:58000,tags:'bag bags backpack travel'}
   ];
 
+  const defaultSizes=['XS','S','M','L','XL','XXL'];
+  const defaultColours=['Black','Charcoal','Off-White'];
+  products.forEach(p=>{p.sizes=p.sizes||defaultSizes.slice();p.colours=p.colours||defaultColours.slice();});
+
   const categories = ['All','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
   const newDrop = products.filter(p => p.drop);
   const bestSellerIds = ['hood-03','tee-03','pants-01','jacket-01','track-01','jersey-01','tee-01','hood-01'];
@@ -692,6 +722,10 @@ body{background:#101010}
     grid.innerHTML = list.length ? list.map(p => cardMarkup(p)).join('') : '<div class="no-products">NO PRODUCTS FOUND</div>';
     document.querySelectorAll('#shop-category-bar .category-chip').forEach(b => b.classList.toggle('active', b.dataset.category === category));
     bindAddButtons(grid);
+    grid.querySelectorAll('[data-product-id]').forEach(card=>card.addEventListener('click',e=>{
+      if(e.target.closest('.add-cart'))return;
+      openProductDetail(products.find(p=>p.id===card.dataset.productId));
+    }));
   }
 
   function showShop(category='All'){
@@ -793,7 +827,7 @@ body{background:#101010}
            <div class="search-result-name">${escapeHTML(p.name)}</div>
            <div class="search-result-price">${money(p.price)}</div>
          </article>`).join('')}</div>`;
-    document.querySelectorAll('[data-search-product]').forEach(card => card.addEventListener('click',()=>showShop(products.find(p=>p.id===card.dataset.searchProduct)?.category||'All')));
+    document.querySelectorAll('[data-search-product]').forEach(card => card.addEventListener('click',()=>openProductDetail(products.find(p=>p.id===card.dataset.searchProduct))));
   }
   searchBtn.addEventListener('click',()=>{
     const open=searchPanel.classList.toggle('open');
@@ -803,6 +837,38 @@ body{background:#101010}
     searchPanel.classList.remove('open');searchInput.value='';doSearch('');
   });
   searchInput.addEventListener('input',e=>doSearch(e.target.value));
+
+
+  /* ---------- PRODUCT DETAILS: SIZE + COLOUR ---------- */
+  const productDetailOverlay=document.getElementById('product-detail-overlay');
+  const detailTitle=document.getElementById('product-detail-title');
+  const detailPrice=document.getElementById('product-detail-price');
+  const detailSizes=document.getElementById('product-size-options');
+  const detailColours=document.getElementById('product-colour-options');
+  const detailAdd=document.getElementById('product-detail-add');
+  let selectedProduct=null,selectedSize='M',selectedColour='Black';
+
+  function openProductDetail(p){
+    if(!p)return;
+    selectedProduct=p;selectedSize=p.sizes.includes('M')?'M':p.sizes[0];selectedColour=p.colours[0];
+    detailTitle.textContent=p.name;detailPrice.textContent=money(p.price);
+    detailSizes.innerHTML=p.sizes.map(s=>`<button type="button" class="variant-option${s===selectedSize?' active':''}" data-size="${escapeHTML(s)}">${escapeHTML(s)}</button>`).join('');
+    detailColours.innerHTML=p.colours.map(c=>`<button type="button" class="variant-option${c===selectedColour?' active':''}" data-colour="${escapeHTML(c)}">${escapeHTML(c)}</button>`).join('');
+    detailSizes.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{selectedSize=b.dataset.size;detailSizes.querySelectorAll('[data-size]').forEach(x=>x.classList.remove('active'));b.classList.add('active')}));
+    detailColours.querySelectorAll('[data-colour]').forEach(b=>b.addEventListener('click',()=>{selectedColour=b.dataset.colour;detailColours.querySelectorAll('[data-colour]').forEach(x=>x.classList.remove('active'));b.classList.add('active')}));
+    productDetailOverlay.classList.add('open');productDetailOverlay.setAttribute('aria-hidden','false');
+  }
+  function closeProductDetail(){productDetailOverlay.classList.remove('open');productDetailOverlay.setAttribute('aria-hidden','true')}
+  document.getElementById('product-detail-close')?.addEventListener('click',closeProductDetail);
+  productDetailOverlay?.addEventListener('click',e=>{if(e.target===productDetailOverlay)closeProductDetail()});
+  detailAdd?.addEventListener('click',()=>{
+    if(!selectedProduct)return;
+    const variantId=`${selectedProduct.id}-${selectedSize}-${selectedColour}`.toLowerCase().replace(/\s+/g,'-');
+    const existing=cart.find(x=>x.variantId===variantId);
+    if(existing)existing.quantity++;
+    else cart.push({id:selectedProduct.id,variantId,name:`${selectedProduct.name} · ${selectedSize} · ${selectedColour}`,price:selectedProduct.price,quantity:1});
+    renderCart();closeProductDetail();openCart();
+  });
 
   /* ---------- CART ---------- */
   let cart=[];
@@ -866,6 +932,13 @@ body{background:#101010}
   document.getElementById('checkout-btn').addEventListener('click',openCheckout);
   document.getElementById('checkout-close').addEventListener('click',closeCheckout);
   checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
+  let checkoutTouchStartX=0,checkoutTouchStartY=0;
+  checkoutOverlay.addEventListener('touchstart',e=>{checkoutTouchStartX=e.changedTouches[0].clientX;checkoutTouchStartY=e.changedTouches[0].clientY},{passive:true});
+  checkoutOverlay.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-checkoutTouchStartX,dy=e.changedTouches[0].clientY-checkoutTouchStartY;
+    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy))closeCheckout();
+  },{passive:true});
+
   checkoutForm.addEventListener('submit',e=>{
     e.preventDefault();
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
