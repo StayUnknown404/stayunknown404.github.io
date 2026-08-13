@@ -1067,7 +1067,27 @@ body{background:#101010}
   /* ---------- SECURE PAYSTACK CHECKOUT ---------- */
   const BACKEND_URL='https://stayunknown404-backend.onrender.com';
 
+  function getSupersededPendingRefs(){
+    try{
+      const refs=JSON.parse(localStorage.getItem('stayunknown_superseded_pending_refs')||'[]');
+      return Array.isArray(refs)?refs:[];
+    }catch(_){return []}
+  }
+
+  function rememberSupersededPending(reference){
+    if(!reference)return;
+    const refs=getSupersededPendingRefs();
+    if(!refs.includes(reference)) refs.push(reference);
+    localStorage.setItem('stayunknown_superseded_pending_refs',JSON.stringify(refs.slice(-50)));
+  }
+
   function savePendingOrder(reference, customer){
+    try{
+      const previous=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null');
+      if(previous?.reference && previous.reference!==reference){
+        rememberSupersededPending(previous.reference);
+      }
+    }catch(_){}
     localStorage.setItem('stayunknown_pending_payment',JSON.stringify({
       reference,
       customer,
@@ -1187,7 +1207,42 @@ body{background:#101010}
   function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false')}
   function openOrderConfirmation(order,customerName){lastOrderForDetails=order;document.getElementById('order-confirm-card').querySelector('p').textContent=`THANK YOU FOR SHOPPING WITH US${customerName?`, ${customerName.toUpperCase()}`:''}.`;document.getElementById('order-confirmation').classList.add('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','false')}
   function closeOrderDetails(){document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true')}
-  async function fetchMyOrders(){const user=window.__stayUnknownCurrentUser;const list=document.getElementById('orders-list');if(!user){orderHistory=[];list.innerHTML='<div class="orders-empty">SIGN IN TO SEE YOUR ORDERS.</div>';return}list.innerHTML='<div class="orders-empty">LOADING YOUR ORDERS…</div>';try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load orders.');orderHistory=Array.isArray(data.orders)?data.orders:[];renderOrderHistory()}catch(error){list.innerHTML=`<div class="orders-empty">${escapeHTML(error.message||'Unable to load your orders.')}</div>`}}
+  function orderItemsSignature(order){
+    return JSON.stringify((Array.isArray(order?.items)?order.items:[]).map(item=>({
+      productId:item.productId||'',
+      quantity:Number(item.quantity||1),
+      size:item.size||'',
+      color:item.color||'',
+      price:Number(item.price||0)
+    })).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));
+  }
+
+  function removeSupersededPendingOrders(orders){
+    const refs=new Set(getSupersededPendingRefs());
+    const paidOrders=orders.filter(o=>String(o.paymentStatus||'').toUpperCase()==='PAID');
+    return orders.filter(order=>{
+      const status=String(order.paymentStatus||'PENDING').toUpperCase();
+      const reference=String(order.paymentReference||order.orderNumber||order.id||'');
+      if(status!=='PENDING')return true;
+      if(refs.has(reference))return false;
+
+      const sameCompletedOrder=paidOrders.some(paid=>{
+        const paidCustomer=paid.customer||{};
+        const pendingCustomer=order.customer||{};
+        const sameUser=paidCustomer.uid && pendingCustomer.uid
+          ? paidCustomer.uid===pendingCustomer.uid
+          : String(paidCustomer.email||'').toLowerCase()===String(pendingCustomer.email||'').toLowerCase();
+
+        return sameUser &&
+          Number(paid.total||0)===Number(order.total||0) &&
+          orderItemsSignature(paid)===orderItemsSignature(order);
+      });
+
+      return !sameCompletedOrder;
+    });
+  }
+
+  async function fetchMyOrders(){const user=window.__stayUnknownCurrentUser;const list=document.getElementById('orders-list');if(!user){orderHistory=[];list.innerHTML='<div class="orders-empty">SIGN IN TO SEE YOUR ORDERS.</div>';return}list.innerHTML='<div class="orders-empty">LOADING YOUR ORDERS…</div>';try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load orders.');orderHistory=removeSupersededPendingOrders(Array.isArray(data.orders)?data.orders:[]);renderOrderHistory()}catch(error){list.innerHTML=`<div class="orders-empty">${escapeHTML(error.message||'Unable to load your orders.')}</div>`}}
   function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${itemCount} ITEM${itemCount===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card,index)=>card.addEventListener('click',()=>openOrderDetails(filtered[index])))}
   async function openOrdersPage(){document.getElementById('order-confirmation').classList.remove('open');closeOrderDetails();document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
   window.openOrdersPage=openOrdersPage;
