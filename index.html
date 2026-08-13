@@ -643,7 +643,7 @@ body{background:#101010}
   const defaultColours=['Black','Charcoal','Off-White'];
   products.forEach(p=>{p.sizes=p.sizes||defaultSizes.slice();p.colours=p.colours||defaultColours.slice();});
 
-  const categories = ['All','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
+  const categories = ['All','Newly Dropped','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
   const newDrop = products.filter(p => p.drop);
   const bestSellerIds = ['hood-03','tee-03','pants-01','jacket-01','track-01','jersey-01','tee-01','hood-01'];
   const bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
@@ -717,7 +717,9 @@ body{background:#101010}
 
   function renderShop(category='All'){
     const grid = document.getElementById('shop-grid');
-    const list = category === 'All' ? products : products.filter(p => p.category === category);
+    const list = category === 'All' ? products :
+      category === 'Newly Dropped' ? newDrop :
+      products.filter(p => p.category === category);
     document.getElementById('shop-count').textContent = `${list.length} PRODUCTS · ${category.toUpperCase()}`;
     grid.innerHTML = list.length ? list.map(p => cardMarkup(p)).join('') : '<div class="no-products">NO PRODUCTS FOUND</div>';
     document.querySelectorAll('#shop-category-bar .category-chip').forEach(b => b.classList.toggle('active', b.dataset.category === category));
@@ -749,7 +751,7 @@ body{background:#101010}
   }
 
   document.getElementById('shop-all-btn').addEventListener('click', () => showShop('All'));
-  document.getElementById('hero-shop-btn').addEventListener('click', () => showShop('All'));
+  document.getElementById('hero-shop-btn').addEventListener('click', () => showShop('Newly Dropped'));
   document.getElementById('shop-back-btn').addEventListener('click', showHome);
 
   /* ---------- NEW DROP AUTO CAROUSEL ---------- */
@@ -862,7 +864,7 @@ body{background:#101010}
   document.getElementById('product-detail-close')?.addEventListener('click',closeProductDetail);
   productDetailOverlay?.addEventListener('click',e=>{if(e.target===productDetailOverlay)closeProductDetail()});
   detailAdd?.addEventListener('click',()=>{
-    if(!selectedProduct)return;
+    if(!selectedProduct || !selectedSize || !selectedColour)return;
     const variantId=`${selectedProduct.id}-${selectedSize}-${selectedColour}`.toLowerCase().replace(/\s+/g,'-');
     const existing=cart.find(x=>x.variantId===variantId);
     if(existing)existing.quantity++;
@@ -897,13 +899,13 @@ body{background:#101010}
   function bindAddButtons(root=document){
     root.querySelectorAll('.add-cart').forEach(btn=>{
       if(btn.dataset.bound)return; btn.dataset.bound='1';
-      btn.addEventListener('click',()=>{
+      btn.addEventListener('click',e=>{
+        e.preventDefault();
+        e.stopPropagation();
         const id=btn.dataset.id;
         const p=products.find(x=>x.id===id);
         if(!p)return;
-        const existing=cart.find(x=>x.id===id);
-        if(existing)existing.quantity++;else cart.push({id:p.id,name:p.name,price:p.price,quantity:1});
-        renderCart();openCart();
+        openProductDetail(p);
       });
     });
   }
@@ -934,10 +936,18 @@ body{background:#101010}
   checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
   let checkoutTouchStartX=0,checkoutTouchStartY=0;
   checkoutOverlay.addEventListener('touchstart',e=>{checkoutTouchStartX=e.changedTouches[0].clientX;checkoutTouchStartY=e.changedTouches[0].clientY},{passive:true});
-  checkoutOverlay.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-checkoutTouchStartX,dy=e.changedTouches[0].clientY-checkoutTouchStartY;
-    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy))closeCheckout();
-  },{passive:true});
+  const checkoutSheet=document.getElementById('checkout-sheet') || checkoutOverlay;
+  [checkoutOverlay,checkoutSheet].forEach(target=>{
+    target.addEventListener('touchstart',e=>{
+      checkoutTouchStartX=e.changedTouches[0].clientX;
+      checkoutTouchStartY=e.changedTouches[0].clientY;
+    },{passive:true});
+    target.addEventListener('touchend',e=>{
+      const dx=e.changedTouches[0].clientX-checkoutTouchStartX;
+      const dy=e.changedTouches[0].clientY-checkoutTouchStartY;
+      if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.2) closeCheckout();
+    },{passive:true});
+  });
 
   checkoutForm.addEventListener('submit',e=>{
     e.preventDefault();
