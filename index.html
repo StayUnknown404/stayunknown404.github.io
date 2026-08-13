@@ -655,6 +655,9 @@ body{background:#101010}
     {id:'bag-05',category:'Bags',name:'Unknown Travel Pack',price:58000,tags:'bag bags backpack travel'}
   ];
 
+  // Expose PRODUCTS globally for Paystack checkout lookup
+  window.PRODUCTS = products;
+
   const SIZE_MAP = {
     'T-Shirts':['S','M','L','XL','XXL'], 'Hoodies':['S','M','L','XL','XXL'], 'Sweatshirts':['S','M','L','XL','XXL'],
     'Jackets':['S','M','L','XL','XXL'], 'Pants':['S','M','L','XL','XXL'], 'Shorts':['S','M','L','XL','XXL'],
@@ -1020,6 +1023,8 @@ body{background:#101010}
     }
   }
 
+  window.verifyPayment = verifyReturnedPayment;
+
   checkoutForm.addEventListener('submit',async e=>{
     e.preventDefault();
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
@@ -1302,26 +1307,10 @@ function updateAccountUI(user) {
     passwordInput.value = '';
     nameInput.value = '';
     setAuthMode(false);
-          }
   }
-  
-  window.PRODUCTS = typeof products !== 'undefined' ? products : [];
-  
-  window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const trf = urlParams.get('trxref') || urlParams.get('reference');
-      
-      if (trf) {
-          // Strip the parameters from the address bar immediately
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // Run payment verification once
-          verifyPayment(trf);
-     }
-  });
-  
-  onAuthStateChanged(auth, updateAccountUI);
-  
+}
+
+onAuthStateChanged(auth, updateAccountUI);
 </script>
 </body>
 </html>
