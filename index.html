@@ -196,6 +196,95 @@ footer{flex-direction:column;gap:12px}
 .btn{width:auto;padding:15px 24px}
 .product .image{height:290px}
 }
+
+/* ===== STAYUNKNOWN HOMEPAGE + SHOP UPDATE ===== */
+body{background:#101010}
+.nav{padding:15px 4%;align-items:center;min-height:72px}
+.brand-wrap{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.logo{font-size:clamp(22px,2.1vw,30px)}
+.header-greeting{margin-top:5px}
+.nav-actions{gap:14px;align-items:center}
+.profile-btn,.cart-btn,.search-btn,.menu-btn{flex:0 0 auto}
+.profile-btn{width:40px;height:40px}.cart-btn{width:44px;height:44px}
+.search-btn,.menu-btn{width:40px;height:44px}
+.profile-btn svg{width:27px;height:27px}.search-btn svg,.menu-btn svg{width:25px;height:25px}
+.bag-mark{width:28px;height:33px}.bag-mark:before{left:5px;width:14px}
+.cart-count{top:-3px;right:-5px;min-width:21px;height:21px;font-size:10px}
+.search-panel-results{max-width:1100px;margin:16px auto 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-height:62vh;overflow:auto}
+.search-result-card{border:1px solid #292929;background:#151515;padding:12px;cursor:pointer}
+.search-result-card:hover{background:#1c1c1c}
+.search-result-image{height:120px;display:grid;place-items:center;background:linear-gradient(145deg,#1c1c1c,#0e0e0e);font:32px Anton;color:#666}
+.search-result-name{font-size:11px;font-weight:800;text-transform:uppercase;margin-top:10px}
+.search-result-price{font-size:11px;color:#999;margin-top:4px}
+.menu-nav-item.shop-toggle{border:0;background:none;color:inherit;width:100%;padding:0;text-align:left;font:inherit}
+.shop-category-menu{display:none;padding:0 0 5px 12px;margin-top:-8px;border-left:1px solid #333}
+.shop-category-menu.open{display:block}
+.shop-category-menu button{display:block;width:100%;text-align:left;background:none;border:0;color:#aaa;padding:9px 0;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer}
+.shop-category-menu button:hover{color:#fff}
+.view-shell{transition:opacity .28s,transform .28s}
+.view-shell.is-hidden{display:none}
+.shop-view{min-height:100svh;padding:125px 5% 80px;background:#101010}
+.shop-view-inner{max-width:1380px;margin:auto}
+.shop-view-top{display:flex;justify-content:space-between;align-items:center;gap:18px;border-bottom:1px solid #2b2b2b;padding-bottom:22px;margin-bottom:24px}
+.shop-view-top h2{font:clamp(45px,8vw,88px)/.9 Anton;margin:0;text-transform:uppercase}
+.back-btn{background:none;color:#fff;border:1px solid #555;padding:11px 16px;font-size:10px;font-weight:800;letter-spacing:1.5px;cursor:pointer}
+.category-bar{display:flex;gap:8px;overflow-x:auto;padding:2px 0 20px;scrollbar-width:none}
+.category-bar::-webkit-scrollbar{display:none}
+.category-chip{white-space:nowrap;border:1px solid #333;background:#161616;color:#bbb;padding:10px 13px;font-size:10px;font-weight:800;text-transform:uppercase;cursor:pointer}
+.category-chip.active,.category-chip:hover{background:#f3f3f0;color:#111;border-color:#f3f3f0}
+.shop-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.catalog-card{background:#151515;border:1px solid #252525;overflow:hidden;position:relative}
+.catalog-card .product-visual{height:300px;display:grid;place-items:center;background:radial-gradient(circle at 60% 25%,#2a2a2a,#151515 52%,#0e0e0e);font:42px Anton;color:#666;letter-spacing:2px}
+.catalog-card .catalog-info{padding:14px}
+.catalog-card .catalog-name{font-size:12px;font-weight:800;text-transform:uppercase}
+.catalog-card .catalog-meta{font-size:10px;color:#777;text-transform:uppercase;margin-top:5px}
+.catalog-card .catalog-price{font-size:12px;color:#aaa;margin-top:7px}
+.catalog-card .add-cart{width:100%;margin-top:12px}
+.shop-count{font-size:10px;color:#777;letter-spacing:1px;text-transform:uppercase}
+.carousel-section{overflow:hidden}
+.carousel-viewport{overflow:hidden;position:relative}
+.carousel-track{display:flex;touch-action:pan-y;will-change:transform;transition:transform .55s cubic-bezier(.2,.75,.2,1)}
+.carousel-slide{flex:0 0 100%;min-width:0;padding-right:12px}
+.carousel-dots{display:flex;justify-content:center;gap:7px;margin-top:18px}
+.carousel-dot{width:6px;height:6px;border-radius:50%;border:0;background:#444;padding:0;cursor:pointer}
+.carousel-dot.active{background:#f3f3f0;transform:scale(1.35)}
+.new-drop-card{background:#171717;border:1px solid #252525;min-height:470px}
+.new-drop-card .image{height:350px;background:radial-gradient(circle at 70% 25%,#292929,#141414 55%,#101010);display:grid;place-items:center;font:54px Anton;color:#666;letter-spacing:3px}
+.new-drop-card .info{padding:18px}
+.new-drop-card .name{font-weight:800;text-transform:uppercase}
+.new-drop-card .price{color:#999;margin-top:6px;font-size:13px}
+.best-sellers-wrap{overflow:hidden}
+.best-seller-track{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;cursor:grab;scrollbar-width:none}
+.best-seller-track::-webkit-scrollbar{display:none}
+.best-seller-card{flex:0 0 calc(25% - 11px);scroll-snap-align:start}
+.best-seller-card .image{height:290px}
+.best-seller-card .info{padding:14px}
+.best-seller-card .name{font-size:12px;font-weight:800;text-transform:uppercase}
+.best-seller-card .price{font-size:12px;color:#999;margin-top:5px}
+.promo-ready{position:relative}
+.promo-card{min-height:360px;border:1px solid #333;background:#171717;display:grid;align-content:center;padding:30px}
+.promo-card .promo-kicker{font-size:10px;letter-spacing:3px;color:#888}
+.promo-card h3{font:50px Anton;margin:12px 0;text-transform:uppercase}
+.promo-card p{color:#999;max-width:420px;line-height:1.7}
+.home-shop-all{text-align:center;padding:8px 5% 80px}
+.home-shop-all .btn{margin-top:0;min-width:190px}
+.no-products{padding:35px 0;color:#777;text-align:center;font-size:12px;letter-spacing:2px;text-transform:uppercase}
+@media(min-width:701px){.carousel-slide{flex-basis:50%}}
+@media(max-width:1050px){.shop-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.best-seller-card{flex-basis:calc(33.333% - 10px)}.search-panel-results{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){
+  .nav{padding:12px 4%;min-height:62px}.logo{font-size:21px}.header-greeting{font-size:8px;letter-spacing:1.8px;margin-top:4px}
+  .nav-actions{gap:9px}.profile-btn,.cart-btn,.search-btn,.menu-btn{width:36px;height:40px}.profile-btn svg{width:25px;height:25px}.search-btn svg,.menu-btn svg{width:24px;height:24px}
+  .bag-mark{width:25px;height:30px}.bag-mark span{font-size:9px}.cart-count{min-width:19px;height:19px}
+  .search-panel-results{grid-template-columns:repeat(2,minmax(0,1fr));max-height:58vh}
+  .search-result-image{height:100px}.shop-view{padding:100px 5% 60px}.shop-view-top{align-items:flex-end}.shop-view-top h2{font-size:52px}
+  .shop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.catalog-card .product-visual{height:230px;font-size:34px}
+  .new-drop-card{min-height:390px}.new-drop-card .image{height:285px}.best-seller-card{flex-basis:78%}.home-shop-all{padding-bottom:55px}
+}
+@media(max-width:420px){
+  .nav-actions{gap:6px}.brand-wrap{max-width:145px}.logo{font-size:20px}.shop-grid{grid-template-columns:1fr 1fr}
+  .catalog-card .product-visual{height:210px}.shop-view-top h2{font-size:46px}.back-btn{padding:10px 11px}
+}
+
 </style>
 </head>
 <body class="intro-active">
@@ -217,7 +306,7 @@ footer{flex-direction:column;gap:12px}
   </div>
 
   <div class="links">
-    <a href="#shop">Shop</a>
+    <a href="javascript:void(0)" id="desktop-shop-link">Shop</a>
     <a href="#story">Story</a>
     <a href="#contact">Contact</a>
   </div>
@@ -254,8 +343,9 @@ footer{flex-direction:column;gap:12px}
   </div>
 
   <div class="menu-nav-links">
-    <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>NEW DROP</span><span>↗</span></a>
-    <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>SHOP</span><span>+</span></a>
+    <a class="menu-nav-item" href="#new-drop" onclick="closeDrawer()"><span>NEW DROP</span><span>↗</span></a>
+    <button class="menu-nav-item shop-toggle" id="menu-shop-toggle" type="button"><span>SHOP</span><span id="menu-shop-plus">+</span></button>
+    <div class="shop-category-menu" id="menu-shop-categories"></div>
 
     <div class="menu-nav-item" id="nav-account-toggle" role="button" tabindex="0">
       <span>ACCOUNT</span><span>↗</span>
@@ -366,42 +456,44 @@ footer{flex-direction:column;gap:12px}
     <div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
     <h1>Move<br><span>In Silence.</span></h1>
     <p>STAYUNKNOWN is built around individuality, movement and quiet confidence.</p>
-    <a class="btn" href="#shop">Shop the drop</a>
+    <button class="btn" id="hero-shop-btn" type="button">SHOP THE DROP</button>
   </div>
 </header>
 
-<section class="section" id="shop">
-  <div class="section-head"><h2>Latest Drop</h2><span>01 / 03</span></div>
-  <div class="grid" id="product-grid">
-    <article class="product" data-search="unknown oversized tee tee shirt top">
-      <div class="tag">NEW</div>
-      <div class="image">SU / 01</div>
-      <div class="info">
-        <div class="name">Unknown Oversized Tee</div>
-        <div class="price">₦35,000</div>
-        <button class="add-cart" data-product="Unknown Oversized Tee" data-price="35000">ADD TO BAG</button>
-      </div>
-    </article>
 
-    <article class="product" data-search="silence hoodie hoodie sweatshirt">
-      <div class="image">SU / 02</div>
-      <div class="info">
-        <div class="name">Silence Hoodie</div>
-        <div class="price">₦65,000</div>
-        <button class="add-cart" data-product="Silence Hoodie" data-price="65000">ADD TO BAG</button>
-      </div>
-    </article>
+<section class="section carousel-section" id="new-drop">
+  <div class="section-head"><h2>New Drop</h2><span id="new-drop-count">01 / 08</span></div>
+  <div class="carousel-viewport" id="new-drop-viewport">
+    <div class="carousel-track" id="new-drop-track"></div>
+  </div>
+  <div class="carousel-dots" id="new-drop-dots" aria-label="New Drop slides"></div>
+</section>
 
-    <article class="product" data-search="unknown track pants pants trousers track">
-      <div class="image">SU / 03</div>
-      <div class="info">
-        <div class="name">Unknown Track Pants</div>
-        <div class="price">₦55,000</div>
-        <button class="add-cart" data-product="Unknown Track Pants" data-price="55000">ADD TO BAG</button>
-      </div>
-    </article>
+<section class="home-shop-all">
+  <button class="btn" id="shop-all-btn" type="button">SHOP ALL</button>
+</section>
+
+<section class="section carousel-section promo-ready" id="best-sellers">
+  <div class="section-head"><h2>Best Sellers</h2><span>SWIPE / DRAG</span></div>
+  <div class="best-sellers-wrap">
+    <div class="best-seller-track" id="best-seller-track"></div>
   </div>
 </section>
+
+<section class="view-shell is-hidden" id="shop-view" aria-hidden="true">
+  <div class="shop-view">
+    <div class="shop-view-inner">
+      <div class="shop-view-top">
+        <h2>SHOP</h2>
+        <button class="back-btn" id="shop-back-btn" type="button">← GO BACK</button>
+      </div>
+      <div class="category-bar" id="shop-category-bar"></div>
+      <div class="shop-count" id="shop-count"></div>
+      <div class="shop-grid" id="shop-grid"></div>
+    </div>
+  </div>
+</section>
+
 
 <section class="statement">
   <h2>Stay<br>Unknown.</h2>
@@ -444,45 +536,107 @@ footer{flex-direction:column;gap:12px}
   /* ---------- INTRO ---------- */
   const intro = document.getElementById('su404-intro');
   let introClosed = false;
-
-  function dismissIntro() {
-    if (introClosed || !intro) return;
+  function dismissIntro(){
+    if(introClosed || !intro) return;
     introClosed = true;
     intro.classList.add('hide');
     document.body.classList.remove('intro-active');
     window.setTimeout(() => intro.remove(), 900);
   }
+  if(intro){
+    intro.addEventListener('click', dismissIntro);
+    window.setTimeout(dismissIntro, 4000);
+  }
 
-  intro.addEventListener('click', dismissIntro);
-  window.setTimeout(dismissIntro, 4000);
+  /* ---------- PRODUCT CATALOG ---------- */
+  const products = [
+    // T-Shirts
+    {id:'tee-01',category:'T-Shirts',name:'Unknown Oversized Tee',price:35000,drop:true,tags:'tee t-shirt shirt top oversized unknown'},
+    {id:'tee-02',category:'T-Shirts',name:'404 Graphic Tee',price:29000,drop:true,tags:'tee t-shirt graphic 404'},
+    {id:'tee-03',category:'T-Shirts',name:'Move In Silence Tee',price:42000,drop:true,tags:'tee t-shirt move silence'},
+    {id:'tee-04',category:'T-Shirts',name:'After Dark Box Tee',price:31000,tags:'tee t-shirt dark box'},
+    {id:'tee-05',category:'T-Shirts',name:'Unknown Signal Tee',price:39000,tags:'tee t-shirt signal unknown'},
+    {id:'tee-06',category:'T-Shirts',name:'Static Logo Tee',price:27000,tags:'tee t-shirt static logo'},
+    // Hoodies
+    {id:'hood-01',category:'Hoodies',name:'Unknown Heavy Hoodie',price:72000,drop:true,tags:'hoodie hood heavy unknown'},
+    {id:'hood-02',category:'Hoodies',name:'404 Zip Hoodie',price:68000,drop:true,tags:'hoodie zip 404'},
+    {id:'hood-03',category:'Hoodies',name:'Silence Hoodie',price:65000,tags:'hoodie silence'},
+    {id:'hood-04',category:'Hoodies',name:'No Signal Pullover',price:59000,tags:'hoodie pullover signal'},
+    {id:'hood-05',category:'Hoodies',name:'Midnight Unknown Hoodie',price:75000,tags:'hoodie midnight unknown'},
+    // Sweatshirts
+    {id:'sweat-01',category:'Sweatshirts',name:'404 Crew Sweatshirt',price:52000,drop:true,tags:'sweatshirt crew 404'},
+    {id:'sweat-02',category:'Sweatshirts',name:'Move Quiet Crew',price:48000,tags:'sweatshirt crew silence'},
+    {id:'sweat-03',category:'Sweatshirts',name:'Unknown Core Sweatshirt',price:56000,tags:'sweatshirt unknown core'},
+    {id:'sweat-04',category:'Sweatshirts',name:'Signal Fade Sweatshirt',price:51000,tags:'sweatshirt signal fade'},
+    {id:'sweat-05',category:'Sweatshirts',name:'After Hours Crew',price:47000,tags:'sweatshirt crew hours'},
+    // Jackets
+    {id:'jacket-01',category:'Jackets',name:'Unknown Utility Jacket',price:88000,drop:true,tags:'jacket utility unknown'},
+    {id:'jacket-02',category:'Jackets',name:'404 Flight Jacket',price:96000,tags:'jacket flight 404'},
+    {id:'jacket-03',category:'Jackets',name:'Silent Shell Jacket',price:79000,tags:'jacket shell silence'},
+    {id:'jacket-04',category:'Jackets',name:'Noir Coach Jacket',price:67000,tags:'jacket coach noir'},
+    {id:'jacket-05',category:'Jackets',name:'Unknown Technical Jacket',price:99500,tags:'jacket technical unknown'},
+    // Pants
+    {id:'pants-01',category:'Pants',name:'Silence Track Pants',price:55000,drop:true,tags:'pants track silence'},
+    {id:'pants-02',category:'Pants',name:'Unknown Cargo Pants',price:59000,tags:'pants cargo unknown'},
+    {id:'pants-03',category:'Pants',name:'404 Utility Trousers',price:47000,tags:'pants trousers utility 404'},
+    {id:'pants-04',category:'Pants',name:'Move In Silence Pants',price:52000,tags:'pants move silence'},
+    {id:'pants-05',category:'Pants',name:'After Dark Wide Pants',price:43000,tags:'pants wide dark'},
+    // Shorts
+    {id:'short-01',category:'Shorts',name:'Unknown Mesh Shorts',price:36000,drop:true,tags:'shorts mesh unknown'},
+    {id:'short-02',category:'Shorts',name:'404 Sport Shorts',price:32000,tags:'shorts sport 404'},
+    {id:'short-03',category:'Shorts',name:'Silence Utility Shorts',price:41000,tags:'shorts utility silence'},
+    {id:'short-04',category:'Shorts',name:'Core Logo Shorts',price:28000,tags:'shorts logo core'},
+    {id:'short-05',category:'Shorts',name:'No Signal Shorts',price:34000,tags:'shorts signal'},
+    // Tracksuits
+    {id:'track-01',category:'Tracksuits',name:'Unknown Full Tracksuit',price:98000,drop:true,tags:'tracksuit track set unknown'},
+    {id:'track-02',category:'Tracksuits',name:'404 Velocity Tracksuit',price:105000,tags:'tracksuit 404 velocity'},
+    {id:'track-03',category:'Tracksuits',name:'Silence Track Set',price:92000,tags:'tracksuit silence'},
+    {id:'track-04',category:'Tracksuits',name:'Night Run Tracksuit',price:89000,tags:'tracksuit night run'},
+    {id:'track-05',category:'Tracksuits',name:'Unknown Core Track Set',price:97000,tags:'tracksuit core unknown'},
+    // Jerseys
+    {id:'jersey-01',category:'Jerseys',name:'404 Football Jersey',price:62000,drop:true,tags:'jersey football 404'},
+    {id:'jersey-02',category:'Jerseys',name:'Unknown Away Jersey',price:58000,tags:'jersey away unknown'},
+    {id:'jersey-03',category:'Jerseys',name:'Silence Training Jersey',price:49000,tags:'jersey training silence'},
+    {id:'jersey-04',category:'Jerseys',name:'Signal Racing Jersey',price:65000,tags:'jersey racing signal'},
+    {id:'jersey-05',category:'Jerseys',name:'Move 404 Jersey',price:54000,tags:'jersey move 404'},
+    // Accessories
+    {id:'acc-01',category:'Accessories',name:'404 Logo Cap',price:18000,drop:true,tags:'accessory accessories cap hat 404'},
+    {id:'acc-02',category:'Accessories',name:'Unknown Beanie',price:22000,tags:'accessory accessories beanie unknown'},
+    {id:'acc-03',category:'Accessories',name:'Move In Silence Socks',price:12000,tags:'accessory accessories socks'},
+    {id:'acc-04',category:'Accessories',name:'404 Metal Keychain',price:10000,tags:'accessory accessories keychain'},
+    {id:'acc-05',category:'Accessories',name:'Unknown Logo Belt',price:28000,tags:'accessory accessories belt'},
+    // Bags
+    {id:'bag-01',category:'Bags',name:'404 Crossbody Bag',price:35000,drop:true,tags:'bag bags crossbody 404'},
+    {id:'bag-02',category:'Bags',name:'Unknown Utility Tote',price:29000,tags:'bag bags tote utility'},
+    {id:'bag-03',category:'Bags',name:'Silence Sling Bag',price:42000,tags:'bag bags sling silence'},
+    {id:'bag-04',category:'Bags',name:'404 Mini Duffle',price:47000,tags:'bag bags duffle 404'},
+    {id:'bag-05',category:'Bags',name:'Unknown Travel Pack',price:58000,tags:'bag bags backpack travel'}
+  ];
 
-  /* ---------- UI REFERENCES ---------- */
+  const categories = ['All','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
+  const newDrop = products.filter(p => p.drop);
+  const bestSellerIds = ['hood-03','tee-03','pants-01','jacket-01','track-01','jersey-01','tee-01','hood-01'];
+  const bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
+
+  const money = value => `₦${Number(value).toLocaleString('en-NG')}`;
+  const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const productVisual = p => `<div class="product-visual" aria-hidden="true">${escapeHTML(p.id.split('-')[0].toUpperCase())} / ${escapeHTML(p.id.split('-')[1])}</div>`;
+
+  /* ---------- UI ---------- */
   const drawer = document.getElementById('side-drawer');
   const cartPanel = document.getElementById('cart-panel');
   const searchPanel = document.getElementById('search-panel');
   const searchInput = document.getElementById('search-input');
   const searchResults = document.getElementById('search-results');
-  const productCards = [...document.querySelectorAll('.product')];
+  const searchBtn = document.getElementById('search-btn');
+  const shopView = document.getElementById('shop-view');
+  const menuCategories = document.getElementById('menu-shop-categories');
 
-  const money = value => `₦${Number(value).toLocaleString('en-NG')}`;
-
-  function openDrawer() {
-    drawer.classList.add('open');
-  }
-
-  function closeDrawer() {
-    drawer.classList.remove('open');
-  }
+  function openDrawer(){drawer.classList.add('open')}
+  function closeDrawer(){drawer.classList.remove('open')}
   window.closeDrawer = closeDrawer;
-
-  function openCart() {
-    closeDrawer();
-    cartPanel.classList.add('open');
-  }
-
-  function closeCart() {
-    cartPanel.classList.remove('open');
-  }
+  function openCart(){closeDrawer();cartPanel.classList.add('open')}
+  function closeCart(){cartPanel.classList.remove('open')}
 
   document.getElementById('open-menu-btn').addEventListener('click', openDrawer);
   document.getElementById('close-menu-btn').addEventListener('click', closeDrawer);
@@ -492,274 +646,245 @@ footer{flex-direction:column;gap:12px}
 
   document.getElementById('profile-top-btn').addEventListener('click', () => {
     openDrawer();
-    const account = document.getElementById('account-modal');
-    account.style.display = 'block';
+    document.getElementById('account-modal').style.display = 'block';
   });
+
+  function renderCategoryButtons(container, active='All'){
+    container.innerHTML = categories.map(cat =>
+      `<button class="category-chip${cat===active?' active':''}" data-category="${escapeHTML(cat)}">${escapeHTML(cat)}</button>`
+    ).join('');
+    container.querySelectorAll('[data-category]').forEach(btn =>
+      btn.addEventListener('click', () => showShop(btn.dataset.category))
+    );
+  }
+
+  renderCategoryButtons(document.getElementById('shop-category-bar'));
+
+  menuCategories.innerHTML = categories.slice(1).map(cat =>
+    `<button type="button" data-category="${escapeHTML(cat)}">${escapeHTML(cat)}</button>`
+  ).join('');
+  menuCategories.querySelectorAll('[data-category]').forEach(btn =>
+    btn.addEventListener('click', () => { showShop(btn.dataset.category); closeDrawer(); })
+  );
+
+  document.getElementById('menu-shop-toggle').addEventListener('click', () => {
+    menuCategories.classList.toggle('open');
+    document.getElementById('menu-shop-plus').textContent = menuCategories.classList.contains('open') ? '−' : '+';
+  });
+
+  function cardMarkup(p, cls=''){
+    return `<article class="${cls} catalog-card" data-product-id="${p.id}">
+      ${p.drop ? '<div class="tag">NEW</div>' : ''}
+      ${productVisual(p)}
+      <div class="catalog-info">
+        <div class="catalog-name">${escapeHTML(p.name)}</div>
+        <div class="catalog-meta">${escapeHTML(p.category)}</div>
+        <div class="catalog-price">${money(p.price)}</div>
+        <button class="add-cart" type="button" data-product="${escapeHTML(p.name)}" data-price="${p.price}" data-id="${p.id}">ADD TO BAG</button>
+      </div>
+    </article>`;
+  }
+
+  function renderShop(category='All'){
+    const grid = document.getElementById('shop-grid');
+    const list = category === 'All' ? products : products.filter(p => p.category === category);
+    document.getElementById('shop-count').textContent = `${list.length} PRODUCTS · ${category.toUpperCase()}`;
+    grid.innerHTML = list.length ? list.map(p => cardMarkup(p)).join('') : '<div class="no-products">NO PRODUCTS FOUND</div>';
+    document.querySelectorAll('#shop-category-bar .category-chip').forEach(b => b.classList.toggle('active', b.dataset.category === category));
+    bindAddButtons(grid);
+  }
+
+  function showShop(category='All'){
+    closeCart(); closeDrawer();
+    document.querySelector('.hero').style.display = 'none';
+    document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el => el.style.display='none');
+    shopView.classList.remove('is-hidden');
+    shopView.setAttribute('aria-hidden','false');
+    renderShop(category);
+    window.scrollTo({top:0,behavior:'smooth'});
+    history.replaceState(null,'','#shop');
+  }
+
+  function showHome(){
+    shopView.classList.add('is-hidden');
+    shopView.setAttribute('aria-hidden','true');
+    document.querySelector('.hero').style.display = '';
+    document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el => el.style.display='');
+    window.scrollTo({top:0,behavior:'smooth'});
+    history.replaceState(null,'','#home');
+  }
+
+  document.getElementById('shop-all-btn').addEventListener('click', () => showShop('All'));
+  document.getElementById('hero-shop-btn').addEventListener('click', () => showShop('All'));
+  document.getElementById('shop-back-btn').addEventListener('click', showHome);
+
+  /* ---------- NEW DROP AUTO CAROUSEL ---------- */
+  const dropTrack = document.getElementById('new-drop-track');
+  const dropDots = document.getElementById('new-drop-dots');
+  let dropIndex = 0;
+  let dropTimer = null;
+  let dropStartX = 0;
+  let dropDragging = false;
+
+  dropTrack.innerHTML = newDrop.map(p => `<div class="carousel-slide">${cardMarkup(p,'new-drop-card')}</div>`).join('');
+  dropDots.innerHTML = newDrop.map((_,i) => `<button class="carousel-dot${i===0?' active':''}" data-slide="${i}" aria-label="Go to slide ${i+1}"></button>`).join('');
+
+  function dropVisible(){return window.innerWidth >= 701 ? 2 : 1}
+  function updateDrop(index, animate=true){
+    const max = Math.max(0,newDrop.length-dropVisible());
+    dropIndex = Math.min(Math.max(index,0),max);
+    dropTrack.style.transition = animate ? '' : 'none';
+    dropTrack.style.transform = `translateX(-${dropIndex * (100/dropVisible())}%)`;
+    dropDots.querySelectorAll('.carousel-dot').forEach((d,i) => d.classList.toggle('active', i===dropIndex));
+    document.getElementById('new-drop-count').textContent = `${String(dropIndex+1).padStart(2,'0')} / ${String(newDrop.length).padStart(2,'0')}`;
+  }
+  function startDropTimer(){
+    clearInterval(dropTimer);
+    dropTimer = setInterval(() => updateDrop(dropIndex >= Math.max(0,newDrop.length-dropVisible()) ? 0 : dropIndex+1), 4200);
+  }
+  dropDots.querySelectorAll('.carousel-dot').forEach(d => d.addEventListener('click', () => {updateDrop(Number(d.dataset.slide));startDropTimer()}));
+  const dropViewport = document.getElementById('new-drop-viewport');
+  dropViewport.addEventListener('pointerdown', e => {dropDragging=true;dropStartX=e.clientX;dropViewport.setPointerCapture?.(e.pointerId);clearInterval(dropTimer)});
+  dropViewport.addEventListener('pointerup', e => {
+    if(!dropDragging)return; dropDragging=false; const dx=e.clientX-dropStartX;
+    if(Math.abs(dx)>45) updateDrop(dropIndex+(dx<0?1:-1)); startDropTimer();
+  });
+  dropViewport.addEventListener('pointercancel', () => {dropDragging=false;startDropTimer()});
+  dropViewport.addEventListener('mouseenter', () => clearInterval(dropTimer));
+  dropViewport.addEventListener('mouseleave', startDropTimer);
+  window.addEventListener('resize', () => updateDrop(dropIndex,false));
+  updateDrop(0,false); startDropTimer();
+  bindAddButtons(dropTrack);
+
+  /* ---------- BEST SELLERS: PRODUCTS + PROMO-READY CAROUSEL ---------- */
+  const bestTrack = document.getElementById('best-seller-track');
+  bestTrack.innerHTML = bestSellers.map(p => cardMarkup(p,'best-seller-card')).join('') +
+    `<article class="best-seller-card promo-card" data-content-type="promotion">
+      <div class="promo-kicker">404 / FUTURE DROP</div><h3>MORE<br>UNKNOWN.</h3><p>This carousel accepts products, discount cards, sale announcements and promotional banners without changing the section structure.</p>
+    </article>`;
+  bindAddButtons(bestTrack);
+
+  let bestDown=false,bestStart=0,bestScroll=0;
+  bestTrack.addEventListener('pointerdown',e=>{bestDown=true;bestStart=e.clientX;bestScroll=bestTrack.scrollLeft;bestTrack.setPointerCapture?.(e.pointerId);bestTrack.style.cursor='grabbing'});
+  bestTrack.addEventListener('pointermove',e=>{if(bestDown)bestTrack.scrollLeft=bestScroll-(e.clientX-bestStart)});
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>bestTrack.addEventListener(ev,()=>{bestDown=false;bestTrack.style.cursor='grab'}));
 
   /* ---------- SEARCH ---------- */
-  function normalize(value) {
-    return String(value || '').trim().toLowerCase();
-  }
-
-  function filterProducts(query) {
-    const q = normalize(query);
-    let matches = 0;
-
-    productCards.forEach(card => {
-      const searchable = normalize(
-        `${card.dataset.search || ''} ${card.querySelector('.name')?.textContent || ''}`
-      );
-
-      /*
-       * Match the whole search string or any search word.
-       * This keeps searches such as "hoodie", "tee" and "pants"
-       * immediately useful on mobile and desktop.
-       */
-      const words = q.split(/\s+/).filter(Boolean);
-      const matched = !q || words.every(word => searchable.includes(word));
-
-      card.classList.toggle('search-hidden', !matched);
-      if (matched) matches++;
-    });
-
-    if (!q) {
-      searchResults.textContent = 'Search products by name.';
-    } else if (matches) {
-      searchResults.textContent = `${matches} RESULT${matches === 1 ? '' : 'S'} FOUND.`;
-      document.getElementById('shop').scrollIntoView({behavior:'smooth', block:'start'});
-    } else {
-      searchResults.textContent = 'NO PRODUCTS FOUND.';
+  function normalize(value){return String(value||'').trim().toLowerCase()}
+  function doSearch(query){
+    const q=normalize(query);
+    if(!q){
+      searchResults.textContent='Search all STAYUNKNOWN products by name, category or keyword.';
+      document.getElementById('search-results').className='search-results';
+      document.getElementById('search-results').innerHTML='Search all STAYUNKNOWN products by name, category or keyword.';
+      return;
     }
-  }
-
-  document.getElementById('search-btn').addEventListener('click', () => {
-    const open = searchPanel.classList.toggle('open');
-    if (open) {
-      searchInput.focus();
-    } else {
-      searchInput.value = '';
-      filterProducts('');
+    const words=q.split(/\s+/).filter(Boolean);
+    const matches=products.filter(p => words.every(w => normalize(`${p.name} ${p.category} ${p.tags}`).includes(w)));
+    if(!matches.length){
+      document.getElementById('search-results').innerHTML='NO PRODUCTS FOUND';
+      return;
     }
+    document.getElementById('search-results').innerHTML =
+      `<div class="shop-count">${matches.length} RESULT${matches.length===1?'':'S'} FOUND</div>
+       <div class="search-panel-results">${matches.map(p => `
+         <article class="search-result-card" data-search-product="${p.id}">
+           <div class="search-result-image">${escapeHTML(p.category.split(/[- ]/)[0].toUpperCase())}</div>
+           <div class="search-result-name">${escapeHTML(p.name)}</div>
+           <div class="search-result-price">${money(p.price)}</div>
+         </article>`).join('')}</div>`;
+    document.querySelectorAll('[data-search-product]').forEach(card => card.addEventListener('click',()=>showShop(products.find(p=>p.id===card.dataset.searchProduct)?.category||'All')));
+  }
+  searchBtn.addEventListener('click',()=>{
+    const open=searchPanel.classList.toggle('open');
+    if(open)searchInput.focus();else{searchInput.value='';doSearch('')}
   });
-
-  document.getElementById('search-close').addEventListener('click', () => {
-    searchPanel.classList.remove('open');
-    searchInput.value = '';
-    filterProducts('');
+  document.getElementById('search-close').addEventListener('click',()=>{
+    searchPanel.classList.remove('open');searchInput.value='';doSearch('');
   });
-
-  searchInput.addEventListener('input', event => filterProducts(event.target.value));
+  searchInput.addEventListener('input',e=>doSearch(e.target.value));
 
   /* ---------- CART ---------- */
-  let cart = [];
-
-  function cartQuantity() {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  let cart=[];
+  function cartQuantity(){return cart.reduce((s,i)=>s+i.quantity,0)}
+  function cartSubtotal(){return cart.reduce((s,i)=>s+i.price*i.quantity,0)}
+  function renderCart(){
+    const box=document.getElementById('cart-items'), count=cartQuantity(), subtotal=cartSubtotal();
+    document.getElementById('cart-count').textContent=count;
+    document.getElementById('menu-cart-count').textContent=count;
+    document.getElementById('cart-total').textContent=money(subtotal);
+    document.getElementById('checkout-btn').disabled=!cart.length;
+    if(!cart.length){box.innerHTML='<div class="cart-empty">Your bag is empty.</div>';renderCheckoutSummary();return}
+    box.innerHTML=cart.map((item,index)=>`<div class="cart-item">
+      <div class="cart-item-main"><div class="cart-item-name">${escapeHTML(item.name)}</div><div class="cart-item-price">${money(item.price)} each · ${money(item.price*item.quantity)}</div></div>
+      <div class="cart-item-actions"><button class="qty-btn" data-action="minus" data-index="${index}">−</button><span class="cart-qty">${item.quantity}</span><button class="qty-btn" data-action="plus" data-index="${index}">+</button><button class="cart-remove" data-action="remove" data-index="${index}">REMOVE</button></div>
+    </div>`).join('');
+    box.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{
+      const i=Number(btn.dataset.index),a=btn.dataset.action;
+      if(a==='plus')cart[i].quantity++;
+      if(a==='minus'){cart[i].quantity--;if(cart[i].quantity<=0)cart.splice(i,1)}
+      if(a==='remove')cart.splice(i,1);
+      renderCart();
+    }));
+    renderCheckoutSummary();
   }
-
-  function cartSubtotal() {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  }
-
-  function escapeHTML(value) {
-    return String(value).replace(/[&<>"']/g, char => ({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#039;'
-    }[char]));
-  }
-
-  function renderCart() {
-    const box = document.getElementById('cart-items');
-    const count = cartQuantity();
-    const subtotal = cartSubtotal();
-
-    document.getElementById('cart-count').textContent = count;
-    document.getElementById('menu-cart-count').textContent = count;
-    document.getElementById('cart-total').textContent = money(subtotal);
-
-    if (!cart.length) {
-      box.innerHTML = '<div class="cart-empty">Your bag is empty.</div>';
-      document.getElementById('checkout-btn').disabled = true;
-      renderCheckoutSummary();
-      return;
-    }
-
-    box.innerHTML = cart.map((item, index) => `
-      <div class="cart-item">
-        <div class="cart-item-main">
-          <div class="cart-item-name">${escapeHTML(item.name)}</div>
-          <div class="cart-item-price">${money(item.price)} each · ${money(item.price * item.quantity)}</div>
-        </div>
-        <div class="cart-item-actions">
-          <button class="qty-btn" data-action="minus" data-index="${index}" aria-label="Decrease quantity">−</button>
-          <span class="cart-qty">${item.quantity}</span>
-          <button class="qty-btn" data-action="plus" data-index="${index}" aria-label="Increase quantity">+</button>
-          <button class="cart-remove" data-action="remove" data-index="${index}">REMOVE</button>
-        </div>
-      </div>
-    `).join('');
-
-    box.querySelectorAll('[data-action]').forEach(button => {
-      button.addEventListener('click', () => {
-        const index = Number(button.dataset.index);
-        const action = button.dataset.action;
-
-        if (action === 'plus') cart[index].quantity += 1;
-        if (action === 'minus') {
-          cart[index].quantity -= 1;
-          if (cart[index].quantity <= 0) cart.splice(index, 1);
-        }
-        if (action === 'remove') cart.splice(index, 1);
-
-        renderCart();
+  function bindAddButtons(root=document){
+    root.querySelectorAll('.add-cart').forEach(btn=>{
+      if(btn.dataset.bound)return; btn.dataset.bound='1';
+      btn.addEventListener('click',()=>{
+        const id=btn.dataset.id;
+        const p=products.find(x=>x.id===id);
+        if(!p)return;
+        const existing=cart.find(x=>x.id===id);
+        if(existing)existing.quantity++;else cart.push({id:p.id,name:p.name,price:p.price,quantity:1});
+        renderCart();openCart();
       });
     });
-
-    document.getElementById('checkout-btn').disabled = false;
-    renderCheckoutSummary();
   }
-
-  document.querySelectorAll('.add-cart').forEach(button => {
-    button.addEventListener('click', () => {
-      const name = button.dataset.product;
-      const price = Number(button.dataset.price);
-      const existing = cart.find(item => item.name === name);
-
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        cart.push({name, price, quantity:1});
-      }
-
-      renderCart();
-      openCart();
-    });
-  });
 
   /* ---------- CHECKOUT / GUEST CHECKOUT ---------- */
-  const checkoutOverlay = document.getElementById('checkout-overlay');
-  const checkoutForm = document.getElementById('checkout-form');
-  const checkoutStatus = document.getElementById('checkout-status');
-
-  function renderCheckoutSummary() {
-    const summary = document.getElementById('checkout-summary-items');
-    const total = document.getElementById('checkout-summary-total');
-
-    if (!cart.length) {
-      summary.innerHTML = '<div class="checkout-note">Your bag is empty.</div>';
-      total.textContent = money(0);
-      return;
-    }
-
-    summary.innerHTML = cart.map(item => `
-      <div class="checkout-summary-row">
-        <span>${escapeHTML(item.name)} × ${item.quantity}</span>
-        <span>${money(item.price * item.quantity)}</span>
-      </div>
-    `).join('');
-
-    total.textContent = money(cartSubtotal());
+  const checkoutOverlay=document.getElementById('checkout-overlay');
+  const checkoutForm=document.getElementById('checkout-form');
+  const checkoutStatus=document.getElementById('checkout-status');
+  function renderCheckoutSummary(){
+    const summary=document.getElementById('checkout-summary-items'),total=document.getElementById('checkout-summary-total');
+    if(!cart.length){summary.innerHTML='<div class="checkout-note">Your bag is empty.</div>';total.textContent=money(0);return}
+    summary.innerHTML=cart.map(i=>`<div class="checkout-summary-row"><span>${escapeHTML(i.name)} × ${i.quantity}</span><span>${money(i.price*i.quantity)}</span></div>`).join('');
+    total.textContent=money(cartSubtotal());
   }
-
-  function openCheckout() {
-    if (!cart.length) {
-      checkoutStatus.textContent = 'Your 404 Bag is empty.';
-      return;
+  function openCheckout(){
+    if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
+    closeCart();checkoutStatus.textContent='';checkoutOverlay.classList.add('open');checkoutOverlay.setAttribute('aria-hidden','false');renderCheckoutSummary();
+    const currentUser=window.__stayUnknownCurrentUser;
+    if(currentUser){
+      if(!document.getElementById('checkout-email').value)document.getElementById('checkout-email').value=currentUser.email||'';
+      if(!document.getElementById('checkout-name').value)document.getElementById('checkout-name').value=currentUser.displayName||'';
     }
-
-    closeCart();
-    checkoutStatus.textContent = '';
-    checkoutOverlay.classList.add('open');
-    checkoutOverlay.setAttribute('aria-hidden', 'false');
-    renderCheckoutSummary();
-
-    /* If the Firebase user is signed in, prefill only convenience fields.
-       Checkout remains fully available to guests. */
-    const currentUser = window.__stayUnknownCurrentUser;
-    if (currentUser) {
-      if (!document.getElementById('checkout-email').value) {
-        document.getElementById('checkout-email').value = currentUser.email || '';
-      }
-      if (!document.getElementById('checkout-name').value) {
-        document.getElementById('checkout-name').value = currentUser.displayName || '';
-      }
-    }
-
     document.getElementById('checkout-name').focus();
   }
-
-  function closeCheckout() {
-    checkoutOverlay.classList.remove('open');
-    checkoutOverlay.setAttribute('aria-hidden', 'true');
-  }
-
-  document.getElementById('checkout-btn').addEventListener('click', openCheckout);
-  document.getElementById('checkout-close').addEventListener('click', closeCheckout);
-
-  checkoutOverlay.addEventListener('click', event => {
-    if (event.target === checkoutOverlay) closeCheckout();
-  });
-
-  checkoutForm.addEventListener('submit', event => {
-    event.preventDefault();
-
-    if (!cart.length) {
-      checkoutStatus.textContent = 'Your 404 Bag is empty.';
-      return;
-    }
-
-    const orderId = `SU-${Date.now().toString().slice(-8)}`;
-    const customerName = document.getElementById('checkout-name').value.trim();
-
-    /*
-     * The original file has no payment/order backend, so this completes the
-     * guest checkout flow without pretending a payment gateway exists.
-     * The order details are retained locally for the confirmation shown here.
-     */
-    const order = {
-      id: orderId,
-      customer: customerName,
-      email: document.getElementById('checkout-email').value.trim(),
-      phone: document.getElementById('checkout-phone').value.trim(),
-      address: document.getElementById('checkout-address').value.trim(),
-      note: document.getElementById('checkout-note').value.trim(),
-      items: cart.map(item => ({...item})),
-      total: cartSubtotal(),
-      createdAt: new Date().toISOString()
-    };
-
-    localStorage.setItem('stayunknown_last_order', JSON.stringify(order));
-
-    checkoutStatus.innerHTML = `
-      <div class="checkout-success">
-        <strong>ORDER RECEIVED — ${escapeHTML(orderId)}</strong><br>
-        Thanks, ${escapeHTML(customerName)}. Your guest order details are saved on this device.
-        We can connect this final step to your preferred payment/order backend without moving account creation into checkout.
-      </div>
-    `;
-
-    cart = [];
-    renderCart();
-    checkoutForm.reset();
+  function closeCheckout(){checkoutOverlay.classList.remove('open');checkoutOverlay.setAttribute('aria-hidden','true')}
+  document.getElementById('checkout-btn').addEventListener('click',openCheckout);
+  document.getElementById('checkout-close').addEventListener('click',closeCheckout);
+  checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
+  checkoutForm.addEventListener('submit',e=>{
+    e.preventDefault();
+    if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
+    const orderId=`SU-${Date.now().toString().slice(-8)}`,customerName=document.getElementById('checkout-name').value.trim();
+    const order={id:orderId,customer:customerName,email:document.getElementById('checkout-email').value.trim(),phone:document.getElementById('checkout-phone').value.trim(),address:document.getElementById('checkout-address').value.trim(),note:document.getElementById('checkout-note').value.trim(),items:cart.map(i=>({...i})),total:cartSubtotal(),createdAt:new Date().toISOString()};
+    localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
+    checkoutStatus.innerHTML=`<div class="checkout-success"><strong>ORDER RECEIVED — ${escapeHTML(orderId)}</strong><br>Thanks, ${escapeHTML(customerName)}. Your guest order details are saved on this device.</div>`;
+    cart=[];renderCart();checkoutForm.reset();
   });
 
   renderCart();
 
-  /* ---------- KEYBOARD / ESCAPE ---------- */
-  document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape') return;
-    closeDrawer();
-    closeCart();
-    closeCheckout();
-    if (searchPanel.classList.contains('open')) {
-      searchPanel.classList.remove('open');
-      searchInput.value = '';
-      filterProducts('');
-    }
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    closeDrawer();closeCart();closeCheckout();
+    if(searchPanel.classList.contains('open')){searchPanel.classList.remove('open');searchInput.value='';doSearch('')}
   });
+
+  if(location.hash==='#shop')showShop('All');
 })();
 </script>
 
