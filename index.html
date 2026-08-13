@@ -85,7 +85,30 @@ button,input,textarea{font:inherit}
 .cart-qty{min-width:20px;text-align:center;font-size:11px}
 .cart-total{display:flex;justify-content:space-between;margin-top:20px;font-weight:800}
 .checkout-btn{width:100%;margin-top:16px;padding:14px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer}
-.checkout-btn:disabled{opacity:.45;cursor:not-allowed}
+#checkout-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ORDER CONFIRMATION */
+#order-success-popup{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);padding:22px}
+#order-success-popup.open{display:flex}
+.order-success-card{width:min(92vw,430px);background:#111;border:1px solid #444;padding:34px 24px;text-align:center;box-shadow:0 20px 70px rgba(0,0,0,.55)}
+.order-success-card h2{font:clamp(34px,9vw,52px)/.9 Anton,sans-serif;margin:0 0 15px;text-transform:uppercase}
+.order-success-card p{margin:8px 0;color:#aaa;line-height:1.7;font-size:13px}
+.order-success-card .order-success-ref{margin-top:18px;color:#f3f3f0;font-size:11px;letter-spacing:1px}
+
+/* ACCOUNT ORDER HISTORY */
+#account-orders{margin:16px 0 12px;border-top:1px solid #292929;padding-top:14px}
+#account-orders h4{margin:0 0 10px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.account-orders-status{font-size:11px;color:#888;line-height:1.6}
+.account-order{border:1px solid #292929;background:#101010;padding:11px;margin-bottom:8px}
+.account-order-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.account-order-number{font-size:10px;font-weight:800;letter-spacing:.5px;word-break:break-all}
+.account-order-status{font-size:9px;font-weight:800;letter-spacing:1px;padding:4px 6px;border:1px solid #444;white-space:nowrap}
+.account-order-status.paid{color:#f3f3f0;border-color:#777}
+.account-order-status.failed{color:#d9534f;border-color:#6d302d}
+.account-order-status.pending{color:#aaa;border-color:#555}
+.account-order-items{font-size:10px;color:#888;line-height:1.6;margin-top:8px}
+.account-order-total{font-size:11px;font-weight:800;margin-top:8px}
+
 
 /* SEARCH */
 #search-panel{position:fixed;top:79px;left:0;right:0;z-index:900;background:#0d0d0d;border-bottom:1px solid #292929;padding:18px 5%;display:none}
@@ -399,6 +422,10 @@ body{background:#101010}
       </div>
 
       <div id="user-dashboard">
+        <div id="account-orders">
+          <h4>MY ORDERS</h4>
+          <div id="account-orders-list" class="account-orders-status">Loading your orders…</div>
+        </div>
         <button id="btn-reset-pw" class="auth-alt">Send Password Reset Link</button>
         <button id="btn-signout" class="auth-alt">Sign Out</button>
         <button id="btn-delete-acct" style="width:100%;padding:8px;background:#d9534f;color:#fff;border:0;margin-top:10px;cursor:pointer">Delete Account</button>
@@ -490,6 +517,15 @@ body{background:#101010}
         <p class="checkout-note">Account creation is optional. You can complete this checkout as a guest.</p>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="order-success-popup" aria-hidden="true">
+  <div class="order-success-card" role="dialog" aria-modal="true" aria-labelledby="order-success-title">
+    <h2 id="order-success-title">ORDER CONFIRMED</h2>
+    <p>Thank you for shopping with us.</p>
+    <p>Your payment has been confirmed and your order is now being processed.</p>
+    <div class="order-success-ref" id="order-success-ref"></div>
   </div>
 </div>
 
@@ -991,19 +1027,23 @@ body{background:#101010}
   }
 
   function showPaidOrder(order){
-    const pending=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null');
-    const customerName=pending?.customer?.name || document.getElementById('checkout-name').value.trim() || 'customer';
     localStorage.setItem('stayunknown_last_order',JSON.stringify(order));
     localStorage.removeItem('stayunknown_pending_payment');
-    checkoutStatus.innerHTML=`
-      <div class="checkout-success">
-        <strong>PAYMENT SUCCESSFUL — ${escapeHTML(order.orderNumber || order.paymentReference || '')}</strong><br>
-        Thank you, ${escapeHTML(customerName)}. Your payment has been confirmed.<br>
-        <small style="color:#999">STATUS: PAID · TOTAL: ${money(order.total || cartSubtotal())}</small>
-      </div>`;
+    checkoutOverlay.classList.remove('open');
+    checkoutOverlay.setAttribute('aria-hidden','true');
+    const popup=document.getElementById('order-success-popup');
+    document.getElementById('order-success-ref').textContent=`ORDER ${order.orderNumber || order.paymentReference || ''}`;
+    popup.classList.add('open');
+    popup.setAttribute('aria-hidden','false');
     cart=[];
     renderCart();
     checkoutForm.reset();
+    if(window.__stayUnknownRefreshOrders)window.__stayUnknownRefreshOrders();
+    window.setTimeout(()=>{
+      popup.classList.remove('open');
+      popup.setAttribute('aria-hidden','true');
+      showHome();
+    },3200);
   }
 
   async function verifyReturnedPayment(reference){
@@ -1020,6 +1060,7 @@ body{background:#101010}
       history.replaceState(null,document.title,window.location.pathname);
     }catch(error){
       checkoutStatus.innerHTML=`<div class="checkout-success"><strong>PAYMENT COULD NOT BE VERIFIED</strong><br>${escapeHTML(error.message || 'Please contact STAYUNKNOWN support with your payment reference.')}</div>`;
+      if(window.__stayUnknownRefreshOrders)window.__stayUnknownRefreshOrders();
     }
   }
 
@@ -1036,12 +1077,21 @@ body{background:#101010}
     checkoutStatus.innerHTML='<div class="checkout-success">SECURE PAYMENT INITIALIZING…</div>';
 
     try{
+      const currentUser=window.__stayUnknownCurrentUser;
+      const authToken=currentUser ? await currentUser.getIdToken() : '';
+      const requestHeaders={'Content-Type':'application/json'};
+      if(authToken)requestHeaders.Authorization=`Bearer ${authToken}`;
+
       const response=await fetch(`${BACKEND_URL}/api/paystack/initialize`,{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:requestHeaders,
         body:JSON.stringify({
           email,
           phone,
+          userId:currentUser ? currentUser.uid : '',
+          customerName,
+          address:document.getElementById('checkout-address').value.trim(),
+          note:document.getElementById('checkout-note').value.trim(),
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
             productId:item.id,
@@ -1092,6 +1142,9 @@ body{background:#101010}
 
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
+    const popup=document.getElementById('order-success-popup');
+    popup.classList.remove('open');
+    popup.setAttribute('aria-hidden','true');
     closeDrawer();closeCart();closeCheckout();closeProductOptions();
     if(searchPanel.classList.contains('open')){searchPanel.classList.remove('open');searchInput.value='';doSearch('')}
   });
@@ -1142,6 +1195,7 @@ const toggleAuth = $("toggle-auth-mode");
 const forgotPassword = $("forgot-password-link");
 const statusMessage = $("auth-status-msg");
 const accountModal = $("account-modal");
+const accountOrdersList = $("account-orders-list");
 
 let signupMode = false;
 
@@ -1282,6 +1336,29 @@ deleteButton.addEventListener('click', async () => {
   }
 });
 
+async function refreshOrders(user = auth.currentUser) {
+  if (!accountOrdersList) return;
+  if (!user) { accountOrdersList.textContent = 'Sign in to see your order history.'; return; }
+  accountOrdersList.textContent = 'Loading your orders…';
+  try {
+    const token = await user.getIdToken();
+    const response = await fetch('https://stayunknown404-backend.onrender.com/api/orders', {headers:{Authorization:`Bearer ${token}`}});
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to load orders.');
+    if (!data.orders.length) { accountOrdersList.textContent = 'No orders yet.'; return; }
+    accountOrdersList.innerHTML = data.orders.map(order => {
+      const status = String(order.paymentStatus || 'PENDING').toLowerCase();
+      const statusClass = status === 'paid' ? 'paid' : status === 'failed' ? 'failed' : 'pending';
+      const statusText = status === 'paid' ? 'PAID' : status === 'failed' ? 'NOT PAID' : 'PENDING';
+      const items = Array.isArray(order.items) ? order.items.map(item => `${escapeHTML(item.name || item.productId || 'Item')} × ${Number(item.quantity || 1)}`).join('<br>') : '';
+      const date = order.paidAt || order.updatedAt || order.createdAt || '';
+      return `<div class="account-order"><div class="account-order-top"><div class="account-order-number">${escapeHTML(order.orderNumber || order.paymentReference || order.id || '')}</div><span class="account-order-status ${statusClass}">${statusText}</span></div><div class="account-order-items">${items || 'Order details unavailable.'}</div><div class="account-order-total">${money(order.total || 0)}</div><div class="account-orders-status">${escapeHTML(date ? new Date(date).toLocaleString() : '')}</div></div>`;
+    }).join('');
+  } catch (error) { accountOrdersList.textContent = error.message || 'Unable to load your orders.'; }
+}
+
+window.__stayUnknownRefreshOrders = () => refreshOrders(auth.currentUser);
+
 function updateAccountUI(user) {
   window.__stayUnknownCurrentUser = user || null;
 
@@ -1294,6 +1371,7 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
+    refreshOrders(user);
   } else {
     greeting.textContent = 'Welcome to Stay Unknown';
     subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
@@ -1302,6 +1380,7 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = '';
     headerGreeting.classList.remove('visible');
+    if(accountOrdersList)accountOrdersList.textContent='Sign in to see your order history.';
 
     emailInput.value = '';
     passwordInput.value = '';
