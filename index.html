@@ -1302,24 +1302,26 @@ function updateAccountUI(user) {
     passwordInput.value = '';
     nameInput.value = '';
     setAuthMode(false);
+          }
   }
-}
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const trf = urlParams.get('trxref') || urlParams.get('reference');
-    
-    if (trf) {
-        // Strip the parameters from the address bar immediately to stop the loop
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Run payment verification once
-        verifyPayment(trf);
-    }
-});
-
-onAuthStateChanged(auth, updateAccountUI);
-
-onAuthStateChanged(auth, updateAccountUI);
+  
+  window.PRODUCTS = typeof products !== 'undefined' ? products : [];
+  
+  window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const trf = urlParams.get('trxref') || urlParams.get('reference');
+      
+      if (trf) {
+          // Strip the parameters from the address bar immediately
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Run payment verification once
+          verifyPayment(trf);
+     }
+  });
+  
+  onAuthStateChanged(auth, updateAccountUI);
+  
 </script>
 </body>
 </html>
