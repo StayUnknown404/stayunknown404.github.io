@@ -9,109 +9,120 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--panel:#141414;--text:#ffffff;--muted:#888888;--line:#222222}*{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}body.intro-active{overflow:hidden}a{color:inherit;text-decoration:none}button,input{font:inherit}
+:root{--bg:#111;--panel:#181818;--text:#f3f3f0;--muted:#999;--line:#2b2b2b;--danger:#d9534f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+body.intro-active{overflow:hidden}
+a{color:inherit;text-decoration:none}
+button,input,textarea{font:inherit}
 
-/* 1. INTRO OVERLAY (STEADY CRT - NO FLICKER) */
+/* INTRO — intentionally static: CRT styling without flicker */
 #su404-intro{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#050505;overflow:hidden;opacity:1;transition:opacity .8s,visibility .8s;cursor:pointer}
 #su404-intro.hide{opacity:0;visibility:hidden;pointer-events:none}
-#su404-intro:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.03) 0 1px,transparent 1px 4px);opacity:.4;pointer-events:none}
+#su404-intro:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.055) 0 1px,transparent 1px 4px);opacity:.55;pointer-events:none}
+#su404-intro:after{content:"";position:absolute;inset:-20%;background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);opacity:.22;pointer-events:none}
 .crt-frame{width:min(90vw,500px);padding:40px 20px;display:flex;flex-direction:column;align-items:center;background:#080808;border-radius:8px;box-shadow:inset 0 0 100px 40px #000,0 0 30px #000;text-align:center;z-index:2}
 .crt-brand{font:clamp(20px,5vw,32px) 'VT323',monospace;letter-spacing:6px;color:#f3f3f0;margin-bottom:10px}
-.crt-404{font:clamp(90px,25vw,170px) Anton,sans-serif;line-height:.8;color:#e0e0e0;letter-spacing:4px;margin:10px 0;text-shadow:2px 0 rgba(255,0,0,.3),-2px 0 rgba(0,255,255,.3)}
+.crt-404{font:clamp(90px,25vw,170px) Anton,sans-serif;line-height:.8;color:#e0e0e0;letter-spacing:4px;margin:10px 0;text-shadow:2px 0 rgba(255,0,0,.4),-2px 0 rgba(0,255,255,.4)}
 .crt-tagline{font:clamp(18px,4.5vw,28px) 'VT323',monospace;letter-spacing:4px;color:#d0d0d0;margin-top:10px}
 .crt-welcome{font-size:clamp(11px,2.5vw,13px);letter-spacing:2px;color:#888;text-transform:uppercase;margin-top:20px;border-top:1px dashed #333;padding-top:15px;width:80%;font-weight:600}
 
-/* 2. HEADER & NAVIGATION MATCHING IMAGE EXACTLY */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:flex-start;justify-content:space-between;padding:24px 5% 18px;background:rgba(10,10,10,.85);backdrop-filter:blur(12px)}
-.brand-group{display:flex;flex-direction:column;gap:6px}
-.logo{font:32px Anton,sans-serif;letter-spacing:1px;line-height:1;color:#fff}
-.header-welcome-text{font-size:11px;letter-spacing:2.5px;font-weight:700;color:#999;text-transform:uppercase}
-.header-welcome-text span{color:#fff}
+/* HEADER */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:flex-start;justify-content:space-between;padding:24px 3.35% 22px;background:#090909;border-bottom:1px solid rgba(255,255,255,.035)}
+.brand-wrap{min-width:235px}
+.logo{font:clamp(24px,2.15vw,31px)/.95 Anton,sans-serif;letter-spacing:.5px;display:block;color:#f3f3f0}
+.header-greeting{display:none;margin-top:19px;font-size:11px;letter-spacing:3px;color:#b5b5b5;font-weight:600;text-transform:uppercase}
+.header-greeting.visible{display:block}
+.links{display:none}
+.nav-actions{display:flex;align-items:center;gap:16px;padding-top:0}
+.icon-btn{background:none;color:#fff;cursor:pointer}
+.profile-btn{width:42px;height:42px;border:0;border-radius:50%;display:grid;place-items:center;padding:0}
+.profile-btn svg{width:34px;height:34px;stroke:currentColor;fill:none;stroke-width:1.25}
+.cart-btn{position:relative;width:50px;height:50px;border:0;border-radius:0;display:grid;place-items:center;padding:0}
+.bag-mark{position:relative;width:32px;height:38px;border:1.35px solid #e7e7e7;border-radius:5px 5px 3px 3px;display:grid;place-items:center;margin-top:5px}
+.bag-mark:before{content:"";position:absolute;width:14px;height:10px;left:7px;top:-8px;border:1.35px solid #e7e7e7;border-bottom:0;border-radius:9px 9px 0 0}
+.bag-mark span{font:700 11px/1 Inter,Arial,sans-serif;letter-spacing:-.5px;color:#f3f3f0}
+.cart-count{position:absolute;top:-1px;right:-2px;min-width:25px;height:25px;padding:0 6px;border-radius:50%;background:#f3f3f0;color:#111;display:grid;place-items:center;font-size:11px;font-weight:700}
+.search-btn,.menu-btn{width:34px;height:50px;border:0;font-size:21px;display:grid;place-items:center;padding:0}
+.search-btn svg,.menu-btn svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.35}
+.menu-btn{font-size:25px}
 
-.nav-actions{display:flex;align-items:center;gap:22px;margin-top:2px}
-.icon-btn{background:none;border:none;color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;position:relative}
-.icon-btn svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-
-/* CUSTOM 404 BAG ICON */
-.bag-icon-wrap{position:relative;width:34px;height:38px;display:flex;align-items:center;justify-content:center}
-.bag-svg{width:32px!important;height:36px!important}
-.cart-count{position:absolute;top:-4px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:#fff;color:#000;display:grid;place-items:center;font-size:10px;font-weight:900;border:1px solid #0a0a0a}
-
-/* DRAWERS & PANELS */
-#side-drawer,#cart-panel{position:fixed;top:0;right:-100%;width:100%;max-width:420px;height:100vh;background:#0d0d0d;z-index:1000;transition:right .3s ease;padding:30px 25px;overflow-y:auto;border-left:1px solid #222}
+/* DRAWERS / PANELS */
+#side-drawer,#cart-panel{position:fixed;top:0;right:-100%;width:100%;max-width:420px;height:100vh;background:#0d0d0d;z-index:1000;transition:right .3s;padding:30px 25px;overflow-y:auto;border-left:1px solid #222}
 #side-drawer.open,#cart-panel.open{right:0}
 .drawer-header,.cart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
-.drawer-header .logo{font-size:24px}
+.drawer-header .logo{font-size:22px}
 .close-drawer,.cart-close{background:none;border:0;color:#fff;font-size:24px;cursor:pointer}
 .menu-nav-links{display:flex;flex-direction:column;gap:20px;font-weight:800;text-transform:uppercase;font-size:16px;border-bottom:1px solid #222;padding-bottom:20px}
 .menu-nav-item{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.menu-nav-item:hover{color:#aaa}
 .drawer-socials{border-top:1px solid #222;margin-top:20px;padding-top:20px;display:flex;flex-direction:column;gap:14px}
-.drawer-socials a{font-size:13px;font-weight:800;color:#bbb;display:flex;justify-content:space-between}
-
-/* 3. ACCOUNT MODAL */
+.drawer-socials a{font-size:13px;font-weight:800;color:#bbb}
 #account-modal{display:none;padding:15px;background:#151515;border-radius:6px;margin:10px 0;border:1px solid #222}
 #account-modal h3{font-size:16px;margin:0 0 5px}
 #account-modal p{font-size:12px;color:#888;margin:0 0 15px}
-.auth-input{width:100%;padding:10px;background:#222;border:1px solid #333;color:#fff;border-radius:4px;outline:none}
+.auth-input,.checkout-input,.checkout-textarea{width:100%;padding:10px;background:#222;border:1px solid #333;color:#fff;outline:0}
+.auth-input:focus,.checkout-input:focus,.checkout-textarea:focus{border-color:#777}
 .auth-label{display:block;font-size:10px;letter-spacing:1px;margin-bottom:4px;color:#888}
-.auth-field{margin-bottom:12px}
-.auth-main{width:100%;padding:11px;background:#fff;color:#000;border:0;cursor:pointer;font-weight:bold;margin-bottom:8px;border-radius:4px}
-.auth-alt{width:100%;padding:9px;background:#222;color:#fff;border:1px solid #444;margin-bottom:8px;cursor:pointer;border-radius:4px}
-.auth-links{display:flex;justify-content:space-between;font-size:11px;color:#ccc}
+.auth-field,.checkout-field{margin-bottom:10px}
+.auth-main{width:100%;padding:10px;background:#fff;color:#000;border:0;cursor:pointer;font-weight:bold;margin-bottom:8px}
+.auth-alt{width:100%;padding:8px;background:#222;color:#fff;border:1px solid #444;margin-bottom:8px;cursor:pointer}
+.auth-links{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#ccc}
 .auth-link{text-decoration:underline;cursor:pointer}
-#auth-status-msg{margin-top:10px;font-size:11px;font-weight:bold}
+#auth-status-msg{margin-top:10px;font-size:11px;font-weight:bold;line-height:1.5}
 #user-dashboard{display:none;margin-top:10px}
-
-/* 4. SEARCH PANEL */
-#search-panel{position:fixed;top:80px;left:0;right:0;z-index:900;background:#0d0d0d;border-bottom:1px solid #292929;padding:18px 5%;display:none}
-#search-panel.open{display:block}
-.search-wrap{max-width:900px;margin:auto;display:flex;gap:10px}
-.search-wrap input{flex:1;background:#171717;color:#fff;border:1px solid #333;padding:14px;outline:0;border-radius:4px}
-.search-close{background:#f3f3f0;color:#111;border:0;padding:0 18px;font-weight:800;cursor:pointer;border-radius:4px}
-.search-results{max-width:900px;margin:12px auto 0;color:#999;font-size:12px}
-
-/* 5. CART & CHECKOUT */
 #cart-items{margin-top:10px}
 .cart-empty{color:#888;font-size:13px;line-height:1.7}
-.cart-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #222}
-.cart-item-name{font-weight:700}
-.cart-remove{background:none;border:1px solid #444;color:#fff;padding:5px 8px;cursor:pointer;font-size:10px;border-radius:3px}
+.cart-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:15px 0;border-bottom:1px solid #222}
+.cart-item-main{min-width:0}
+.cart-item-name{font-weight:700;text-transform:uppercase;font-size:13px}
+.cart-item-price{color:#999;font-size:12px;margin-top:5px}
+.cart-item-actions{display:flex;align-items:center;gap:6px}
+.qty-btn,.cart-remove{background:none;border:1px solid #444;color:#fff;cursor:pointer;font-size:10px}
+.qty-btn{width:28px;height:28px}
+.cart-remove{padding:7px 8px}
+.cart-qty{min-width:20px;text-align:center;font-size:11px}
 .cart-total{display:flex;justify-content:space-between;margin-top:20px;font-weight:800}
-.checkout-btn{width:100%;margin-top:16px;padding:14px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer;border-radius:4px}
+.checkout-btn{width:100%;margin-top:16px;padding:14px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer}
+.checkout-btn:disabled{opacity:.45;cursor:not-allowed}
 
-/* HERO SECTION - SLEEK MATCHING SCREENSHOT */
-.hero{min-height:100vh;display:flex;align-items:flex-end;padding:0 6% 80px;background:radial-gradient(ellipse at 50% 30%, #202020 0%, #0a0a0a 70%)}
-.hero-inner{max-width:900px;width:100%}
-.eyebrow{text-transform:uppercase;letter-spacing:4px;font-size:12px;color:#aaa;font-weight:500;margin-bottom:28px}
-.hero h1{font:clamp(75px,18vw,180px)/.80 Anton,sans-serif;margin:0 0 28px;text-transform:uppercase;letter-spacing:1px}
-.hero h1 .text-white{color:#ffffff;display:block}
-.hero h1 .text-gray{color:#777777;display:block}
-.hero p{max-width:540px;color:#b0b0b0;line-height:1.6;font-size:16px;margin:0 0 32px}
+/* SEARCH */
+#search-panel{position:fixed;top:79px;left:0;right:0;z-index:900;background:#0d0d0d;border-bottom:1px solid #292929;padding:18px 5%;display:none}
+#search-panel.open{display:block}
+.search-wrap{max-width:900px;margin:auto;display:flex;gap:10px}
+.search-wrap input{flex:1;background:#171717;color:#fff;border:1px solid #333;padding:14px;outline:0}
+.search-wrap input:focus{border-color:#777}
+.search-close{background:#f3f3f0;color:#111;border:0;padding:0 18px;font-weight:800;cursor:pointer}
+.search-results{max-width:900px;margin:12px auto 0;color:#999;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
 
-/* OUTLINED CTA BUTTON MATCHING SCREENSHOT */
-.btn-outline{display:inline-block;padding:16px 28px;background:transparent;color:#ffffff;border:1px solid rgba(255,255,255,0.7);text-transform:uppercase;font-weight:700;font-size:11px;letter-spacing:2px;border-radius:0;transition:all .2s ease}
-.btn-outline:hover{background:#ffffff;color:#000000;border-color:#ffffff}
+/* MAIN */
+.hero{min-height:100svh;display:grid;align-items:end;padding:145px 5.8% 72px;background:radial-gradient(circle at 76% 31%,#2a2a2a 0,#1b1b1b 22%,#131313 48%,#111 72%)}
+.hero-inner{max-width:1120px;width:100%;padding-bottom:0}
+.eyebrow{text-transform:uppercase;letter-spacing:5px;font-size:11px;color:#aaa;margin-bottom:25px}
+.hero h1{font:clamp(76px,13.8vw,178px)/.72 Anton,sans-serif;margin:0 0 30px;text-transform:uppercase;letter-spacing:-2.5px;max-width:900px}
+.hero h1 span{display:block;color:#888;margin-top:-.02em;margin-left:0}
+.hero p{max-width:560px;color:#aaa;line-height:1.75;font-size:16px;margin:0}
+.btn{display:inline-flex;margin-top:31px;padding:16px 30px;border:1px solid #666;background:transparent;color:#f3f3f0;text-transform:uppercase;font-weight:600;font-size:12px;letter-spacing:2px;align-items:center;justify-content:center}
+.btn:hover{background:#f3f3f0;color:#111}
 
-/* 6. LATEST DROP (SWIPABLE CAROUSEL) */
-.section{padding:90px 7%;max-width:1300px;margin:auto}
+/* SHOP */
+.section{padding:100px 6%;max-width:1380px;margin:auto}
 .section-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:30px}
 .section h2{font:46px Anton,sans-serif;margin:0;text-transform:uppercase}
 .section-head span{color:var(--muted);font-size:12px}
-
-.grid{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:15px;scrollbar-width:none;-ms-overflow-style:none}
-.grid::-webkit-scrollbar{display:none}
-.product{flex:0 0 85%;min-height:430px;position:relative;overflow:hidden;background:var(--panel);scroll-snap-align:start;border-radius:4px}
-@media(min-width:768px){.product{flex:0 0 calc(33.333% - 11px)}}
-
-.product .image{height:330px;background:linear-gradient(135deg,#2b2b2b,#111);display:grid;place-items:center;font:54px Anton;color:#777;letter-spacing:3px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.product{background:#171717;min-height:470px;position:relative;overflow:hidden;border:1px solid #222}
+.product .image{height:350px;background:#141414;display:grid;place-items:center;font:54px Anton;color:#666;letter-spacing:3px}
 .product .info{padding:18px}
 .product .name{font-weight:800;text-transform:uppercase}
 .product .price{color:#999;margin-top:6px;font-size:13px}
-.tag{position:absolute;top:14px;left:14px;background:#f3f3f0;color:#111;padding:7px 9px;font-size:10px;font-weight:800;border-radius:2px}
-.add-cart{margin-top:12px;padding:9px 12px;background:#f3f3f0;color:#111;border:0;font-size:10px;font-weight:800;cursor:pointer;text-transform:uppercase;border-radius:3px}
+.tag{position:absolute;top:14px;left:14px;background:#f3f3f0;color:#111;padding:7px 9px;font-size:10px;font-weight:800}
+.add-cart{margin-top:12px;padding:9px 12px;background:#f3f3f0;color:#111;border:0;font-size:10px;font-weight:800;cursor:pointer;text-transform:uppercase}
+.add-cart:active{transform:translateY(1px)}
+.product.search-hidden{display:none!important}
 
-/* BRAND SECTIONS & FOOTER */
+/* OTHER SECTIONS */
 .statement{background:#e8e8e3;color:#111;text-align:center;padding:110px 7%}
 .statement h2{font:clamp(55px,11vw,135px)/.85 Anton;margin:0;text-transform:uppercase}
 .statement p{margin:28px auto 0;max-width:520px;line-height:1.7;color:#444}
@@ -123,13 +134,73 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,san
 .social-link{display:flex!important;justify-content:space-between}
 footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#777;font-size:11px;text-transform:uppercase}
 
-@media(max-width:700px){.about,.contact{grid-template-columns:1fr}.section{padding:70px 5%}.hero{padding-left:6%;padding-right:6%;padding-bottom:60px}footer{flex-direction:column;gap:12px}}
-@media(max-width:460px){.hero h1{font-size:80px}}
+/* CHECKOUT */
+#checkout-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+#checkout-overlay.open{display:flex}
+.checkout-modal{width:min(100%,760px);max-height:92vh;overflow:auto;background:#0d0d0d;border:1px solid #292929;padding:26px}
+.checkout-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding-bottom:18px;margin-bottom:20px}
+.checkout-header h2{font:32px Anton;margin:0;text-transform:uppercase}
+.checkout-close{background:none;border:0;color:#fff;font-size:24px;cursor:pointer}
+.checkout-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.checkout-summary{border:1px solid #222;padding:16px;background:#111}
+.checkout-summary h3{margin:0 0 15px;font-size:12px;letter-spacing:2px}
+.checkout-summary-row{display:flex;justify-content:space-between;gap:15px;padding:9px 0;border-bottom:1px solid #222;font-size:12px}
+.checkout-summary-total{display:flex;justify-content:space-between;margin-top:15px;font-weight:800}
+.checkout-note{font-size:11px;color:#777;line-height:1.6;margin-top:15px}
+.checkout-submit{width:100%;padding:14px;margin-top:8px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer}
+.checkout-status{font-size:12px;line-height:1.6;margin-top:12px}
+.checkout-success{border:1px solid #444;padding:14px;margin-top:12px;color:#ddd}
+.checkout-textarea{min-height:90px;resize:vertical}
+
+/* RESPONSIVE */
+@media(max-width:850px){.brand-wrap{min-width:0}.header-greeting{font-size:10px;letter-spacing:2.5px}.section{padding-left:5%;padding-right:5%}}
+@media(max-width:700px){
+.grid{grid-template-columns:1fr}
+.product{min-height:390px}
+.product .image{height:300px}
+.about,.contact{grid-template-columns:1fr}
+.section{padding-top:76px;padding-bottom:76px}
+.hero{padding:145px 5.8% 64px;min-height:100svh}
+.hero h1{font-size:clamp(78px,17vw,122px);line-height:.72;letter-spacing:-2px;margin-bottom:28px}
+.hero p{font-size:15px;max-width:500px}
+footer{flex-direction:column;gap:12px}
+.nav{padding:24px 3.5% 22px}
+.logo{font-size:24px}
+.nav-actions{gap:11px}
+.profile-btn{display:grid}
+}
+@media(max-width:520px){
+.nav-actions{gap:7px}
+.profile-btn,.cart-btn,.search-btn,.menu-btn{width:34px;height:42px}
+.profile-btn svg{width:32px;height:32px}
+.bag-mark{width:29px;height:35px}
+.bag-mark:before{left:6px;width:14px}
+.cart-count{top:-3px;right:-4px}
+.search-btn svg,.menu-btn svg{width:28px;height:28px}
+.header-greeting{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin-top:17px}
+.search-wrap{flex-direction:column}
+.search-close{padding:11px}
+.checkout-grid{grid-template-columns:1fr}
+.checkout-modal{padding:18px}
+}
+@media(max-width:420px){
+.nav{padding-top:22px;padding-bottom:20px}
+.nav-actions{gap:3px}
+.brand-wrap{max-width:175px}
+.logo{font-size:22px}
+.header-greeting{font-size:9px;letter-spacing:2px}
+.hero{padding-left:5.8%;padding-right:5.8%;padding-bottom:56px}
+.hero h1{font-size:clamp(72px,19vw,104px)}
+.eyebrow{font-size:10px;letter-spacing:4px;margin-bottom:22px}
+.hero p{font-size:14px}
+.btn{width:auto;padding:15px 24px}
+.product .image{height:290px}
+}
 </style>
 </head>
 <body class="intro-active">
 
-<!-- 1. CRT INTRO (STEADY 4-SEC / DISMISS ON CLICK) -->
+<!-- 4-second intro. Click/tap anywhere to dismiss. -->
 <div id="su404-intro" aria-label="STAYUNKNOWN intro">
   <div class="crt-frame">
     <div class="crt-brand">STAYUNKNOWN</div>
@@ -139,85 +210,78 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   </div>
 </div>
 
-<!-- 2. NAVIGATION HEADER (MATCHING SCREENSHOT) -->
 <nav class="nav">
-  <div class="brand-group">
+  <div class="brand-wrap">
     <a class="logo" href="#">STAYUNKNOWN</a>
-    <div class="header-welcome-text" id="header-welcome-text" style="display:none;">
-      WELCOME, <span id="header-user-name">GUEST</span>
-    </div>
+    <div class="header-greeting" id="header-user-greeting" aria-live="polite"></div>
+  </div>
+
+  <div class="links">
+    <a href="#shop">Shop</a>
+    <a href="#story">Story</a>
+    <a href="#contact">Contact</a>
   </div>
 
   <div class="nav-actions">
-    <!-- PROFILE ICON -->
-    <button class="icon-btn" id="profile-top-btn" aria-label="Account">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+    <button class="icon-btn profile-btn" id="profile-top-btn" aria-label="Account" title="Account">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.9-3.2 3.2-5 7-5s6.1 1.8 7 5"/><circle cx="12" cy="12" r="10"/></svg>
     </button>
-    
-    <!-- 404 BAG ICON WITH FLOATING BADGE -->
-    <button class="icon-btn" id="cart-btn" aria-label="Cart">
-      <div class="bag-icon-wrap">
-        <svg class="bag-svg" viewBox="0 0 36 40">
-          <path d="M8 12 L28 12 L30 36 L6 36 Z" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linejoin="round"/>
-          <path d="M13 12 C13 7, 23 7, 23 12" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
-          <text x="18" y="27" font-family="Inter, sans-serif" font-weight="900" font-size="9" fill="#ffffff" text-anchor="middle">404</text>
-        </svg>
-        <span class="cart-count" id="cart-count">0</span>
-      </div>
+    <button class="icon-btn cart-btn" id="cart-btn" aria-label="404 Bag" title="404 Bag">
+      <span class="bag-mark" aria-hidden="true"><span>404</span></span>
+      <span class="cart-count" id="cart-count">0</span>
     </button>
-
-    <!-- SEARCH ICON -->
-    <button class="icon-btn" id="search-btn" aria-label="Search">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    <button class="icon-btn search-btn" id="search-btn" aria-label="Search" title="Search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
     </button>
-
-    <!-- MENU HAMBURGER ICON -->
-    <button class="icon-btn" id="open-menu-btn" aria-label="Menu">
-      <svg viewBox="0 0 24 24"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
+    <button class="icon-btn menu-btn" id="open-menu-btn" aria-label="Menu" title="Menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
   </div>
 </nav>
 
-<!-- 4. SEARCH PANEL -->
-<div id="search-panel">
+<div id="search-panel" aria-label="Product search">
   <div class="search-wrap">
-    <input id="search-input" type="search" placeholder="SEARCH STAYUNKNOWN..." autocomplete="off">
+    <input id="search-input" type="search" placeholder="SEARCH STAYUNKNOWN..." autocomplete="off" aria-label="Search products">
     <button class="search-close" id="search-close">CLOSE</button>
   </div>
   <div class="search-results" id="search-results">Search products by name.</div>
 </div>
 
-<!-- SIDE DRAWER & ACCOUNT MENU -->
-<div id="side-drawer">
+<div id="side-drawer" aria-label="Site menu">
   <div class="drawer-header">
     <span class="logo">STAYUNKNOWN</span>
-    <button class="close-drawer" id="close-menu-btn">✕</button>
+    <button class="close-drawer" id="close-menu-btn" aria-label="Close menu">✕</button>
   </div>
+
   <div class="menu-nav-links">
     <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>NEW DROP</span><span>↗</span></a>
     <a class="menu-nav-item" href="#shop" onclick="closeDrawer()"><span>SHOP</span><span>+</span></a>
-    <div class="menu-nav-item" id="nav-account-toggle"><span>ACCOUNT</span><span>↗</span></div>
 
-    <!-- 3. FIREBASE ACCOUNT SYSTEM -->
+    <div class="menu-nav-item" id="nav-account-toggle" role="button" tabindex="0">
+      <span>ACCOUNT</span><span>↗</span>
+    </div>
+
     <div id="account-modal">
       <h3 id="welcome-greeting">Welcome to Stay Unknown</h3>
       <p id="account-subtext">Sign in to save your details or continue browsing as a guest.</p>
-      
+
       <div id="auth-box">
         <div id="name-field" class="auth-field" style="display:none">
-          <label class="auth-label">USERNAME</label>
-          <input id="user-name" class="auth-input" placeholder="Your username">
+          <label class="auth-label" for="user-name">USERNAME</label>
+          <input id="user-name" class="auth-input" placeholder="Your username" autocomplete="username">
         </div>
         <div class="auth-field">
-          <label class="auth-label">EMAIL</label>
-          <input type="email" id="user-email" class="auth-input" placeholder="you@example.com">
+          <label class="auth-label" for="user-email">EMAIL</label>
+          <input type="email" id="user-email" class="auth-input" placeholder="you@example.com" autocomplete="email">
         </div>
         <div class="auth-field">
-          <label class="auth-label">PASSWORD</label>
-          <input type="password" id="user-password" class="auth-input" placeholder="••••••••">
+          <label class="auth-label" for="user-password">PASSWORD</label>
+          <input type="password" id="user-password" class="auth-input" placeholder="••••••••" autocomplete="current-password">
         </div>
+
         <button id="btn-login" class="auth-main">SIGN IN</button>
         <button id="btn-signup" class="auth-main" style="display:none">CREATE ACCOUNT</button>
+
         <div class="auth-links">
           <span id="toggle-auth-mode" class="auth-link">Need an account? Sign Up</span>
           <span id="forgot-password-link" class="auth-link">Forgot Password?</span>
@@ -227,9 +291,9 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
       <div id="user-dashboard">
         <button id="btn-reset-pw" class="auth-alt">Send Password Reset Link</button>
         <button id="btn-signout" class="auth-alt">Sign Out</button>
-        <button id="btn-delete-acct" style="width:100%;padding:9px;background:#8b0000;color:#fff;border:0;margin-top:10px;cursor:pointer;border-radius:4px;font-weight:bold;">Delete Account</button>
+        <button id="btn-delete-acct" style="width:100%;padding:8px;background:#d9534f;color:#fff;border:0;margin-top:10px;cursor:pointer">Delete Account</button>
       </div>
-      <div id="auth-status-msg"></div>
+      <div id="auth-status-msg" aria-live="polite"></div>
     </div>
 
     <div class="menu-nav-item" id="menu-cart-btn"><span>404 BAG</span><span id="menu-cart-count">0</span></div>
@@ -237,72 +301,103 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
     <a class="menu-nav-item" href="#contact" onclick="closeDrawer()"><span>CONTACT</span><span>↗</span></a>
   </div>
 
-  <!-- 7. SOCIAL LINKS -->
   <div class="drawer-socials">
-    <a href="https://x.com/stayunknown404_?s=11" target="_blank" rel="noopener noreferrer"><span>X / TWITTER</span><span>↗</span></a>
-    <a href="https://www.tiktok.com/@stayunknown.404" target="_blank" rel="noopener noreferrer"><span>TIKTOK</span><span>↗</span></a>
+    <a href="https://x.com/stayunknown404_?s=11" target="_blank" rel="noopener noreferrer">X / TWITTER ↗</a>
+    <a href="https://www.tiktok.com/@stayunknown.404" target="_blank" rel="noopener noreferrer">TIKTOK ↗</a>
   </div>
 </div>
 
-<!-- 5. SHOPPING CART PANEL -->
-<div id="cart-panel">
+<div id="cart-panel" aria-label="404 Bag">
   <div class="cart-header">
     <strong>404 BAG</strong>
-    <button class="cart-close" id="cart-close">✕</button>
+    <button class="cart-close" id="cart-close" aria-label="Close bag">✕</button>
   </div>
-  <div id="cart-items">
-    <div class="cart-empty">Your bag is empty.</div>
-  </div>
-  <div class="cart-total">
-    <span>TOTAL</span>
-    <span id="cart-total">₦0</span>
-  </div>
-  <button class="checkout-btn" id="checkout-btn">CHECKOUT (GUEST READY)</button>
+  <div id="cart-items"><div class="cart-empty">Your bag is empty.</div></div>
+  <div class="cart-total"><span>TOTAL</span><span id="cart-total">₦0</span></div>
+  <button class="checkout-btn" id="checkout-btn" disabled>CHECKOUT</button>
 </div>
 
-<!-- HERO SECTION MATCHING SCREENSHOT EXACTLY -->
+<!-- Guest checkout. No Firebase account is required. -->
+<div id="checkout-overlay" aria-hidden="true">
+  <div class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+    <div class="checkout-header">
+      <h2 id="checkout-title">Checkout</h2>
+      <button class="checkout-close" id="checkout-close" aria-label="Close checkout">✕</button>
+    </div>
+
+    <div class="checkout-grid">
+      <form id="checkout-form">
+        <div class="checkout-field">
+          <label class="auth-label" for="checkout-name">FULL NAME</label>
+          <input id="checkout-name" class="checkout-input" required autocomplete="name">
+        </div>
+        <div class="checkout-field">
+          <label class="auth-label" for="checkout-email">EMAIL</label>
+          <input id="checkout-email" class="checkout-input" type="email" required autocomplete="email">
+        </div>
+        <div class="checkout-field">
+          <label class="auth-label" for="checkout-phone">PHONE</label>
+          <input id="checkout-phone" class="checkout-input" type="tel" required autocomplete="tel">
+        </div>
+        <div class="checkout-field">
+          <label class="auth-label" for="checkout-address">DELIVERY ADDRESS</label>
+          <textarea id="checkout-address" class="checkout-textarea" required autocomplete="street-address"></textarea>
+        </div>
+        <div class="checkout-field">
+          <label class="auth-label" for="checkout-note">ORDER NOTE (OPTIONAL)</label>
+          <textarea id="checkout-note" class="checkout-textarea"></textarea>
+        </div>
+        <button class="checkout-submit" type="submit">CONTINUE AS GUEST</button>
+        <div class="checkout-status" id="checkout-status" aria-live="polite"></div>
+      </form>
+
+      <div class="checkout-summary">
+        <h3>ORDER SUMMARY</h3>
+        <div id="checkout-summary-items"></div>
+        <div class="checkout-summary-total"><span>TOTAL</span><span id="checkout-summary-total">₦0</span></div>
+        <p class="checkout-note">Account creation is optional. You can complete this checkout as a guest.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <header class="hero">
   <div class="hero-inner">
-    <div class="eyebrow">INDEPENDENT STREETWEAR · LAGOS · WORLDWIDE</div>
-    <h1>
-      <span class="text-white">MOVE</span>
-      <span class="text-gray">IN SILENCE.</span>
-    </h1>
+    <div class="eyebrow">Independent streetwear · Lagos · Worldwide</div>
+    <h1>Move<br><span>In Silence.</span></h1>
     <p>STAYUNKNOWN is built around individuality, movement and quiet confidence.</p>
-    <a class="btn-outline" href="#shop">SHOP THE DROP</a>
+    <a class="btn" href="#shop">Shop the drop</a>
   </div>
 </header>
 
-<!-- 6. LATEST DROP (SWIPABLE SLIDESHOW) -->
 <section class="section" id="shop">
-  <div class="section-head">
-    <h2>Latest Drop</h2>
-    <span>SWIPE TO EXPLORE</span>
-  </div>
+  <div class="section-head"><h2>Latest Drop</h2><span>01 / 03</span></div>
   <div class="grid" id="product-grid">
-    <article class="product" data-search="unknown oversized tee tee shirt">
+    <article class="product" data-search="unknown oversized tee tee shirt top">
       <div class="tag">NEW</div>
       <div class="image">SU / 01</div>
       <div class="info">
         <div class="name">Unknown Oversized Tee</div>
-        <div class="price">₦ —</div>
-        <button class="add-cart" data-product="Unknown Oversized Tee">ADD TO BAG</button>
+        <div class="price">₦35,000</div>
+        <button class="add-cart" data-product="Unknown Oversized Tee" data-price="35000">ADD TO BAG</button>
       </div>
     </article>
+
     <article class="product" data-search="silence hoodie hoodie sweatshirt">
       <div class="image">SU / 02</div>
       <div class="info">
         <div class="name">Silence Hoodie</div>
-        <div class="price">₦ —</div>
-        <button class="add-cart" data-product="Silence Hoodie">ADD TO BAG</button>
+        <div class="price">₦65,000</div>
+        <button class="add-cart" data-product="Silence Hoodie" data-price="65000">ADD TO BAG</button>
       </div>
     </article>
-    <article class="product" data-search="unknown track pants pants sports">
+
+    <article class="product" data-search="unknown track pants pants trousers track">
       <div class="image">SU / 03</div>
       <div class="info">
         <div class="name">Unknown Track Pants</div>
-        <div class="price">₦ —</div>
-        <button class="add-cart" data-product="Unknown Track Pants">ADD TO BAG</button>
+        <div class="price">₦55,000</div>
+        <button class="add-cart" data-product="Unknown Track Pants" data-price="55000">ADD TO BAG</button>
       </div>
     </article>
   </div>
@@ -321,11 +416,10 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   <div>
     <p>STAYUNKNOWN is a Nigerian streetwear label created around individuality, movement and quiet confidence.</p>
     <p>From everyday casual pieces to sport-inspired silhouettes, every collection is designed to feel bold without trying too hard.</p>
-    <a class="btn-outline" href="#contact" style="color:#000; border-color:#000;">Join the movement</a>
+    <a class="btn" href="#contact">Join the movement</a>
   </div>
 </section>
 
-<!-- CONTACT & OFFICIAL SOCIAL LINKS -->
 <section class="section contact" id="contact">
   <div>
     <div class="eyebrow">Stay connected</div>
@@ -333,12 +427,8 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   </div>
   <div>
     <a href="mailto:hello@stayunknown.com">Email ↗</a>
-    <a class="social-link" href="https://x.com/stayunknown404_?s=11" target="_blank" rel="noopener noreferrer">
-      <span>X / Twitter</span><span>↗</span>
-    </a>
-    <a class="social-link" href="https://www.tiktok.com/@stayunknown.404" target="_blank" rel="noopener noreferrer">
-      <span>TikTok</span><span>↗</span>
-    </a>
+    <a class="social-link" href="https://x.com/stayunknown404_?s=11" target="_blank" rel="noopener noreferrer"><span>X / Twitter</span><span>↗</span></a>
+    <a class="social-link" href="https://www.tiktok.com/@stayunknown.404" target="_blank" rel="noopener noreferrer"><span>TikTok</span><span>↗</span></a>
   </div>
 </section>
 
@@ -347,204 +437,543 @@ footer{padding:35px 7%;border-top:1px solid var(--line);display:flex;justify-con
   <span>MOVE IN SILENCE</span>
 </footer>
 
-<!-- SCRIPT CONTROLS -->
 <script>
-// 1. CRT INTRO (4s Auto Hide / Click Hide)
-(()=>{
+(() => {
+  'use strict';
+
+  /* ---------- INTRO ---------- */
   const intro = document.getElementById('su404-intro');
-  const dismiss = () => {
-    if (intro.classList.contains('hide')) return;
+  let introClosed = false;
+
+  function dismissIntro() {
+    if (introClosed || !intro) return;
+    introClosed = true;
     intro.classList.add('hide');
     document.body.classList.remove('intro-active');
-    setTimeout(() => intro.remove(), 900);
-  };
-  intro.addEventListener('click', dismiss);
-  setTimeout(dismiss, 4000);
-})();
-
-// UI NAVIGATION & DRAWERS
-const d = document.getElementById('side-drawer');
-const c = document.getElementById('cart-panel');
-const s = document.getElementById('search-panel');
-
-document.getElementById('open-menu-btn').onclick = () => d.classList.add('open');
-document.getElementById('close-menu-btn').onclick = () => d.classList.remove('open');
-window.closeDrawer = () => d.classList.remove('open');
-
-document.getElementById('cart-btn').onclick = () => c.classList.add('open');
-document.getElementById('cart-close').onclick = () => c.classList.remove('open');
-document.getElementById('menu-cart-btn').onclick = () => { d.classList.remove('open'); c.classList.add('open'); };
-
-document.getElementById('profile-top-btn').onclick = () => {
-  d.classList.add('open');
-  document.getElementById('account-modal').style.display = 'block';
-};
-
-// 4. SEARCH FUNCTIONALITY
-document.getElementById('search-btn').onclick = () => {
-  s.classList.toggle('open');
-  if (s.classList.contains('open')) document.getElementById('search-input').focus();
-};
-document.getElementById('search-close').onclick = () => {
-  s.classList.remove('open');
-  document.getElementById('search-input').value = '';
-  filterProducts('');
-};
-
-const ps = [...document.querySelectorAll('.product')];
-function filterProducts(q) {
-  q = q.trim().toLowerCase();
-  let n = 0;
-  ps.forEach(p => {
-    let ok = !q || (p.dataset.search || '').includes(q) || p.querySelector('.name').textContent.toLowerCase().includes(q);
-    p.style.display = ok ? '' : 'none';
-    if (ok) n++;
-  });
-  document.getElementById('search-results').textContent = q ? (n ? `${n} result${n === 1 ? '' : 's'} found.` : 'No products found.') : 'Search products by name.';
-}
-document.getElementById('search-input').oninput = e => filterProducts(e.target.value);
-
-// 5. CART SYSTEM & GUEST CHECKOUT
-let cart = [];
-function renderCart() {
-  const box = document.getElementById('cart-items');
-  const n = cart.length;
-  document.getElementById('cart-count').textContent = n;
-  document.getElementById('menu-cart-count').textContent = n;
-  if (!n) {
-    box.innerHTML = '<div class="cart-empty">Your bag is empty.</div>';
-  } else {
-    box.innerHTML = cart.map((x, i) => `<div class="cart-item"><div class="cart-item-name">${x}</div><button class="cart-remove" data-i="${i}">REMOVE</button></div>`).join('');
-    box.querySelectorAll('.cart-remove').forEach(b => b.onclick = () => {
-      cart.splice(+b.dataset.i, 1);
-      renderCart();
-    });
+    window.setTimeout(() => intro.remove(), 900);
   }
-  document.getElementById('cart-total').textContent = '₦—';
-}
 
-document.querySelectorAll('.add-cart').forEach(b => b.onclick = () => {
-  cart.push(b.dataset.product);
+  intro.addEventListener('click', dismissIntro);
+  window.setTimeout(dismissIntro, 4000);
+
+  /* ---------- UI REFERENCES ---------- */
+  const drawer = document.getElementById('side-drawer');
+  const cartPanel = document.getElementById('cart-panel');
+  const searchPanel = document.getElementById('search-panel');
+  const searchInput = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
+  const productCards = [...document.querySelectorAll('.product')];
+
+  const money = value => `₦${Number(value).toLocaleString('en-NG')}`;
+
+  function openDrawer() {
+    drawer.classList.add('open');
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('open');
+  }
+  window.closeDrawer = closeDrawer;
+
+  function openCart() {
+    closeDrawer();
+    cartPanel.classList.add('open');
+  }
+
+  function closeCart() {
+    cartPanel.classList.remove('open');
+  }
+
+  document.getElementById('open-menu-btn').addEventListener('click', openDrawer);
+  document.getElementById('close-menu-btn').addEventListener('click', closeDrawer);
+  document.getElementById('cart-btn').addEventListener('click', openCart);
+  document.getElementById('cart-close').addEventListener('click', closeCart);
+  document.getElementById('menu-cart-btn').addEventListener('click', openCart);
+
+  document.getElementById('profile-top-btn').addEventListener('click', () => {
+    openDrawer();
+    const account = document.getElementById('account-modal');
+    account.style.display = 'block';
+  });
+
+  /* ---------- SEARCH ---------- */
+  function normalize(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function filterProducts(query) {
+    const q = normalize(query);
+    let matches = 0;
+
+    productCards.forEach(card => {
+      const searchable = normalize(
+        `${card.dataset.search || ''} ${card.querySelector('.name')?.textContent || ''}`
+      );
+
+      /*
+       * Match the whole search string or any search word.
+       * This keeps searches such as "hoodie", "tee" and "pants"
+       * immediately useful on mobile and desktop.
+       */
+      const words = q.split(/\s+/).filter(Boolean);
+      const matched = !q || words.every(word => searchable.includes(word));
+
+      card.classList.toggle('search-hidden', !matched);
+      if (matched) matches++;
+    });
+
+    if (!q) {
+      searchResults.textContent = 'Search products by name.';
+    } else if (matches) {
+      searchResults.textContent = `${matches} RESULT${matches === 1 ? '' : 'S'} FOUND.`;
+      document.getElementById('shop').scrollIntoView({behavior:'smooth', block:'start'});
+    } else {
+      searchResults.textContent = 'NO PRODUCTS FOUND.';
+    }
+  }
+
+  document.getElementById('search-btn').addEventListener('click', () => {
+    const open = searchPanel.classList.toggle('open');
+    if (open) {
+      searchInput.focus();
+    } else {
+      searchInput.value = '';
+      filterProducts('');
+    }
+  });
+
+  document.getElementById('search-close').addEventListener('click', () => {
+    searchPanel.classList.remove('open');
+    searchInput.value = '';
+    filterProducts('');
+  });
+
+  searchInput.addEventListener('input', event => filterProducts(event.target.value));
+
+  /* ---------- CART ---------- */
+  let cart = [];
+
+  function cartQuantity() {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  function cartSubtotal() {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#039;'
+    }[char]));
+  }
+
+  function renderCart() {
+    const box = document.getElementById('cart-items');
+    const count = cartQuantity();
+    const subtotal = cartSubtotal();
+
+    document.getElementById('cart-count').textContent = count;
+    document.getElementById('menu-cart-count').textContent = count;
+    document.getElementById('cart-total').textContent = money(subtotal);
+
+    if (!cart.length) {
+      box.innerHTML = '<div class="cart-empty">Your bag is empty.</div>';
+      document.getElementById('checkout-btn').disabled = true;
+      renderCheckoutSummary();
+      return;
+    }
+
+    box.innerHTML = cart.map((item, index) => `
+      <div class="cart-item">
+        <div class="cart-item-main">
+          <div class="cart-item-name">${escapeHTML(item.name)}</div>
+          <div class="cart-item-price">${money(item.price)} each · ${money(item.price * item.quantity)}</div>
+        </div>
+        <div class="cart-item-actions">
+          <button class="qty-btn" data-action="minus" data-index="${index}" aria-label="Decrease quantity">−</button>
+          <span class="cart-qty">${item.quantity}</span>
+          <button class="qty-btn" data-action="plus" data-index="${index}" aria-label="Increase quantity">+</button>
+          <button class="cart-remove" data-action="remove" data-index="${index}">REMOVE</button>
+        </div>
+      </div>
+    `).join('');
+
+    box.querySelectorAll('[data-action]').forEach(button => {
+      button.addEventListener('click', () => {
+        const index = Number(button.dataset.index);
+        const action = button.dataset.action;
+
+        if (action === 'plus') cart[index].quantity += 1;
+        if (action === 'minus') {
+          cart[index].quantity -= 1;
+          if (cart[index].quantity <= 0) cart.splice(index, 1);
+        }
+        if (action === 'remove') cart.splice(index, 1);
+
+        renderCart();
+      });
+    });
+
+    document.getElementById('checkout-btn').disabled = false;
+    renderCheckoutSummary();
+  }
+
+  document.querySelectorAll('.add-cart').forEach(button => {
+    button.addEventListener('click', () => {
+      const name = button.dataset.product;
+      const price = Number(button.dataset.price);
+      const existing = cart.find(item => item.name === name);
+
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({name, price, quantity:1});
+      }
+
+      renderCart();
+      openCart();
+    });
+  });
+
+  /* ---------- CHECKOUT / GUEST CHECKOUT ---------- */
+  const checkoutOverlay = document.getElementById('checkout-overlay');
+  const checkoutForm = document.getElementById('checkout-form');
+  const checkoutStatus = document.getElementById('checkout-status');
+
+  function renderCheckoutSummary() {
+    const summary = document.getElementById('checkout-summary-items');
+    const total = document.getElementById('checkout-summary-total');
+
+    if (!cart.length) {
+      summary.innerHTML = '<div class="checkout-note">Your bag is empty.</div>';
+      total.textContent = money(0);
+      return;
+    }
+
+    summary.innerHTML = cart.map(item => `
+      <div class="checkout-summary-row">
+        <span>${escapeHTML(item.name)} × ${item.quantity}</span>
+        <span>${money(item.price * item.quantity)}</span>
+      </div>
+    `).join('');
+
+    total.textContent = money(cartSubtotal());
+  }
+
+  function openCheckout() {
+    if (!cart.length) {
+      checkoutStatus.textContent = 'Your 404 Bag is empty.';
+      return;
+    }
+
+    closeCart();
+    checkoutStatus.textContent = '';
+    checkoutOverlay.classList.add('open');
+    checkoutOverlay.setAttribute('aria-hidden', 'false');
+    renderCheckoutSummary();
+
+    /* If the Firebase user is signed in, prefill only convenience fields.
+       Checkout remains fully available to guests. */
+    const currentUser = window.__stayUnknownCurrentUser;
+    if (currentUser) {
+      if (!document.getElementById('checkout-email').value) {
+        document.getElementById('checkout-email').value = currentUser.email || '';
+      }
+      if (!document.getElementById('checkout-name').value) {
+        document.getElementById('checkout-name').value = currentUser.displayName || '';
+      }
+    }
+
+    document.getElementById('checkout-name').focus();
+  }
+
+  function closeCheckout() {
+    checkoutOverlay.classList.remove('open');
+    checkoutOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  document.getElementById('checkout-btn').addEventListener('click', openCheckout);
+  document.getElementById('checkout-close').addEventListener('click', closeCheckout);
+
+  checkoutOverlay.addEventListener('click', event => {
+    if (event.target === checkoutOverlay) closeCheckout();
+  });
+
+  checkoutForm.addEventListener('submit', event => {
+    event.preventDefault();
+
+    if (!cart.length) {
+      checkoutStatus.textContent = 'Your 404 Bag is empty.';
+      return;
+    }
+
+    const orderId = `SU-${Date.now().toString().slice(-8)}`;
+    const customerName = document.getElementById('checkout-name').value.trim();
+
+    /*
+     * The original file has no payment/order backend, so this completes the
+     * guest checkout flow without pretending a payment gateway exists.
+     * The order details are retained locally for the confirmation shown here.
+     */
+    const order = {
+      id: orderId,
+      customer: customerName,
+      email: document.getElementById('checkout-email').value.trim(),
+      phone: document.getElementById('checkout-phone').value.trim(),
+      address: document.getElementById('checkout-address').value.trim(),
+      note: document.getElementById('checkout-note').value.trim(),
+      items: cart.map(item => ({...item})),
+      total: cartSubtotal(),
+      createdAt: new Date().toISOString()
+    };
+
+    localStorage.setItem('stayunknown_last_order', JSON.stringify(order));
+
+    checkoutStatus.innerHTML = `
+      <div class="checkout-success">
+        <strong>ORDER RECEIVED — ${escapeHTML(orderId)}</strong><br>
+        Thanks, ${escapeHTML(customerName)}. Your guest order details are saved on this device.
+        We can connect this final step to your preferred payment/order backend without moving account creation into checkout.
+      </div>
+    `;
+
+    cart = [];
+    renderCart();
+    checkoutForm.reset();
+  });
+
   renderCart();
-  c.classList.add('open');
-});
 
-document.getElementById('checkout-btn').onclick = () => alert(cart.length ? 'Checkout is ready for your bag. Payment setup can be connected when prices/payment are added.' : 'Your 404 Bag is empty.');
-renderCart();
+  /* ---------- KEYBOARD / ESCAPE ---------- */
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    closeDrawer();
+    closeCart();
+    closeCheckout();
+    if (searchPanel.classList.contains('open')) {
+      searchPanel.classList.remove('open');
+      searchInput.value = '';
+      filterProducts('');
+    }
+  });
+})();
 </script>
 
-<!-- 3. FIREBASE AUTHENTICATION SCRIPT -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  onAuthStateChanged,
+  signOut,
+  sendPasswordResetEmail,
+  deleteUser
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
 const app = initializeApp({
-  apiKey: "AIzaSyB39u1-5EbGimA--fZa_-FApAavayzjlBU",
-  authDomain: "stayunknown-auth.firebaseapp.com",
-  projectId: "stayunknown-auth",
-  storageBucket: "stayunknown-auth.firebasestorage.app",
-  messagingSenderId: "453624121758",
-  appId: "1:453624121758:web:79f2f96bc46b0fdfc4ae8f"
+  apiKey:"AIzaSyB39u1-5EbGimA--fZa_-FApAavayzjlBU",
+  authDomain:"stayunknown-auth.firebaseapp.com",
+  projectId:"stayunknown-auth",
+  storageBucket:"stayunknown-auth.firebasestorage.app",
+  messagingSenderId:"453624121758",
+  appId:"1:453624121758:web:79f2f96bc46b0fdfc4ae8f"
 });
 const auth = getAuth(app);
 
 const $ = id => document.getElementById(id);
-const g = $("welcome-greeting"), st = $("account-subtext"), ab = $("auth-box"), ud = $("user-dashboard"), nf = $("name-field"), nm = $("user-name"), em = $("user-email"), pw = $("user-password"), li = $("btn-login"), su = $("btn-signup"), so = $("btn-signout"), rp = $("btn-reset-pw"), da = $("btn-delete-acct"), tm = $("toggle-auth-mode"), fp = $("forgot-password-link"), msg = $("auth-status-msg"), am = $("account-modal"), hw = $("header-welcome-text"), hun = $("header-user-name");
+const greeting = $("welcome-greeting");
+const subtext = $("account-subtext");
+const headerGreeting = $("header-user-greeting");
+const authBox = $("auth-box");
+const userDashboard = $("user-dashboard");
+const nameField = $("name-field");
+const nameInput = $("user-name");
+const emailInput = $("user-email");
+const passwordInput = $("user-password");
+const loginButton = $("btn-login");
+const signupButton = $("btn-signup");
+const signoutButton = $("btn-signout");
+const resetButton = $("btn-reset-pw");
+const deleteButton = $("btn-delete-acct");
+const toggleAuth = $("toggle-auth-mode");
+const forgotPassword = $("forgot-password-link");
+const statusMessage = $("auth-status-msg");
+const accountModal = $("account-modal");
 
-let signup = false;
-const show = (x, e = false) => {
-  msg.style.color = e ? '#d9534f' : '#5cb85c';
-  msg.textContent = x;
-};
+let signupMode = false;
 
-$("nav-account-toggle").onclick = () => am.style.display = am.style.display === 'block' ? 'none' : 'block';
+function showStatus(message, error = false) {
+  statusMessage.style.color = error ? '#d9534f' : '#5cb85c';
+  statusMessage.textContent = message;
+}
 
-tm.onclick = () => {
-  signup = !signup;
-  nf.style.display = signup ? 'block' : 'none';
-  su.style.display = signup ? 'block' : 'none';
-  li.style.display = signup ? 'none' : 'block';
-  tm.textContent = signup ? 'Already have an account? Sign In' : 'Need an account? Sign Up';
-  msg.textContent = '';
-};
+function setAuthMode(isSignup) {
+  signupMode = isSignup;
+  nameField.style.display = signupMode ? 'block' : 'none';
+  signupButton.style.display = signupMode ? 'block' : 'none';
+  loginButton.style.display = signupMode ? 'none' : 'block';
+  toggleAuth.textContent = signupMode
+    ? 'Already have an account? Sign In'
+    : 'Need an account? Sign Up';
+  statusMessage.textContent = '';
+  passwordInput.autocomplete = signupMode ? 'new-password' : 'current-password';
+}
 
-su.onclick = async () => {
-  let n = nm.value.trim(), e = em.value.trim(), p = pw.value;
-  if (!n || !e || !p) return show('Please fill in all fields.', true);
-  try {
-    let x = await createUserWithEmailAndPassword(auth, e, p);
-    await updateProfile(x.user, { displayName: n });
-    show('Account created successfully!');
-  } catch (x) {
-    show(x.message.replace('Firebase: ', ''), true);
-  }
-};
+$("nav-account-toggle").addEventListener('click', () => {
+  accountModal.style.display = accountModal.style.display === 'block' ? 'none' : 'block';
+});
 
-li.onclick = async () => {
-  let e = em.value.trim(), p = pw.value;
-  if (!e || !p) return show('Please enter email and password.', true);
-  try {
-    await signInWithEmailAndPassword(auth, e, p);
-    show('Signed in successfully!');
-  } catch (x) {
-    show('Invalid email or password.', true);
-  }
-};
-
-onAuthStateChanged(auth, u => {
-  if (u) {
-    let n = u.displayName || 'VALUED CUSTOMER';
-    g.textContent = `Welcome back, ${n}!`;
-    st.textContent = `Signed in as ${u.email}`;
-    ab.style.display = 'none';
-    ud.style.display = 'block';
-    hun.textContent = n.toUpperCase();
-    hw.style.display = 'block';
-  } else {
-    g.textContent = 'Welcome to Stay Unknown';
-    st.textContent = 'Sign in to save your details or continue browsing as a guest.';
-    ab.style.display = 'block';
-    ud.style.display = 'none';
-    hw.style.display = 'none';
-    em.value = '';
-    pw.value = '';
-    if (nm) nm.value = '';
+$("nav-account-toggle").addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    accountModal.style.display = accountModal.style.display === 'block' ? 'none' : 'block';
   }
 });
 
-so.onclick = () => signOut(auth);
+toggleAuth.addEventListener('click', () => setAuthMode(!signupMode));
 
-fp.onclick = async () => {
-  let e = em.value.trim();
-  if (!e) return show('Enter your email address above first.', true);
+signupButton.addEventListener('click', async () => {
+  const username = nameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !email || !password) {
+    showStatus('Please fill in all fields.', true);
+    return;
+  }
+
+  if (password.length < 6) {
+    showStatus('Password must be at least 6 characters.', true);
+    return;
+  }
+
+  signupButton.disabled = true;
+
   try {
-    await sendPasswordResetEmail(auth, e);
-    show(`Password reset link sent to ${e}`);
-  } catch (x) {
-    show(x.message.replace('Firebase: ', ''), true);
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(credential.user, {displayName: username});
+    await credential.user.reload();
+    showStatus('Account created successfully!');
+  } catch (error) {
+    showStatus(error.message.replace('Firebase: ', ''), true);
+  } finally {
+    signupButton.disabled = false;
   }
-};
+});
 
-rp.onclick = async () => {
-  let u = auth.currentUser;
-  if (u?.email) try {
-    await sendPasswordResetEmail(auth, u.email);
-    show(`Password reset link sent to ${u.email}`);
-  } catch (x) {
-    show(x.message.replace('Firebase: ', ''), true);
-  }
-};
+loginButton.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
-da.onclick = async () => {
-  if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-    try {
-      await deleteUser(auth.currentUser);
-      alert('Your account has been deleted.');
-    } catch (x) {
-      show('Please log out and log back in before deleting your account.', true);
-    }
+  if (!email || !password) {
+    showStatus('Please enter email and password.', true);
+    return;
   }
-};
+
+  loginButton.disabled = true;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    showStatus('Signed in successfully!');
+  } catch (error) {
+    showStatus('Invalid email or password.', true);
+  } finally {
+    loginButton.disabled = false;
+  }
+});
+
+signoutButton.addEventListener('click', async () => {
+  try {
+    await signOut(auth);
+    showStatus('Signed out successfully.');
+    setAuthMode(false);
+  } catch (error) {
+    showStatus(error.message.replace('Firebase: ', ''), true);
+  }
+});
+
+forgotPassword.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  if (!email) {
+    showStatus('Enter your email address above first.', true);
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showStatus(`Password reset link sent to ${email}`);
+  } catch (error) {
+    showStatus(error.message.replace('Firebase: ', ''), true);
+  }
+});
+
+resetButton.addEventListener('click', async () => {
+  const user = auth.currentUser;
+  if (!user?.email) {
+    showStatus('No signed-in email is available.', true);
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, user.email);
+    showStatus(`Password reset link sent to ${user.email}`);
+  } catch (error) {
+    showStatus(error.message.replace('Firebase: ', ''), true);
+  }
+});
+
+deleteButton.addEventListener('click', async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    showStatus('No account is signed in.', true);
+    return;
+  }
+
+  if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+
+  try {
+    await deleteUser(user);
+    showStatus('Your account has been deleted.');
+  } catch (error) {
+    showStatus('Please log out and log back in before deleting your account.', true);
+  }
+});
+
+function updateAccountUI(user) {
+  window.__stayUnknownCurrentUser = user || null;
+
+  if (user) {
+    const username = user.displayName || 'VALUED CUSTOMER';
+    greeting.textContent = `Welcome back, ${username}!`;
+    subtext.textContent = `Signed in as ${user.email}`;
+    authBox.style.display = 'none';
+    userDashboard.style.display = 'block';
+
+    headerGreeting.textContent = `WELCOME, ${username}`;
+    headerGreeting.classList.add('visible');
+  } else {
+    greeting.textContent = 'Welcome to Stay Unknown';
+    subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
+    authBox.style.display = 'block';
+    userDashboard.style.display = 'none';
+
+    headerGreeting.textContent = '';
+    headerGreeting.classList.remove('visible');
+
+    emailInput.value = '';
+    passwordInput.value = '';
+    nameInput.value = '';
+    setAuthMode(false);
+  }
+}
+
+onAuthStateChanged(auth, updateAccountUI);
 </script>
 </body>
 </html>
