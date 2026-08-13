@@ -1,461 +1,931 @@
 [
   {
-    "id": "tee-unknown-oversized",
+    "id": "tee-01",
     "name": "Unknown Oversized Tee",
     "category": "T-Shirts",
     "price": 35000,
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "colors": ["Black", "White", "Grey"],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tee-404-graphic",
+    "id": "tee-02",
     "name": "404 Graphic Tee",
     "category": "T-Shirts",
-    "price": 40000,
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "colors": ["Black", "White"],
+    "price": 29000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tee-move-silence",
+    "id": "tee-03",
     "name": "Move In Silence Tee",
     "category": "T-Shirts",
-    "price": 30000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey", "Off White"],
+    "price": 42000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tee-static",
-    "name": "Static Signal Tee",
+    "id": "tee-04",
+    "name": "After Dark Box Tee",
     "category": "T-Shirts",
-    "price": 32500,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Charcoal"],
+    "price": 31000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tee-after-dark",
-    "name": "After Dark Tee",
+    "id": "tee-05",
+    "name": "Unknown Signal Tee",
     "category": "T-Shirts",
-    "price": 38000,
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "colors": ["Black", "Grey"],
+    "price": 39000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Grey"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "hoodie-heavy-unknown",
+    "id": "tee-06",
+    "name": "Static Logo Tee",
+    "category": "T-Shirts",
+    "price": 27000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Grey"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "hood-01",
     "name": "Unknown Heavy Hoodie",
     "category": "Hoodies",
-    "price": 65000,
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "colors": ["Black", "Grey"],
+    "price": 72000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "hoodie-404-zip",
+    "id": "hood-02",
     "name": "404 Zip Hoodie",
     "category": "Hoodies",
-    "price": 70000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Charcoal"],
+    "price": 68000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "hoodie-silence",
-    "name": "Silence Pullover Hoodie",
+    "id": "hood-03",
+    "name": "Silence Hoodie",
     "category": "Hoodies",
-    "price": 60000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Off White"],
+    "price": 65000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "hoodie-signal",
-    "name": "Unknown Signal Hoodie",
+    "id": "hood-04",
+    "name": "No Signal Pullover",
     "category": "Hoodies",
-    "price": 72500,
-    "sizes": ["M", "L", "XL", "XXL"],
-    "colors": ["Black", "Grey"],
+    "price": 59000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "hoodie-shadow",
-    "name": "Shadow Code Hoodie",
+    "id": "hood-05",
+    "name": "Midnight Unknown Hoodie",
     "category": "Hoodies",
-    "price": 55000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black"],
+    "price": 75000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Grey"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "sweat-core",
-    "name": "Unknown Core Sweatshirt",
-    "category": "Sweatshirts",
-    "price": 48000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
-    "comingSoon": false
-  },
-  {
-    "id": "sweat-404",
+    "id": "sweat-01",
     "name": "404 Crew Sweatshirt",
     "category": "Sweatshirts",
     "price": 52000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Off White"],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Ash",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "sweat-silence",
-    "name": "Move In Silence Crew",
+    "id": "sweat-02",
+    "name": "Move Quiet Crew",
     "category": "Sweatshirts",
-    "price": 50000,
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "colors": ["Charcoal", "Black"],
+    "price": 48000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Ash",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "sweat-static",
-    "name": "Static Wave Sweatshirt",
+    "id": "sweat-03",
+    "name": "Unknown Core Sweatshirt",
     "category": "Sweatshirts",
-    "price": 46000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Grey", "Black"],
+    "price": 56000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Ash",
+      "Grey"
+    ],
     "comingSoon": false
   },
   {
-    "id": "sweat-night",
-    "name": "Night Shift Sweatshirt",
+    "id": "sweat-04",
+    "name": "Signal Fade Sweatshirt",
     "category": "Sweatshirts",
-    "price": 54000,
-    "sizes": ["M", "L", "XL"],
-    "colors": ["Black"],
+    "price": 51000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Ash",
+      "Grey"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "jacket-unknown",
+    "id": "sweat-05",
+    "name": "After Hours Crew",
+    "category": "Sweatshirts",
+    "price": 47000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Ash",
+      "Grey"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "jacket-01",
     "name": "Unknown Utility Jacket",
     "category": "Jackets",
-    "price": 85000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Olive"],
+    "price": 88000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "jacket-404",
-    "name": "404 Technical Jacket",
+    "id": "jacket-02",
+    "name": "404 Flight Jacket",
     "category": "Jackets",
-    "price": 95000,
-    "sizes": ["M", "L", "XL", "XXL"],
-    "colors": ["Black"],
+    "price": 96000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "jacket-signal",
-    "name": "Signal Wind Jacket",
+    "id": "jacket-03",
+    "name": "Silent Shell Jacket",
     "category": "Jackets",
-    "price": 75000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
+    "price": 79000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "jacket-shadow",
-    "name": "Shadow Shell Jacket",
+    "id": "jacket-04",
+    "name": "Noir Coach Jacket",
     "category": "Jackets",
-    "price": 90000,
-    "sizes": ["M", "L", "XL"],
-    "colors": ["Black", "Charcoal"],
+    "price": 67000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "jacket-night",
-    "name": "Night Runner Jacket",
+    "id": "jacket-05",
+    "name": "Unknown Technical Jacket",
     "category": "Jackets",
-    "price": 80000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black"],
+    "price": 99500,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Charcoal",
+      "Olive"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "pants-silence",
+    "id": "pants-01",
     "name": "Silence Track Pants",
     "category": "Pants",
-    "price": 45000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
-    "comingSoon": false
-  },
-  {
-    "id": "pants-404",
-    "name": "404 Cargo Pants",
-    "category": "Pants",
     "price": 55000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Olive"],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "pants-unknown",
-    "name": "Unknown Wide Leg Pants",
+    "id": "pants-02",
+    "name": "Unknown Cargo Pants",
     "category": "Pants",
-    "price": 50000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Charcoal"],
+    "price": 59000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "pants-static",
-    "name": "Static Utility Pants",
+    "id": "pants-03",
+    "name": "404 Utility Trousers",
     "category": "Pants",
-    "price": 58000,
-    "sizes": ["M", "L", "XL", "XXL"],
-    "colors": ["Black"],
+    "price": 47000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
     "comingSoon": false
   },
   {
-    "id": "pants-core",
-    "name": "Core Relaxed Pants",
+    "id": "pants-04",
+    "name": "Move In Silence Pants",
     "category": "Pants",
-    "price": 42000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Grey", "Black"],
+    "price": 52000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "shorts-unknown",
+    "id": "pants-05",
+    "name": "After Dark Wide Pants",
+    "category": "Pants",
+    "price": 43000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "short-01",
     "name": "Unknown Mesh Shorts",
     "category": "Shorts",
-    "price": 32000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
+    "price": 36000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Navy"
+    ],
     "comingSoon": false
   },
   {
-    "id": "shorts-404",
-    "name": "404 Cargo Shorts",
+    "id": "short-02",
+    "name": "404 Sport Shorts",
     "category": "Shorts",
-    "price": 38000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Olive"],
+    "price": 32000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Navy"
+    ],
     "comingSoon": false
   },
   {
-    "id": "shorts-silence",
+    "id": "short-03",
     "name": "Silence Utility Shorts",
     "category": "Shorts",
-    "price": 35000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black"],
+    "price": 41000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Navy"
+    ],
     "comingSoon": false
   },
   {
-    "id": "shorts-night",
-    "name": "Night Run Shorts",
+    "id": "short-04",
+    "name": "Core Logo Shorts",
     "category": "Shorts",
-    "price": 30000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Charcoal", "Black"],
+    "price": 28000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Navy"
+    ],
     "comingSoon": false
   },
   {
-    "id": "shorts-static",
-    "name": "Static Signal Shorts",
+    "id": "short-05",
+    "name": "No Signal Shorts",
     "category": "Shorts",
     "price": 34000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Navy"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "tracksuit-unknown",
+    "id": "track-01",
     "name": "Unknown Full Tracksuit",
     "category": "Tracksuits",
-    "price": 90000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
+    "price": 98000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Black/White"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tracksuit-404",
-    "name": "404 Track Set",
+    "id": "track-02",
+    "name": "404 Velocity Tracksuit",
     "category": "Tracksuits",
-    "price": 95000,
-    "sizes": ["M", "L", "XL"],
-    "colors": ["Black"],
+    "price": 105000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Black/White"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tracksuit-silence",
-    "name": "Move In Silence Tracksuit",
+    "id": "track-03",
+    "name": "Silence Track Set",
     "category": "Tracksuits",
-    "price": 85000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Charcoal"],
+    "price": 92000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Black/White"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tracksuit-signal",
-    "name": "Signal Track Set",
+    "id": "track-04",
+    "name": "Night Run Tracksuit",
     "category": "Tracksuits",
-    "price": 78000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
+    "price": 89000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Black/White"
+    ],
     "comingSoon": false
   },
   {
-    "id": "tracksuit-night",
-    "name": "Night Runner Tracksuit",
+    "id": "track-05",
+    "name": "Unknown Core Track Set",
     "category": "Tracksuits",
-    "price": 88000,
-    "sizes": ["M", "L", "XL", "XXL"],
-    "colors": ["Black"],
+    "price": 97000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Black/White"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "jersey-404",
+    "id": "jersey-01",
     "name": "404 Football Jersey",
     "category": "Jerseys",
-    "price": 50000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "White"],
+    "price": 62000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Red"
+    ],
     "comingSoon": false
   },
   {
-    "id": "jersey-unknown",
+    "id": "jersey-02",
     "name": "Unknown Away Jersey",
     "category": "Jerseys",
-    "price": 55000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "Grey"],
-    "comingSoon": false
-  },
-  {
-    "id": "jersey-silence",
-    "name": "Silence Number Jersey",
-    "category": "Jerseys",
-    "price": 48000,
-    "sizes": ["M", "L", "XL"],
-    "colors": ["Black"],
-    "comingSoon": false
-  },
-  {
-    "id": "jersey-signal",
-    "name": "Signal Sport Jersey",
-    "category": "Jerseys",
-    "price": 52000,
-    "sizes": ["S", "M", "L", "XL"],
-    "colors": ["Black", "White"],
-    "comingSoon": false
-  },
-  {
-    "id": "jersey-night",
-    "name": "Night Shift Jersey",
-    "category": "Jerseys",
     "price": 58000,
-    "sizes": ["M", "L", "XL", "XXL"],
-    "colors": ["Black", "Charcoal"],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Red"
+    ],
     "comingSoon": false
   },
-
   {
-    "id": "accessory-cap",
-    "name": "404 Signal Cap",
+    "id": "jersey-03",
+    "name": "Silence Training Jersey",
+    "category": "Jerseys",
+    "price": 49000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Red"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "jersey-04",
+    "name": "Signal Racing Jersey",
+    "category": "Jerseys",
+    "price": 65000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Red"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "jersey-05",
+    "name": "Move 404 Jersey",
+    "category": "Jerseys",
+    "price": 54000,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Red"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "acc-01",
+    "name": "404 Logo Cap",
     "category": "Accessories",
     "price": 18000,
-    "sizes": ["OS"],
-    "colors": ["Black", "Grey"],
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Silver"
+    ],
     "comingSoon": false
   },
   {
-    "id": "accessory-beanie",
+    "id": "acc-02",
     "name": "Unknown Beanie",
     "category": "Accessories",
-    "price": 16000,
-    "sizes": ["OS"],
-    "colors": ["Black"],
+    "price": 22000,
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Silver"
+    ],
     "comingSoon": false
   },
   {
-    "id": "accessory-belt",
-    "name": "Unknown Utility Belt",
-    "category": "Accessories",
-    "price": 22000,
-    "sizes": ["OS"],
-    "colors": ["Black"],
-    "comingSoon": true
-  },
-  {
-    "id": "accessory-socks",
+    "id": "acc-03",
     "name": "Move In Silence Socks",
     "category": "Accessories",
     "price": 12000,
-    "sizes": ["M", "L"],
-    "colors": ["Black", "White"],
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Silver"
+    ],
     "comingSoon": false
   },
   {
-    "id": "accessory-keychain",
-    "name": "404 Keychain",
+    "id": "acc-04",
+    "name": "404 Metal Keychain",
     "category": "Accessories",
     "price": 10000,
-    "sizes": ["OS"],
-    "colors": ["Black", "Silver"],
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Silver"
+    ],
     "comingSoon": true
   },
-
   {
-    "id": "bag-404",
-    "name": "404 Utility Bag",
+    "id": "acc-05",
+    "name": "Unknown Logo Belt",
+    "category": "Accessories",
+    "price": 28000,
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "White",
+      "Silver"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "bag-01",
+    "name": "404 Crossbody Bag",
     "category": "Bags",
     "price": 35000,
-    "sizes": ["OS"],
-    "colors": ["Black"],
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
+    "comingSoon": false
+  },
+  {
+    "id": "bag-02",
+    "name": "Unknown Utility Tote",
+    "category": "Bags",
+    "price": 29000,
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
     "comingSoon": true
   },
   {
-    "id": "bag-unknown",
-    "name": "Unknown Crossbody Bag",
+    "id": "bag-03",
+    "name": "Silence Sling Bag",
     "category": "Bags",
     "price": 42000,
-    "sizes": ["OS"],
-    "colors": ["Black", "Grey"],
-    "comingSoon": true
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
+    "comingSoon": false
   },
   {
-    "id": "bag-silence",
-    "name": "Move In Silence Tote",
+    "id": "bag-04",
+    "name": "404 Mini Duffle",
     "category": "Bags",
-    "price": 28000,
-    "sizes": ["OS"],
-    "colors": ["Black", "Off White"],
-    "comingSoon": true
+    "price": 47000,
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
+    "comingSoon": false
   },
   {
-    "id": "bag-night",
-    "name": "Night Runner Shoulder Bag",
+    "id": "bag-05",
+    "name": "Unknown Travel Pack",
     "category": "Bags",
-    "price": 38000,
-    "sizes": ["OS"],
-    "colors": ["Black"],
-    "comingSoon": true
-  },
-  {
-    "id": "bag-signal",
-    "name": "Signal Tech Bag",
-    "category": "Bags",
-    "price": 45000,
-    "sizes": ["OS"],
-    "colors": ["Black","Charcoal"],
+    "price": 58000,
+    "sizes": [
+      "ONE SIZE"
+    ],
+    "colors": [
+      "Black",
+      "Grey",
+      "Olive"
+    ],
     "comingSoon": true
   }
 ]
