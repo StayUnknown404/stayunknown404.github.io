@@ -300,6 +300,11 @@ body{background:#101010}
 .variant-option.active{background:#f3f3f0;color:#111;border-color:#f3f3f0}
 .product-detail-add{width:100%;margin-top:22px}
 @media(max-width:700px){.product-detail-overlay{align-items:flex-end}.product-detail-sheet{border-left:0;border-right:0;border-bottom:0;border-radius:12px 12px 0 0}}
+
+.cart-swipe-indicator{display:none}
+@media(max-width:700px){
+  .cart-swipe-indicator{display:block;text-align:center;color:#666;font-size:9px;letter-spacing:1px;padding:6px 0}
+}
 </style>
 </head>
 <body class="intro-active">
@@ -412,7 +417,7 @@ body{background:#101010}
   </div>
 </div>
 
-<div id="cart-panel" aria-label="404 Bag">
+<div id="cart-panel" aria-label="404 Bag"><div class="cart-swipe-indicator" id="cart-swipe-indicator">SWIPE LEFT / RIGHT TO RETURN</div>
   <div class="cart-header">
     <strong>404 BAG</strong>
     <button class="cart-close" id="cart-close" aria-label="Close bag">✕</button>
@@ -871,6 +876,27 @@ body{background:#101010}
     else cart.push({id:selectedProduct.id,variantId,name:`${selectedProduct.name} · ${selectedSize} · ${selectedColour}`,price:selectedProduct.price,quantity:1});
     renderCart();closeProductDetail();openCart();
   });
+
+
+  /* Cart: horizontal swipe returns to the page the customer came from. */
+  const cartPanel=document.getElementById('cart-panel');
+  let cartTouchStartX=0,cartTouchStartY=0;
+  if(cartPanel){
+    cartPanel.addEventListener('touchstart',e=>{
+      if(e.touches.length!==1)return;
+      cartTouchStartX=e.touches[0].clientX;
+      cartTouchStartY=e.touches[0].clientY;
+    },{passive:true});
+    cartPanel.addEventListener('touchend',e=>{
+      if(!cartTouchStartX)return;
+      const dx=e.changedTouches[0].clientX-cartTouchStartX;
+      const dy=e.changedTouches[0].clientY-cartTouchStartY;
+      cartTouchStartX=0;cartTouchStartY=0;
+      if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.2){
+        closeCart();
+      }
+    },{passive:true});
+  }
 
   /* ---------- CART ---------- */
   let cart=[];
