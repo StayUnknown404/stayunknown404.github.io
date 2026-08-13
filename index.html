@@ -305,6 +305,9 @@ body{background:#101010}
 @media(max-width:700px){
   .cart-swipe-indicator{display:block;text-align:center;color:#666;font-size:9px;letter-spacing:1px;padding:6px 0}
 }
+
+.coming-soon-tag{position:absolute;top:14px;right:14px;background:#222;color:#ddd;border:1px solid #444;padding:7px 9px;font-size:10px;font-weight:800;letter-spacing:.5px}
+.add-cart.coming-soon{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body class="intro-active">
@@ -632,15 +635,15 @@ body{background:#101010}
     {id:'jersey-05',category:'Jerseys',name:'Move 404 Jersey',price:54000,tags:'jersey move 404'},
     // Accessories
     {id:'acc-01',category:'Accessories',name:'404 Logo Cap',price:18000,drop:true,tags:'accessory accessories cap hat 404'},
-    {id:'acc-02',category:'Accessories',name:'Unknown Beanie',price:22000,tags:'accessory accessories beanie unknown'},
+    {id:'acc-02',category:'Accessories',name:'Unknown Beanie',price:22000,tags:'accessory accessories beanie unknown',comingSoon:true},
     {id:'acc-03',category:'Accessories',name:'Move In Silence Socks',price:12000,tags:'accessory accessories socks'},
-    {id:'acc-04',category:'Accessories',name:'404 Metal Keychain',price:10000,tags:'accessory accessories keychain'},
-    {id:'acc-05',category:'Accessories',name:'Unknown Logo Belt',price:28000,tags:'accessory accessories belt'},
+    {id:'acc-04',category:'Accessories',name:'404 Metal Keychain',price:10000,tags:'accessory accessories keychain',comingSoon:true},
+    {id:'acc-05',category:'Accessories',name:'Unknown Logo Belt',price:28000,tags:'accessory accessories belt',comingSoon:true},
     // Bags
     {id:'bag-01',category:'Bags',name:'404 Crossbody Bag',price:35000,drop:true,tags:'bag bags crossbody 404'},
-    {id:'bag-02',category:'Bags',name:'Unknown Utility Tote',price:29000,tags:'bag bags tote utility'},
-    {id:'bag-03',category:'Bags',name:'Silence Sling Bag',price:42000,tags:'bag bags sling silence'},
-    {id:'bag-04',category:'Bags',name:'404 Mini Duffle',price:47000,tags:'bag bags duffle 404'},
+    {id:'bag-02',category:'Bags',name:'Unknown Utility Tote',price:29000,tags:'bag bags tote utility',comingSoon:true},
+    {id:'bag-03',category:'Bags',name:'Silence Sling Bag',price:42000,tags:'bag bags sling silence',comingSoon:true},
+    {id:'bag-04',category:'Bags',name:'404 Mini Duffle',price:47000,tags:'bag bags duffle 404',comingSoon:true},
     {id:'bag-05',category:'Bags',name:'Unknown Travel Pack',price:58000,tags:'bag bags backpack travel'}
   ];
 
@@ -710,12 +713,13 @@ body{background:#101010}
   function cardMarkup(p, cls=''){
     return `<article class="${cls} catalog-card" data-product-id="${p.id}">
       ${p.drop ? '<div class="tag">NEW</div>' : ''}
+      ${p.comingSoon ? '<div class="coming-soon-tag">COMING SOON</div>' : ''}
       ${productVisual(p)}
       <div class="catalog-info">
         <div class="catalog-name">${escapeHTML(p.name)}</div>
         <div class="catalog-meta">${escapeHTML(p.category)}</div>
         <div class="catalog-price">${money(p.price)}</div>
-        <button class="add-cart" type="button" data-product="${escapeHTML(p.name)}" data-price="${p.price}" data-id="${p.id}">ADD TO BAG</button>
+        <button class="add-cart${p.comingSoon ? ' coming-soon' : ''}" type="button" data-product="${escapeHTML(p.name)}" data-price="${p.price}" data-id="${p.id}"${p.comingSoon ? ' disabled' : ''}>${p.comingSoon ? 'COMING SOON' : 'ADD TO BAG'}</button>
       </div>
     </article>`;
   }
@@ -886,7 +890,7 @@ body{background:#101010}
       if(e.touches.length!==1)return;
       cartTouchStartX=e.touches[0].clientX;
       cartTouchStartY=e.touches[0].clientY;
-    },{passive:true});
+    ,comingSoon:true},{passive:true});
     cartPanel.addEventListener('touchend',e=>{
       if(!cartTouchStartX)return;
       const dx=e.changedTouches[0].clientX-cartTouchStartX;
