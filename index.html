@@ -1133,7 +1133,7 @@ body{background:#101010}
     localStorage.setItem('stayunknown_superseded_pending_refs',JSON.stringify(refs.slice(-50)));
   }
 
-  function savePendingOrder(reference, customer){
+  function savePendingOrder(reference, customer, authorizationUrl=''){
     try{
       const previous=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null');
       if(previous?.reference && previous.reference!==reference){
@@ -1144,7 +1144,8 @@ body{background:#101010}
       reference,
       customer,
       items:cart.map(i=>({...i})),
-      createdAt:new Date().toISOString()
+      createdAt:new Date().toISOString(),
+      authorizationUrl
     }));
   }
 
@@ -1184,6 +1185,20 @@ body{background:#101010}
     e.preventDefault();
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
 
+    let resumeReference='';
+    try{resumeReference=localStorage.getItem('stayunknown_resume_pending_reference')||''}catch(_){resumeReference=''}
+    if(resumeReference){
+      let pending=null;
+      try{pending=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null')}catch(_){pending=null}
+      if(pending?.reference===resumeReference && pending.authorizationUrl){
+        checkoutStatus.innerHTML='<div class="checkout-success">REDIRECTING TO YOUR EXISTING PAYSTACK CHECKOUT…</div>';
+        localStorage.removeItem('stayunknown_resume_pending_reference');
+        window.location.href=pending.authorizationUrl;
+        return;
+      }
+      localStorage.removeItem('stayunknown_resume_pending_reference');
+    }
+
     const email=document.getElementById('checkout-email').value.trim().toLowerCase();
     const phone=document.getElementById('checkout-phone').value.trim();
     const customerName=document.getElementById('checkout-name').value.trim();
@@ -1218,7 +1233,7 @@ body{background:#101010}
         uid:window.__stayUnknownCurrentUser?.uid || '',
         address:document.getElementById('checkout-address').value.trim(),
         note:document.getElementById('checkout-note').value.trim()
-      });
+      },data.authorization_url);
 
       checkoutStatus.innerHTML='<div class="checkout-success">REDIRECTING TO SECURE PAYSTACK CHECKOUT…</div>';
       window.location.href=data.authorization_url;
@@ -1254,9 +1269,34 @@ body{background:#101010}
     const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();
     const items=Array.isArray(order?.items)?order.items:[];
     const customer=order?.customer||{};
-    body.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px">ORDER NUMBER</div><strong style="font-size:14px">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-detail-grid"><div class="order-detail-box"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class="order-detail-box"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class="order-detail-box"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class="order-detail-box"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class="order-detail-box"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class="order-detail-box"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class="order-detail-box"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class="order-detail-box"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div><div style="font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">ITEMS</div><div class="order-items">${items.length?items.map(item=>`<div class="order-item-row"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class="orders-empty">No item details available.</div>'}</div><div class="order-total-row"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>`;
+    const pendingActions=status==='PENDING'?`<div style="margin-top:20px;padding-top:18px;border-top:1px solid #292929"><div style="font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">PENDING</div><p style="color:#aaa;font-size:11px;line-height:1.7;margin:0 0 14px">This order hasn’t been paid for yet. Would you like to complete your checkout?</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="orders-open-btn" id="pending-continue-checkout" type="button" style="margin:0;flex:1;min-width:150px">CONTINUE CHECKOUT</button><button class="order-close" id="pending-not-now" type="button" style="flex:1;min-width:110px">NOT NOW</button></div></div>`:'';
+    body.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px">ORDER NUMBER</div><strong style="font-size:14px">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-detail-grid"><div class="order-detail-box"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class="order-detail-box"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class="order-detail-box"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class="order-detail-box"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class="order-detail-box"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class="order-detail-box"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class="order-detail-box"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class="order-detail-box"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div><div style="font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">ITEMS</div><div class="order-items">${items.length?items.map(item=>`<div class="order-item-row"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class="orders-empty">No item details available.</div>'}</div><div class="order-total-row"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}`;
   }
-  function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false')}
+  function resumePendingCheckout(order){
+    const reference=String(order?.paymentReference||order?.orderNumber||'').trim();
+    let pending=null;
+    try{pending=JSON.parse(localStorage.getItem('stayunknown_pending_payment')||'null')}catch(_){pending=null}
+    if(!reference || !pending || pending.reference!==reference || !pending.authorizationUrl){
+      const body=document.getElementById('order-details-body');
+      if(!body.querySelector('[data-pending-resume-error]')){const message=document.createElement('div');message.setAttribute('data-pending-resume-error','1');message.style.cssText='margin-top:12px;color:#ffb0b0;font-size:11px;line-height:1.6';message.textContent='This pending checkout cannot be resumed safely on this device because its original Paystack checkout session is no longer available.';body.appendChild(message)}
+      return;
+    }
+    cart=(Array.isArray(pending.items)?pending.items:[]).map(item=>({...item}));
+    renderCart();
+    document.getElementById('checkout-name').value=pending.customer?.name||'';
+    document.getElementById('checkout-email').value=pending.customer?.email||'';
+    document.getElementById('checkout-phone').value=pending.customer?.phone||'';
+    document.getElementById('checkout-address').value=pending.customer?.address||'';
+    document.getElementById('checkout-note').value=pending.customer?.note||'';
+    localStorage.setItem('stayunknown_resume_pending_reference',reference);
+    closeOrderDetails();
+    document.getElementById('orders-page').classList.remove('open');
+    document.getElementById('orders-page').setAttribute('aria-hidden','true');
+    document.getElementById('checkout-status').textContent='';
+    openCheckout();
+  }
+
+  function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false');const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();if(status==='PENDING'){document.getElementById('pending-not-now')?.addEventListener('click',()=>closeOrderDetails());document.getElementById('pending-continue-checkout')?.addEventListener('click',()=>resumePendingCheckout(order))}}
   function openOrderConfirmation(order,customerName){lastOrderForDetails=order;document.getElementById('order-confirm-card').querySelector('p').textContent=`THANK YOU FOR SHOPPING WITH US${customerName?`, ${customerName.toUpperCase()}`:''}.`;document.getElementById('order-confirmation').classList.add('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','false')}
   function closeOrderDetails(){document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true')}
   function orderItemsSignature(order){
