@@ -558,47 +558,76 @@ app.post(
           "NGN";
 
       /*
-        Payment did not succeed.
+        Successful payment.
       */
-      if (!paid) {
-        const failedOrder =
-          await updateOrderStatus(
-            reference,
-            "FAILED",
+      if (paid) {
+        const order =
+          await savePaidOrder(
             transaction
           );
 
         return res.json({
-          paid: false,
+          paid: true,
 
-          status:
-            transaction.status ||
-            "unknown",
-
-          order:
-            failedOrder || {
-              paymentReference:
-                reference,
-
-              paymentStatus:
-                "FAILED"
-            }
+          order
         });
       }
 
       /*
-        Successful payment.
+        Payment did not succeed.
+
+        Only mark the existing order FAILED
+        when Paystack has returned a conclusive
+        unsuccessful transaction status.
+
+        If the transaction is still in progress,
+        keep the order PENDING.
       */
-      const order =
-        await savePaidOrder(
+      const transactionStatus =
+        String(
+          transaction.status || ""
+        ).toLowerCase();
+
+      const failedStatuses =
+        new Set([
+          "abandoned",
+          "failed",
+          "reversed"
+        ]);
+
+      const shouldMarkFailed =
+        failedStatuses.has(
+          transactionStatus
+        );
+
+      const updatedOrder =
+        await updateOrderStatus(
+          reference,
+          shouldMarkFailed
+            ? "FAILED"
+            : "PENDING",
           transaction
         );
 
-      res.json({
-        paid: true,
+      return res.json({
+        paid: false,
 
-        order
+        status:
+          transaction.status ||
+          "unknown",
+
+        order:
+          updatedOrder || {
+            paymentReference:
+              reference,
+
+            paymentStatus:
+              shouldMarkFailed
+                ? "FAILED"
+                : "PENDING"
+          }
       });
+
     } catch (error) {
       console.error(
         "Payment verification error:",
