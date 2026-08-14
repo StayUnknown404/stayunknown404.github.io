@@ -10,6 +10,215 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/*
+  Resend transactional email configuration.
+  Keep the API key in Render environment variables.
+*/
+const STORE_EMAIL =
+  process.env.STORE_EMAIL ||
+  "stayunknown404@icloud.com";
+
+const EMAIL_FROM =
+  process.env.EMAIL_FROM ||
+  "STAYUNKNOWN <onboarding@resend.dev>";
+
+async function sendResendEmail({ to, subject, html }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(
+      "RESEND_API_KEY is not configured; email notification skipped."
+    );
+    return null;
+  }
+
+  const response = await fetch(
+    "https://api.resend.com/emails",
+    {
+      method: "POST",
+      headers: {
+        Authorization:
+          `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type":
+          "application/json"
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      "Resend email request failed."
+    );
+  }
+
+  return data;
+}
+
+function escapeEmailHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildOrderEmailItems(items) {
+  return (Array.isArray(items) ? items : [])
+    .map(item => {
+      const name = escapeEmailHtml(item.name || item.productId || "Product");
+      const quantity = Number(item.quantity || 0);
+      const size = escapeEmailHtml(item.size || "-");
+      const color = escapeEmailHtml(item.color || "-");
+      const lineTotal = Number(item.lineTotal || 0);
+
+      return `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #eee">
+            <strong>${name}</strong><br>
+            <span style="color:#666;font-size:13px">
+              Qty: ${quantity} · Size: ${size} · Colour: ${color}
+            </span>
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;text-align:right">
+            ₦${lineTotal.toLocaleString("en-NG")}
+          </td>
+        </tr>`;
+    })
+    .join("");
+}
+
+async function sendOrderConfirmationEmails(order) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(
+      "RESEND_API_KEY is not configured; order emails skipped."
+    );
+    return;
+  }
+
+  const customer = order?.customer || {};
+  const customerEmail =
+    String(customer.email || "").trim().toLowerCase();
+
+  if (!customerEmail) {
+    console.warn(
+      `No customer email for order ${order?.orderNumber || "unknown"}; customer email skipped.`
+    );
+  }
+
+  const customerName =
+    String(customer.name || "Customer").trim() || "Customer";
+  const orderNumber =
+    String(order.orderNumber || order.paymentReference || "");
+  const paymentReference =
+    String(order.paymentReference || orderNumber);
+  const address =
+    String(customer.address || "Not provided");
+  const phone =
+    String(customer.phone || "Not provided");
+  const note =
+    String(customer.note || "None");
+  const total = Number(order.total || 0);
+  const itemsHtml =
+    buildOrderEmailItems(order.items);
+
+  const safeName = escapeEmailHtml(customerName);
+  const safeOrderNumber = escapeEmailHtml(orderNumber);
+  const safeReference = escapeEmailHtml(paymentReference);
+  const safeAddress = escapeEmailHtml(address);
+  const safePhone = escapeEmailHtml(phone);
+  const safeNote = escapeEmailHtml(note);
+  const totalText = `₦${total.toLocaleString("en-NG")}`;
+
+  const customerHtml = `
+    <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#111;line-height:1.6">
+      <h1 style="font-size:24px;letter-spacing:1px">STAYUNKNOWN</h1>
+      <h2>ORDER CONFIRMED</h2>
+      <p>Thank you for shopping with <strong>STAYUNKNOWN</strong> - ${safeName}.</p>
+      <p>Your payment has been successfully confirmed.</p>
+
+      <div style="background:#f7f7f7;padding:16px;margin:20px 0">
+        <strong>Order number:</strong> ${safeOrderNumber}<br>
+        <strong>Payment status:</strong> PAID<br>
+        <strong>Payment reference:</strong> ${safeReference}
+      </div>
+
+      <h3>YOUR ORDER</h3>
+      <table style="width:100%;border-collapse:collapse">
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      <p style="text-align:right;font-size:18px"><strong>Total: ${totalText}</strong></p>
+
+      <h3>DELIVERY INFORMATION</h3>
+      <p>
+        <strong>Name:</strong> ${safeName}<br>
+        <strong>Phone:</strong> ${safePhone}<br>
+        <strong>Address:</strong> ${safeAddress}<br>
+        <strong>Order note:</strong> ${safeNote}
+      </p>
+
+      <p>Thanks again for shopping with STAYUNKNOWN.</p>
+    </div>`;
+
+  const storeHtml = `
+    <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#111;line-height:1.6">
+      <h1 style="font-size:24px;letter-spacing:1px">STAYUNKNOWN</h1>
+      <h2>NEW ORDER — PAID</h2>
+      <p><strong>${safeName}</strong> has placed a successful order.</p>
+
+      <div style="background:#f7f7f7;padding:16px;margin:20px 0">
+        <strong>Order number:</strong> ${safeOrderNumber}<br>
+        <strong>Customer email:</strong> ${escapeEmailHtml(customerEmail || "Not provided")}<br>
+        <strong>Payment reference:</strong> ${safeReference}<br>
+        <strong>Total:</strong> ${totalText}
+      </div>
+
+      <h3>PRODUCTS</h3>
+      <table style="width:100%;border-collapse:collapse">
+        <tbody>${itemsHtml}</tbody>
+      </table>
+
+      <h3>DELIVERY INFORMATION</h3>
+      <p>
+        <strong>Name:</strong> ${safeName}<br>
+        <strong>Email:</strong> ${escapeEmailHtml(customerEmail || "Not provided")}<br>
+        <strong>Phone:</strong> ${safePhone}<br>
+        <strong>Address:</strong> ${safeAddress}<br>
+        <strong>Order note:</strong> ${safeNote}
+      </p>
+    </div>`;
+
+  const sends = [];
+
+  if (customerEmail) {
+    sends.push(
+      sendResendEmail({
+        to: customerEmail,
+        subject: `STAYUNKNOWN — Order ${orderNumber} Confirmed`,
+        html: customerHtml
+      })
+    );
+  }
+
+  sends.push(
+    sendResendEmail({
+      to: STORE_EMAIL,
+      subject: `STAYUNKNOWN — NEW PAID ORDER ${orderNumber}`,
+      html: storeHtml
+    })
+  );
+
+  await Promise.all(sends);
+}
+
 app.use(cors());
 
 /*
@@ -63,10 +272,6 @@ function initFirebase() {
 
 /*
   Firebase authentication middleware.
-
-  The frontend must send:
-
-  Authorization: Bearer <Firebase ID token>
 */
 async function requireFirebaseUser(req, res, next) {
   try {
@@ -264,17 +469,15 @@ async function paystackRequest(
 
 /*
   Create a pending order.
-
-  This happens BEFORE sending the customer
-  to Paystack.
-
-  If Firebase is configured, the order is saved.
 */
 async function createPendingOrder({
   reference,
   email,
   phone,
   uid,
+  name,
+  address,
+  note,
   items,
   total
 }) {
@@ -297,8 +500,11 @@ async function createPendingOrder({
 
     customer: {
       uid: uid || "",
+      name: name || "",
       email: email || "",
-      phone: phone || ""
+      phone: phone || "",
+      address: address || "",
+      note: note || ""
     },
 
     items,
@@ -332,6 +538,9 @@ app.post(
       const {
         email,
         phone = "",
+        name = "",
+        address = "",
+        note = "",
         items,
         callbackUrl = "",
         userId = ""
@@ -371,6 +580,15 @@ app.post(
       const cleanPhone =
         String(phone || "").trim();
 
+      const cleanName =
+        String(name || "").trim();
+
+      const cleanAddress =
+        String(address || "").trim();
+
+      const cleanNote =
+        String(note || "").trim();
+
       const cleanUserId =
         String(userId || "").trim();
 
@@ -383,6 +601,12 @@ app.post(
 
         phone: cleanPhone,
 
+        name: cleanName,
+
+        address: cleanAddress,
+
+        note: cleanNote,
+
         userId: cleanUserId,
 
         items:
@@ -393,18 +617,19 @@ app.post(
             price: item.price,
             quantity: item.quantity,
             size: item.size,
-            color: item.color
+            color: item.color,
+            lineTotal: item.lineTotal
           }))
       };
 
-      /*
-        Save PENDING order before Paystack.
-      */
       await createPendingOrder({
         reference,
         email: cleanEmail,
         phone: cleanPhone,
         uid: cleanUserId,
+        name: cleanName,
+        address: cleanAddress,
+        note: cleanNote,
         items: trustedItems,
         total
       });
@@ -557,9 +782,6 @@ app.post(
         transaction.currency ===
           "NGN";
 
-      /*
-        Payment did not succeed.
-      */
       if (!paid) {
         const failedOrder =
           await updateOrderStatus(
@@ -586,9 +808,6 @@ app.post(
         });
       }
 
-      /*
-        Successful payment.
-      */
       const order =
         await savePaidOrder(
           transaction
@@ -645,11 +864,6 @@ async function savePaidOrder(
   const firestore =
     initFirebase();
 
-  /*
-    If Firebase isn't configured,
-    still return verified payment
-    information for testing.
-  */
   if (!firestore) {
     return {
       id: reference,
@@ -676,6 +890,10 @@ async function savePaidOrder(
           metadata.userId ||
           "",
 
+        name:
+          metadata.name ||
+          "Customer",
+
         email:
           transaction.customer?.email ||
           metadata.email ||
@@ -684,6 +902,14 @@ async function savePaidOrder(
         phone:
           metadata.phone ||
           transaction.customer?.phone ||
+          "",
+
+        address:
+          metadata.address ||
+          "",
+
+        note:
+          metadata.note ||
           ""
       },
 
@@ -701,10 +927,6 @@ async function savePaidOrder(
     };
   }
 
-  /*
-    Look for existing order created
-    during initialization.
-  */
   const existing =
     await firestore
       .collection("orders")
@@ -716,13 +938,51 @@ async function savePaidOrder(
       .limit(1)
       .get();
 
-  /*
-    If order already exists,
-    update it to PAID.
-  */
   if (!existing.empty) {
     const doc =
       existing.docs[0];
+
+    const existingData =
+      doc.data() || {};
+
+    const existingCustomer =
+      existingData.customer || {};
+
+    const updatedCustomer = {
+      ...existingCustomer,
+
+      uid:
+        existingCustomer.uid ||
+        metadata.userId ||
+        "",
+
+      name:
+        existingCustomer.name ||
+        metadata.name ||
+        "Customer",
+
+      email:
+        existingCustomer.email ||
+        transaction.customer?.email ||
+        metadata.email ||
+        "",
+
+      phone:
+        existingCustomer.phone ||
+        metadata.phone ||
+        transaction.customer?.phone ||
+        "",
+
+      address:
+        existingCustomer.address ||
+        metadata.address ||
+        "",
+
+      note:
+        existingCustomer.note ||
+        metadata.note ||
+        ""
+    };
 
     const updates = {
       paymentStatus:
@@ -735,6 +995,14 @@ async function savePaidOrder(
       currency:
         transaction.currency ||
         "NGN",
+
+      customer:
+        updatedCustomer,
+
+      items:
+        existingData.items?.length
+          ? existingData.items
+          : items,
 
       total:
         totalNaira,
@@ -751,20 +1019,35 @@ async function savePaidOrder(
       updates
     );
 
-    return {
+    const savedOrder = {
       id: doc.id,
 
-      ...doc.data(),
+      ...existingData,
 
       ...updates
     };
+
+    try {
+      if (!existingData.confirmationEmailSentAt) {
+        await sendOrderConfirmationEmails(
+          savedOrder
+        );
+
+        await doc.ref.update({
+          confirmationEmailSentAt:
+            new Date().toISOString()
+        });
+      }
+    } catch (emailError) {
+      console.error(
+        "Order confirmation email error:",
+        emailError
+      );
+    }
+
+    return savedOrder;
   }
 
-  /*
-    Fallback:
-    create the order if the pending
-    order wasn't found.
-  */
   const order = {
     orderNumber:
       reference,
@@ -788,6 +1071,10 @@ async function savePaidOrder(
         metadata.userId ||
         "",
 
+      name:
+        metadata.name ||
+        "Customer",
+
       email:
         transaction.customer?.email ||
         metadata.email ||
@@ -796,6 +1083,14 @@ async function savePaidOrder(
       phone:
         metadata.phone ||
         transaction.customer?.phone ||
+        "",
+
+      address:
+        metadata.address ||
+        "",
+
+      note:
+        metadata.note ||
         ""
     },
 
@@ -820,20 +1115,33 @@ async function savePaidOrder(
       .collection("orders")
       .add(order);
 
-  return {
+  const savedOrder = {
     id: doc.id,
-
     ...order
   };
+
+  try {
+    await doc.ref.update({
+      confirmationEmailSentAt:
+        new Date().toISOString()
+    });
+
+    await sendOrderConfirmationEmails(
+      savedOrder
+    );
+  } catch (emailError) {
+    console.error(
+      "Order confirmation email error:",
+      emailError
+    );
+  }
+
+  return savedOrder;
 }
 
 /*
   Get orders belonging to the
   currently authenticated Firebase user.
-
-  SECURITY:
-  The Firebase ID token determines
-  which user is requesting orders.
 */
 app.get(
   "/api/orders",
@@ -935,10 +1243,6 @@ app.get(
       const order =
         doc.data();
 
-      /*
-        Never allow a customer to view
-        another customer's order.
-      */
       if (
         order.customer?.uid !==
         req.firebaseUser.uid
@@ -972,10 +1276,300 @@ app.get(
 );
 
 /*
-  Paystack webhook.
+  ADMIN / DELIVERY MANAGEMENT
 
-  Paystack signs webhook requests
-  with HMAC SHA-512.
+  ADMIN_EMAIL must be set in Render Environment Variables.
+  Multiple admin emails can be separated with commas.
+*/
+function getAdminEmails() {
+  return String(process.env.ADMIN_EMAIL || "")
+    .split(",")
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+async function requireAdmin(req, res, next) {
+  try {
+    await new Promise((resolve, reject) => {
+      requireFirebaseUser(req, res, err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    const email = String(
+      req.firebaseUser?.email || ""
+    ).trim().toLowerCase();
+
+    const admins = getAdminEmails();
+
+    if (!email || !admins.includes(email)) {
+      return res.status(403).json({
+        error: "Admin access required.",
+        isAdmin: false
+      });
+    }
+
+    req.isAdmin = true;
+    next();
+  } catch (error) {
+    console.error(
+      "Admin authentication error:",
+      error
+    );
+
+    if (!res.headersSent) {
+      return res.status(401).json({
+        error:
+          "Authentication required.",
+        isAdmin: false
+      });
+    }
+  }
+}
+
+app.get(
+  "/api/admin/me",
+  requireFirebaseUser,
+  (req, res) => {
+    const email = String(
+      req.firebaseUser?.email || ""
+    ).trim().toLowerCase();
+
+    const isAdmin = Boolean(
+      email &&
+      getAdminEmails().includes(email)
+    );
+
+    res.json({
+      ok: true,
+      isAdmin,
+      email
+    });
+  }
+);
+
+app.get(
+  "/api/admin/orders",
+  requireAdmin,
+  async (_req, res) => {
+    try {
+      const firestore =
+        initFirebase();
+
+      if (!firestore) {
+        return res.status(503).json({
+          error:
+            "Firebase is not configured."
+        });
+      }
+
+      const snapshot =
+        await firestore
+          .collection("orders")
+          .get();
+
+      const orders =
+        snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(order => {
+            const paymentStatus =
+              String(
+                order.paymentStatus || ""
+              ).toUpperCase();
+
+            return (
+              paymentStatus === "PAID" ||
+              paymentStatus === "PROCESSING" ||
+              paymentStatus === "SHIPPED" ||
+              paymentStatus === "DELIVERED" ||
+              Boolean(
+                order.deliveryStatus
+              )
+            );
+          })
+          .sort((a, b) =>
+            String(
+              b.createdAt || ""
+            ).localeCompare(
+              String(
+                a.createdAt || ""
+              )
+            )
+          );
+
+      return res.json({
+        ok: true,
+        orders
+      });
+    } catch (error) {
+      console.error(
+        "Admin orders error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Unable to load delivery orders."
+      });
+    }
+  }
+);
+
+app.patch(
+  "/api/admin/orders/:orderId/delivery",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const firestore =
+        initFirebase();
+
+      if (!firestore) {
+        return res.status(503).json({
+          error:
+            "Firebase is not configured."
+        });
+      }
+
+      const allowedStatuses = [
+        "PAID",
+        "PROCESSING",
+        "SHIPPED",
+        "DELIVERED"
+      ];
+
+      const body =
+        req.body || {};
+
+      const deliveryStatus =
+        String(
+          body.deliveryStatus ||
+          body.status ||
+          "PAID"
+        )
+          .trim()
+          .toUpperCase();
+
+      if (
+        !allowedStatuses.includes(
+          deliveryStatus
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            "Invalid delivery status."
+        });
+      }
+
+      const orderRef =
+        firestore
+          .collection("orders")
+          .doc(
+            req.params.orderId
+          );
+
+      const orderSnap =
+        await orderRef.get();
+
+      if (!orderSnap.exists) {
+        return res.status(404).json({
+          error:
+            "Order not found."
+        });
+      }
+
+      const existing =
+        orderSnap.data() || {};
+
+      const now =
+        new Date().toISOString();
+
+      const delivery = {
+        status:
+          deliveryStatus,
+
+        estimatedDelivery:
+          String(
+            body.estimatedDelivery ||
+            ""
+          ).trim(),
+
+        courier:
+          String(
+            body.courier ||
+            ""
+          ).trim(),
+
+        trackingNumber:
+          String(
+            body.trackingNumber ||
+            ""
+          ).trim(),
+
+        note:
+          String(
+            body.deliveryNote ||
+            body.note ||
+            ""
+          ).trim(),
+
+        updatedAt:
+          now,
+
+        updatedBy:
+          String(
+            req.firebaseUser?.email ||
+            ""
+          )
+            .trim()
+            .toLowerCase()
+      };
+
+      await orderRef.update({
+        deliveryStatus,
+
+        delivery,
+
+        updatedAt:
+          now
+      });
+
+      return res.json({
+        ok: true,
+
+        order: {
+          id:
+            orderSnap.id,
+
+          ...existing,
+
+          deliveryStatus,
+
+          delivery,
+
+          updatedAt:
+            now
+        }
+      });
+    } catch (error) {
+      console.error(
+        "Admin delivery update error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Unable to update delivery status."
+      });
+    }
+  }
+);
+
+/*
+  Paystack webhook.
 */
 app.post(
   "/api/paystack/webhook",
@@ -1041,9 +1635,6 @@ app.post(
           )
         );
 
-      /*
-        Successful payment.
-      */
       if (
         event.event ===
         "charge.success"
@@ -1053,9 +1644,6 @@ app.post(
         );
       }
 
-      /*
-        Failed payment.
-      */
       if (
         event.event ===
         "charge.failed"
