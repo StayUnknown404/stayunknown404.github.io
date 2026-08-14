@@ -125,7 +125,7 @@ button,input,textarea{font:inherit}
 #auth-status-msg{margin-top:10px;font-size:11px;font-weight:bold;line-height:1.5}
 #user-dashboard{display:none;margin-top:10px}
 .orders-open-btn{width:100%;padding:9px;background:#f3f3f0;color:#111;border:0;margin-bottom:8px;cursor:pointer;font-weight:800;border-radius:3px}
-#order-confirmation,#order-details-modal,#orders-page{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}
+#order-confirmation,#order-details-modal,#orders-page{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}
 #account-page{position:fixed;inset:0;z-index:2800;display:none;background:#111;overflow-y:auto;padding:92px 18px 40px}
 #account-page.open{display:block}
 .account-page-card{width:min(720px,100%);margin:0 auto;background:#111;border:1px solid #2b2b2b;min-height:calc(100vh - 132px);box-shadow:0 24px 80px rgba(0,0,0,.5)}
@@ -437,6 +437,7 @@ body{background:#101010}
     <button class="icon-btn profile-btn" id="profile-top-btn" aria-label="Account" title="Account">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.9-3.2 3.2-5 7-5s6.1 1.8 7 5"/><circle cx="12" cy="12" r="10"/></svg>
     </button>
+    <button class="icon-btn wishlist-top-btn" id="wishlist-top-btn" aria-label="Wishlist" title="Wishlist">♡<span class="cart-count" id="wishlist-count">0</span></button>
     <button class="icon-btn cart-btn" id="cart-btn" aria-label="404 Bag" title="404 Bag">
       <span class="bag-mark" aria-hidden="true"><span>404</span></span>
       <span class="cart-count" id="cart-count">0</span>
@@ -708,7 +709,7 @@ body{background:#101010}
 </div>
 <div id="orders-page" aria-hidden="true">
   <div class="orders-card">
-    <div class="orders-head"><h2>MY ORDERS</h2><div style="display:flex;gap:8px;align-items:center"><button class="orders-back" id="orders-refresh-btn" type="button">REFRESH</button><button class="orders-back" id="orders-page-close" type="button">← BACK</button></div></div>
+    <div class="orders-head"><h2>MY ORDERS</h2><div style="display:flex;gap:7px;align-items:center"><button class="orders-back" id="orders-refresh" type="button">REFRESH</button><button class="orders-back" id="orders-page-close" type="button">← BACK</button></div></div>
     <div class="orders-body">
       <div class="orders-filters" id="orders-filters">
         <button class="orders-filter active" data-status="ALL" type="button">ALL</button><button class="orders-filter" data-status="PAID" type="button">PAID</button><button class="orders-filter" data-status="PENDING" type="button">PENDING</button><button class="orders-filter" data-status="FAILED" type="button">FAILED</button>
@@ -1128,6 +1129,7 @@ body{background:#101010}
   function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
+  document.getElementById('wishlist-top-btn').addEventListener('click',openWishlist);
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
   document.getElementById('nav-wishlist-toggle').addEventListener('click',openWishlist);
   updateWishlistCount();
@@ -1255,8 +1257,11 @@ body{background:#101010}
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
+          name:customerName,
           email,
           phone,
+          address:document.getElementById('checkout-address').value.trim(),
+          note:document.getElementById('checkout-note').value.trim(),
           userId:window.__stayUnknownCurrentUser?.uid || '',
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
@@ -1321,12 +1326,64 @@ body{background:#101010}
     const timeline=status==='FAILED'?`<div class=\"order-timeline\"><div class=\"order-step current done\"><div class=\"order-step-label\">FAILED</div></div></div>`:`<div class=\"order-timeline\">${timelineStatuses.map((step,i)=>`<div class=\"order-step ${currentIndex>=i?'done':''} ${currentIndex===i?'current':''}\"><div class=\"order-step-label\">${step}</div></div>`).join('')}</div>`;
     const pendingActions=status==='PENDING'?`<div style=\"margin-top:18px;padding-top:16px;border-top:1px solid #222\"><div style=\"font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px\">PENDING</div><div style=\"font-size:12px;line-height:1.6;color:#aaa;margin-bottom:14px\">This order hasn’t been paid for yet. Would you like to complete your checkout?</div><div style=\"display:flex;gap:8px;flex-wrap:wrap\"><button type=\"button\" class=\"checkout-submit\" id=\"pending-continue-checkout\">CONTINUE CHECKOUT</button><button type=\"button\" class=\"order-close\" id=\"pending-not-now\">NOT NOW</button></div></div>`:'';
     const retryActions=status==='FAILED'?`<div class=\"order-retry\"><button type=\"button\" id=\"failed-retry-payment\">RETRY PAYMENT</button></div>`:'';
-    body.innerHTML=`<div style=\"display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap\"><div><div style=\"font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px\">ORDER NUMBER</div><strong style=\"font-size:14px\">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class=\"order-status ${statusClass(status)}\">${escapeHTML(status)}</span></div><div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class=\"order-detail-box\"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class=\"order-detail-box\"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class=\"order-detail-box\"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class=\"order-detail-box\"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div>${timeline}<div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Subtotal</small><strong>${money(subtotal)}</strong></div>${deliveryFee?`<div class=\"order-detail-box\"><small>Delivery</small><strong>${money(deliveryFee)}</strong></div>`:''}<div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||subtotal+deliveryFee))}</strong></div></div><div style=\"font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px\">ITEMS</div><div class=\"order-items\">${items.length?items.map(item=>`<div class=\"order-item-row\"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class=\"orders-empty\">No item details available.</div>'}</div><div class=\"order-total-row\"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}${retryActions}`;
+    const paidActions=status==='PAID'?`<div style=\"margin-top:18px;padding-top:16px;border-top:1px solid #222;display:flex;gap:8px;flex-wrap:wrap\"><button type=\"button\" class=\"checkout-submit\" id=\"reorder-paid\">REORDER</button></div>`:'';
+    const copyOrderButton=`<button type=\"button\" class=\"order-close\" id=\"copy-order-number\" style=\"margin-top:10px\">COPY ORDER NUMBER</button>`;
+    body.innerHTML=`<div style=\"display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap\"><div><div style=\"font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px\">ORDER NUMBER</div><strong style=\"font-size:14px\">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class=\"order-status ${statusClass(status)}\">${escapeHTML(status)}</span></div><div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class=\"order-detail-box\"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class=\"order-detail-box\"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class=\"order-detail-box\"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class=\"order-detail-box\"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div>${timeline}<div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Subtotal</small><strong>${money(subtotal)}</strong></div>${deliveryFee?`<div class=\"order-detail-box\"><small>Delivery</small><strong>${money(deliveryFee)}</strong></div>`:''}<div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||subtotal+deliveryFee))}</strong></div></div><div style=\"font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px\">ITEMS</div><div class=\"order-items\">${items.length?items.map(item=>`<div class=\"order-item-row\"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class=\"orders-empty\">No item details available.</div>'}</div><div class=\"order-total-row\"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}${retryActions}${paidActions}${copyOrderButton}`;
     if(status==='PENDING'){
       document.getElementById('pending-not-now').addEventListener('click',closeOrderDetails);
       document.getElementById('pending-continue-checkout').addEventListener('click',()=>resumePendingOrder(order));
     }
     if(status==='FAILED'){document.getElementById('failed-retry-payment').addEventListener('click',()=>retryFailedOrder(order));}
+    if(status==='PAID'){document.getElementById('reorder-paid').addEventListener('click',()=>reorderPaidOrder(order));}
+    document.getElementById('copy-order-number').addEventListener('click',()=>copyOrderNumber(order));
+    const paymentCopy=document.getElementById('copy-payment-reference');
+    if(paymentCopy) paymentCopy.addEventListener('click',()=>copyPaymentReference(order));
+    document.getElementById('share-order-details').addEventListener('click',()=>shareOrderDetails(order));
+  }
+  function orderItemsToCart(order){
+    const items=Array.isArray(order?.items)?order.items:[];
+    return items.map(item=>({id:item.productId||item.id,name:item.name||item.productId||'Item',price:Number(item.price||0),size:item.size||'ONE SIZE',color:item.color||'BLACK',quantity:Math.max(1,Number(item.quantity||1))})).filter(item=>item.id);
+  }
+  function reorderPaidOrder(order){
+    const items=orderItemsToCart(order);
+    if(!items.length){alert('This paid order has no item details available to reorder.');return}
+    cart=items;
+    saveCart();
+    renderCart();
+    closeOrderDetails();
+    openCart();
+  }
+  async function copyPaymentReference(order){
+    const value=String(order?.paymentReference||'').trim();
+    if(!value)return;
+    try{
+      await navigator.clipboard.writeText(value);
+      const button=document.getElementById('copy-payment-reference');
+      if(button){const original=button.textContent;button.textContent='COPIED';setTimeout(()=>{button.textContent=original},1200)}
+    }catch(_){window.prompt('COPY PAYMENT REFERENCE',value)}
+  }
+  async function shareOrderDetails(order){
+    const orderNumber=String(order?.orderNumber||order?.paymentReference||order?.id||'ORDER').trim();
+    const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();
+    const total=money(Number(order?.total||0));
+    const text=`STAYUNKNOWN Order ${orderNumber}\nStatus: ${status}\nTotal: ${total}`;
+    try{
+      if(navigator.share){await navigator.share({title:`STAYUNKNOWN Order ${orderNumber}`,text});return}
+      await navigator.clipboard.writeText(text);
+      alert('ORDER DETAILS COPIED');
+    }catch(error){
+      if(error?.name!=='AbortError') window.prompt('SHARE ORDER DETAILS',text);
+    }
+  }
+
+  async function copyOrderNumber(order){
+    const value=String(order?.orderNumber||order?.paymentReference||order?.id||'').trim();
+    if(!value)return;
+    try{
+      await navigator.clipboard.writeText(value);
+      const button=document.getElementById('copy-order-number');
+      if(button){const original=button.textContent;button.textContent='COPIED';setTimeout(()=>{button.textContent=original},1200)}
+    }catch(_){window.prompt('COPY ORDER NUMBER',value)}
   }
   function resumePendingOrder(order){
     let pending=null;
@@ -1366,7 +1423,7 @@ body{background:#101010}
     checkoutStatus.innerHTML='<div class=\"checkout-success\"><strong>RETRY PAYMENT</strong><br>Review your checkout details and continue to Paystack.</div>';
   }
 
-  function openOrderDetails(order){if(!order)return;lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true');document.getElementById('account-page').classList.remove('open');document.getElementById('account-page').setAttribute('aria-hidden','true');renderOrderDetails(order);const modal=document.getElementById('order-details-modal');modal.classList.add('open');modal.setAttribute('aria-hidden','false');modal.style.zIndex='9999'}
+  function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false')}
   function openOrderConfirmation(order,customerName){lastOrderForDetails=order;document.getElementById('order-confirm-card').querySelector('p').textContent=`THANK YOU FOR SHOPPING WITH US${customerName?`, ${customerName.toUpperCase()}`:''}.`;document.getElementById('order-confirmation').classList.add('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','false')}
   function closeOrderDetails(){document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true');if(orderHistory.length){document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false')}}
   function orderItemsSignature(order){
@@ -1405,15 +1462,15 @@ body{background:#101010}
   }
 
   async function fetchMyOrders(){const user=window.__stayUnknownCurrentUser;const list=document.getElementById('orders-list');if(!user){orderHistory=[];list.innerHTML='<div class="orders-empty">SIGN IN TO SEE YOUR ORDERS.</div>';return}list.innerHTML='<div class="orders-empty">LOADING YOUR ORDERS…</div>';try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load orders.');orderHistory=removeSupersededPendingOrders(Array.isArray(data.orders)?data.orders:[]);renderOrderHistory()}catch(error){list.innerHTML=`<div class="orders-empty">${escapeHTML(error.message||'Unable to load your orders.')}</div>`}}
-  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${itemCount} ITEM${itemCount===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card,index)=>{ card.setAttribute('role','button'); card.setAttribute('tabindex','0'); const open=event=>{ event?.preventDefault?.(); event?.stopPropagation?.(); const order=filtered[index]; if(order) openOrderDetails(order); }; card.addEventListener('click',open); card.addEventListener('keydown',event=>{ if(event.key==='Enter'||event.key===' '){open(event)} }); })}
-  async function openOrdersPage(){document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true');document.getElementById('orders-page').classList.remove('open');document.getElementById('account-page').classList.remove('open');document.getElementById('account-page').setAttribute('aria-hidden','true');document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
+  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${itemCount} ITEM${itemCount===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card)=>card.addEventListener('click',(event)=>{event.preventDefault();event.stopPropagation();const orderIndex=Number(card.dataset.orderIndex);const order=filtered[orderIndex];if(order)openOrderDetails(order)}))}
+  async function openOrdersPage(){document.getElementById('order-confirmation').classList.remove('open');closeOrderDetails();document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
   window.openOrdersPage=openOrdersPage;
   document.getElementById('order-confirm-card').addEventListener('click',()=>{if(lastOrderForDetails)openOrderDetails(lastOrderForDetails)});
   document.getElementById('order-confirm-card').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&lastOrderForDetails){e.preventDefault();openOrderDetails(lastOrderForDetails)}});
   document.getElementById('order-details-close').addEventListener('click',closeOrderDetails);
   document.getElementById('orders-page-close').addEventListener('click',()=>{document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true')});
-  const ordersRefreshBtn=document.getElementById('orders-refresh-btn'); if(ordersRefreshBtn) ordersRefreshBtn.addEventListener('click',()=>fetchMyOrders());
   document.querySelectorAll('.orders-filter').forEach(button=>button.addEventListener('click',()=>{orderHistoryFilter=button.dataset.status;document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b===button));renderOrderHistory()}));
+  document.getElementById('orders-refresh').addEventListener('click',async()=>{const button=document.getElementById('orders-refresh');if(!button)return;const original=button.textContent;button.textContent='LOADING…';button.disabled=true;try{await fetchMyOrders()}finally{button.textContent=original;button.disabled=false}});
 
   renderCart();
 
