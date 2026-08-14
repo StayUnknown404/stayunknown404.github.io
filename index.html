@@ -1257,8 +1257,11 @@ body{background:#101010}
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
+          name:customerName,
           email,
           phone,
+          address:document.getElementById('checkout-address').value.trim(),
+          note:document.getElementById('checkout-note').value.trim(),
           userId:window.__stayUnknownCurrentUser?.uid || '',
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
