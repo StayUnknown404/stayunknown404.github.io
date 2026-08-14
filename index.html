@@ -60,7 +60,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
-<style>.order-detail-summary{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}.order-detail-kicker,.delivery-kicker{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px}.order-detail-box.full{grid-column:1/-1}.order-detail-box strong{white-space:pre-wrap;word-break:break-word}.order-section-title{font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin:18px 0 8px}.delivery-tracking{margin:18px 0;padding:16px;border:1px solid #292929;background:#0d0d0d}.delivery-tracking-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.delivery-tracking h3{font:24px/1 Anton,sans-serif;text-transform:uppercase;margin:4px 0 0}.delivery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.delivery-track-link{display:inline-block;margin-top:12px;color:#fff;text-decoration:underline;font-size:10px;font-weight:900;letter-spacing:1px}.delivery-message{display:flex;flex-direction:column;gap:4px;margin-top:12px;padding-top:12px;border-top:1px solid #222;font-size:11px;line-height:1.5}.delivery-message strong{font-size:9px;letter-spacing:1px;color:#777}.order-history-hint{margin-top:8px;font-size:8px;color:#777;letter-spacing:1px;text-transform:uppercase}.order-history-card:focus{outline:1px solid #fff;outline-offset:2px}@media(max-width:600px){.delivery-grid{grid-template-columns:1fr}.delivery-tracking{padding:13px}}
+<style>
 :root{--bg:#111;--panel:#181818;--text:#f3f3f0;--muted:#999;--line:#2b2b2b;--danger:#d9534f}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -437,6 +437,7 @@ body{background:#101010}
     <button class="icon-btn profile-btn" id="profile-top-btn" aria-label="Account" title="Account">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.9-3.2 3.2-5 7-5s6.1 1.8 7 5"/><circle cx="12" cy="12" r="10"/></svg>
     </button>
+    <button class="icon-btn wishlist-top-btn" id="wishlist-top-btn" aria-label="Wishlist" title="Wishlist">♡<span class="cart-count" id="wishlist-count">0</span></button>
     <button class="icon-btn cart-btn" id="cart-btn" aria-label="404 Bag" title="404 Bag">
       <span class="bag-mark" aria-hidden="true"><span>404</span></span>
       <span class="cart-count" id="cart-count">0</span>
@@ -504,7 +505,6 @@ body{background:#101010}
 
       <div id="user-dashboard">
         <button id="btn-my-orders" class="orders-open-btn" type="button" onclick="openOrdersPage()">MY ORDERS</button>
-        <button id="btn-admin-orders" class="orders-open-btn" type="button" style="display:none">DELIVERY ORDERS</button>
         <button id="btn-reset-pw" class="auth-alt">Send Password Reset Link</button>
         <button id="btn-signout" class="auth-alt">Sign Out</button>
         <button id="btn-delete-acct" style="width:100%;padding:8px;background:#d9534f;color:#fff;border:0;margin-top:10px;cursor:pointer">Delete Account</button>
@@ -693,31 +693,6 @@ body{background:#101010}
 </footer>
 
 
-<div id="admin-orders-page" aria-hidden="true" style="display:none;position:fixed;inset:0;z-index:3100;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.88);backdrop-filter:blur(8px)">
-  <div class="orders-card">
-    <div class="orders-head"><h2>DELIVERY ORDERS</h2><button class="orders-back" id="admin-orders-close" type="button">← BACK</button></div>
-    <div class="orders-body">
-      <div id="admin-orders-list"><div class="orders-empty">Loading paid orders…</div></div>
-    </div>
-  </div>
-</div>
-
-<div id="admin-delivery-modal" aria-hidden="true" style="display:none;position:fixed;inset:0;z-index:3200;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.9);backdrop-filter:blur(8px)">
-  <div class="order-detail-card">
-    <div class="order-detail-head"><strong>UPDATE DELIVERY</strong><button class="order-close" id="admin-delivery-close" type="button">CLOSE</button></div>
-    <div class="order-detail-body">
-      <div id="admin-delivery-order-summary" class="order-detail-summary"></div>
-      <div class="auth-field"><label class="auth-label" for="admin-delivery-status">DELIVERY STATUS</label><select id="admin-delivery-status" class="auth-input"><option value="PAID">PAID</option><option value="PROCESSING">PROCESSING</option><option value="SHIPPED">SHIPPED</option><option value="DELIVERED">DELIVERED</option></select></div>
-      <div class="auth-field"><label class="auth-label" for="admin-estimated-delivery">ESTIMATED DELIVERY</label><input id="admin-estimated-delivery" class="auth-input" placeholder="e.g. 18 August 2026"></div>
-      <div class="auth-field"><label class="auth-label" for="admin-courier">COURIER / DELIVERY METHOD</label><input id="admin-courier" class="auth-input" placeholder="e.g. Dispatch rider"></div>
-      <div class="auth-field"><label class="auth-label" for="admin-tracking-number">TRACKING NUMBER (OPTIONAL)</label><input id="admin-tracking-number" class="auth-input" placeholder="Only if you use one"></div>
-      <div class="auth-field"><label class="auth-label" for="admin-delivery-note">DELIVERY NOTE</label><textarea id="admin-delivery-note" class="auth-input" rows="4" placeholder="Message the customer about delivery"></textarea></div>
-      <button id="admin-save-delivery" class="checkout-submit" type="button">SAVE DELIVERY UPDATE</button>
-      <div id="admin-delivery-status-msg" aria-live="polite"></div>
-    </div>
-  </div>
-</div>
-
 <div id="order-confirmation" aria-hidden="true">
   <div class="order-confirm-card" id="order-confirm-card" role="button" tabindex="0" aria-label="Order confirmed. Tap to view order details.">
     <div class="order-confirm-mark">✓</div>
@@ -734,7 +709,7 @@ body{background:#101010}
 </div>
 <div id="orders-page" aria-hidden="true">
   <div class="orders-card">
-    <div class="orders-head"><h2>MY ORDERS</h2><button class="orders-back" id="orders-page-close" type="button">← BACK</button></div>
+    <div class="orders-head"><h2>MY ORDERS</h2><div style="display:flex;gap:7px;align-items:center"><button class="orders-back" id="orders-refresh" type="button">REFRESH</button><button class="orders-back" id="orders-page-close" type="button">← BACK</button></div></div>
     <div class="orders-body">
       <div class="orders-filters" id="orders-filters">
         <button class="orders-filter active" data-status="ALL" type="button">ALL</button><button class="orders-filter" data-status="PAID" type="button">PAID</button><button class="orders-filter" data-status="PENDING" type="button">PENDING</button><button class="orders-filter" data-status="FAILED" type="button">FAILED</button>
@@ -1154,6 +1129,7 @@ body{background:#101010}
   function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
+  document.getElementById('wishlist-top-btn').addEventListener('click',openWishlist);
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
   document.getElementById('nav-wishlist-toggle').addEventListener('click',openWishlist);
   updateWishlistCount();
@@ -1283,6 +1259,9 @@ body{background:#101010}
         body:JSON.stringify({
           email,
           phone,
+          name:customerName,
+          address:document.getElementById('checkout-address').value.trim(),
+          note:document.getElementById('checkout-note').value.trim(),
           userId:window.__stayUnknownCurrentUser?.uid || '',
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
@@ -1337,30 +1316,74 @@ body{background:#101010}
   function statusClass(status){return String(status||'PENDING').toLowerCase()}
   function renderOrderDetails(order){
     const body=document.getElementById('order-details-body');
-    const status=String(order?.deliveryStatus||order?.paymentStatus||order?.status||'PENDING').toUpperCase();
+    const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();
     const items=Array.isArray(order?.items)?order.items:[];
     const customer=order?.customer||{};
-    const customerName=customer.name||customer.fullName||order?.customerName||order?.name||'—';
-    const address=customer.address||order?.address||'—';
-    const note=customer.note||order?.note||'—';
     const subtotal=items.reduce((sum,item)=>sum+Number(item.lineTotal||((item.price||0)*(item.quantity||1))),0);
     const deliveryFee=Number(order.deliveryFee||order.shippingFee||0);
-    const courier=order.courier||order.deliveryPartner||order.carrier||'';
-    const trackingNumber=order.trackingNumber||order.tracking||'';
-    const estimated=order.estimatedDelivery||order.deliveryEstimate||'';
-    const deliveryNote=order.deliveryNote||order.deliveryNotes||'';
-    const shippedAt=order.shippedAt||'';
-    const deliveredAt=order.deliveredAt||'';
-    const steps=['PENDING','PAID','PROCESSING','SHIPPED','DELIVERED'];
-    const currentIndex=steps.indexOf(status);
-    const timeline=status==='FAILED'?`<div class="order-timeline"><div class="order-step current done"><div class="order-step-label">FAILED</div></div></div>`:`<div class="order-timeline">${steps.map((step,i)=>`<div class="order-step ${currentIndex>=i?'done':''} ${currentIndex===i?'current':''}"><div class="order-step-label">${step}</div></div>`).join('')}</div>`;
-    const deliveryText=status==='DELIVERED'?'DELIVERED':status==='SHIPPED'?'ON THE WAY':status==='PROCESSING'?'BEING PREPARED':status==='PAID'?'PAYMENT CONFIRMED':'AWAITING PAYMENT';
-    const deliveryHtml=`<section class="delivery-tracking"><div class="delivery-tracking-head"><div><div class="delivery-kicker">DELIVERY</div><h3>${deliveryText}</h3></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="delivery-grid"><div class="order-detail-box"><small>Estimated Delivery</small><strong>${escapeHTML(estimated||'To be updated')}</strong></div><div class="order-detail-box"><small>Courier</small><strong>${escapeHTML(courier||'STAYUNKNOWN DELIVERY')}</strong></div>${trackingNumber?`<div class="order-detail-box"><small>Tracking Number</small><strong>${escapeHTML(trackingNumber)}</strong></div>`:''}${shippedAt?`<div class="order-detail-box"><small>Shipped</small><strong>${escapeHTML(formatOrderDate(shippedAt))}</strong></div>`:''}${deliveredAt?`<div class="order-detail-box"><small>Delivered</small><strong>${escapeHTML(formatOrderDate(deliveredAt))}</strong></div>`:''}</div>${deliveryNote?`<div class="delivery-message"><strong>DELIVERY NOTE</strong><span>${escapeHTML(deliveryNote)}</span></div>`:''}</section>`;
-    const pendingActions=status==='PENDING'?`<div style="margin-top:18px;padding-top:16px;border-top:1px solid #222"><div style="font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px">PENDING</div><div style="font-size:12px;line-height:1.6;color:#aaa;margin-bottom:14px">This order hasn’t been paid for yet. Would you like to complete your checkout?</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="checkout-submit" id="pending-continue-checkout">CONTINUE CHECKOUT</button><button type="button" class="order-close" id="pending-not-now">NOT NOW</button></div></div>`:'';
-    const retryActions=status==='FAILED'?`<div class="order-retry"><button type="button" id="failed-retry-payment">RETRY PAYMENT</button></div>`:'';
-    body.innerHTML=`<div class="order-detail-summary"><div><div class="order-detail-kicker">ORDER NUMBER</div><strong>${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div>${timeline}${deliveryHtml}<div class="order-detail-grid"><div class="order-detail-box"><small>Customer Name</small><strong>${escapeHTML(customerName)}</strong></div><div class="order-detail-box"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class="order-detail-box"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class="order-detail-box"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class="order-detail-box full"><small>Delivery Address</small><strong>${escapeHTML(address)}</strong></div><div class="order-detail-box full"><small>Order Note</small><strong>${escapeHTML(note)}</strong></div><div class="order-detail-box"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class="order-detail-box"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div></div><div class="order-detail-grid"><div class="order-detail-box"><small>Subtotal</small><strong>${money(subtotal)}</strong></div>${deliveryFee?`<div class="order-detail-box"><small>Delivery</small><strong>${money(deliveryFee)}</strong></div>`:''}<div class="order-detail-box"><small>Total</small><strong>${money(Number(order.total||subtotal+deliveryFee))}</strong></div></div><div class="order-section-title">ITEMS</div><div class="order-items">${items.length?items.map(item=>`<div class="order-item-row"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class="orders-empty">No item details available.</div>'}</div><div class="order-total-row"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}${retryActions}`;
-    if(status==='PENDING'){document.getElementById('pending-not-now').addEventListener('click',closeOrderDetails);document.getElementById('pending-continue-checkout').addEventListener('click',()=>resumePendingOrder(order));}
-    if(status==='FAILED')document.getElementById('failed-retry-payment').addEventListener('click',()=>retryFailedOrder(order));
+    const timelineStatuses=['PENDING','PAID','PROCESSING','SHIPPED','DELIVERED'];
+    const currentIndex=timelineStatuses.indexOf(status);
+    const timeline=status==='FAILED'?`<div class=\"order-timeline\"><div class=\"order-step current done\"><div class=\"order-step-label\">FAILED</div></div></div>`:`<div class=\"order-timeline\">${timelineStatuses.map((step,i)=>`<div class=\"order-step ${currentIndex>=i?'done':''} ${currentIndex===i?'current':''}\"><div class=\"order-step-label\">${step}</div></div>`).join('')}</div>`;
+    const pendingActions=status==='PENDING'?`<div style=\"margin-top:18px;padding-top:16px;border-top:1px solid #222\"><div style=\"font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px\">PENDING</div><div style=\"font-size:12px;line-height:1.6;color:#aaa;margin-bottom:14px\">This order hasn’t been paid for yet. Would you like to complete your checkout?</div><div style=\"display:flex;gap:8px;flex-wrap:wrap\"><button type=\"button\" class=\"checkout-submit\" id=\"pending-continue-checkout\">CONTINUE CHECKOUT</button><button type=\"button\" class=\"order-close\" id=\"pending-not-now\">NOT NOW</button></div></div>`:'';
+    const retryActions=status==='FAILED'?`<div class=\"order-retry\"><button type=\"button\" id=\"failed-retry-payment\">RETRY PAYMENT</button></div>`:'';
+    const paidActions=status==='PAID'?`<div style=\"margin-top:18px;padding-top:16px;border-top:1px solid #222;display:flex;gap:8px;flex-wrap:wrap\"><button type=\"button\" class=\"checkout-submit\" id=\"reorder-paid\">REORDER</button></div>`:'';
+    const copyOrderButton=`<button type=\"button\" class=\"order-close\" id=\"copy-order-number\" style=\"margin-top:10px\">COPY ORDER NUMBER</button>`;
+    body.innerHTML=`<div style=\"display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap\"><div><div style=\"font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px\">ORDER NUMBER</div><strong style=\"font-size:14px\">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class=\"order-status ${statusClass(status)}\">${escapeHTML(status)}</span></div><div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class=\"order-detail-box\"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class=\"order-detail-box\"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class=\"order-detail-box\"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class=\"order-detail-box\"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div>${timeline}<div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Subtotal</small><strong>${money(subtotal)}</strong></div>${deliveryFee?`<div class=\"order-detail-box\"><small>Delivery</small><strong>${money(deliveryFee)}</strong></div>`:''}<div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||subtotal+deliveryFee))}</strong></div></div><div style=\"font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px\">ITEMS</div><div class=\"order-items\">${items.length?items.map(item=>`<div class=\"order-item-row\"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class=\"orders-empty\">No item details available.</div>'}</div><div class=\"order-total-row\"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}${retryActions}${paidActions}${copyOrderButton}`;
+    if(status==='PENDING'){
+      document.getElementById('pending-not-now').addEventListener('click',closeOrderDetails);
+      document.getElementById('pending-continue-checkout').addEventListener('click',()=>resumePendingOrder(order));
+    }
+    if(status==='FAILED'){document.getElementById('failed-retry-payment').addEventListener('click',()=>retryFailedOrder(order));}
+    if(status==='PAID'){document.getElementById('reorder-paid').addEventListener('click',()=>reorderPaidOrder(order));}
+    document.getElementById('copy-order-number').addEventListener('click',()=>copyOrderNumber(order));
+    const paymentCopy=document.getElementById('copy-payment-reference');
+    if(paymentCopy) paymentCopy.addEventListener('click',()=>copyPaymentReference(order));
+    document.getElementById('share-order-details').addEventListener('click',()=>shareOrderDetails(order));
+  }
+  function orderItemsToCart(order){
+    const items=Array.isArray(order?.items)?order.items:[];
+    return items.map(item=>({id:item.productId||item.id,name:item.name||item.productId||'Item',price:Number(item.price||0),size:item.size||'ONE SIZE',color:item.color||'BLACK',quantity:Math.max(1,Number(item.quantity||1))})).filter(item=>item.id);
+  }
+  function reorderPaidOrder(order){
+    const items=orderItemsToCart(order);
+    if(!items.length){alert('This paid order has no item details available to reorder.');return}
+    cart=items;
+    saveCart();
+    renderCart();
+    closeOrderDetails();
+    openCart();
+  }
+  async function copyPaymentReference(order){
+    const value=String(order?.paymentReference||'').trim();
+    if(!value)return;
+    try{
+      await navigator.clipboard.writeText(value);
+      const button=document.getElementById('copy-payment-reference');
+      if(button){const original=button.textContent;button.textContent='COPIED';setTimeout(()=>{button.textContent=original},1200)}
+    }catch(_){window.prompt('COPY PAYMENT REFERENCE',value)}
+  }
+  async function shareOrderDetails(order){
+    const orderNumber=String(order?.orderNumber||order?.paymentReference||order?.id||'ORDER').trim();
+    const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();
+    const total=money(Number(order?.total||0));
+    const text=`STAYUNKNOWN Order ${orderNumber}\nStatus: ${status}\nTotal: ${total}`;
+    try{
+      if(navigator.share){await navigator.share({title:`STAYUNKNOWN Order ${orderNumber}`,text});return}
+      await navigator.clipboard.writeText(text);
+      alert('ORDER DETAILS COPIED');
+    }catch(error){
+      if(error?.name!=='AbortError') window.prompt('SHARE ORDER DETAILS',text);
+    }
+  }
+
+  async function copyOrderNumber(order){
+    const value=String(order?.orderNumber||order?.paymentReference||order?.id||'').trim();
+    if(!value)return;
+    try{
+      await navigator.clipboard.writeText(value);
+      const button=document.getElementById('copy-order-number');
+      if(button){const original=button.textContent;button.textContent='COPIED';setTimeout(()=>{button.textContent=original},1200)}
+    }catch(_){window.prompt('COPY ORDER NUMBER',value)}
   }
   function resumePendingOrder(order){
     let pending=null;
@@ -1400,20 +1423,7 @@ body{background:#101010}
     checkoutStatus.innerHTML='<div class=\"checkout-success\"><strong>RETRY PAYMENT</strong><br>Review your checkout details and continue to Paystack.</div>';
   }
 
-  async function openOrderDetails(order){
-    lastOrderForDetails=order;
-    document.getElementById('account-page').classList.remove('open');
-    document.getElementById('account-page').setAttribute('aria-hidden','true');
-    document.getElementById('order-confirmation').classList.remove('open');
-    document.getElementById('order-confirmation').setAttribute('aria-hidden','true');
-    document.getElementById('orders-page').classList.remove('open');
-    document.getElementById('orders-page').setAttribute('aria-hidden','true');
-    renderOrderDetails(order);
-    document.getElementById('order-details-modal').classList.add('open');
-    document.getElementById('order-details-modal').setAttribute('aria-hidden','false');
-    const id=String(order?.id||''); const user=window.__stayUnknownCurrentUser;
-    if(id && user){try{const token=await user.getIdToken();const r=await fetch(`${BACKEND_URL}/api/orders/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${token}`}});const d=await r.json();if(r.ok&&d.order){lastOrderForDetails=d.order;const i=orderHistory.findIndex(o=>String(o.id||'')===id);if(i>=0)orderHistory[i]=d.order;renderOrderDetails(d.order)}}catch(_){}}
-  }
+  function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false')}
   function openOrderConfirmation(order,customerName){lastOrderForDetails=order;document.getElementById('order-confirm-card').querySelector('p').textContent=`THANK YOU FOR SHOPPING WITH US${customerName?`, ${customerName.toUpperCase()}`:''}.`;document.getElementById('order-confirmation').classList.add('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','false')}
   function closeOrderDetails(){document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true');if(orderHistory.length){document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false')}}
   function orderItemsSignature(order){
@@ -1452,121 +1462,15 @@ body{background:#101010}
   }
 
   async function fetchMyOrders(){const user=window.__stayUnknownCurrentUser;const list=document.getElementById('orders-list');if(!user){orderHistory=[];list.innerHTML='<div class="orders-empty">SIGN IN TO SEE YOUR ORDERS.</div>';return}list.innerHTML='<div class="orders-empty">LOADING YOUR ORDERS…</div>';try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load orders.');orderHistory=removeSupersededPendingOrders(Array.isArray(data.orders)?data.orders:[]);renderOrderHistory()}catch(error){list.innerHTML=`<div class="orders-empty">${escapeHTML(error.message||'Unable to load your orders.')}</div>`}}
-  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${itemCount} ITEM${itemCount===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card,index)=>{const open=()=>openOrderDetails(filtered[index]);card.addEventListener('click',open);card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}})})}
-  async function openOrdersPage(){document.getElementById('account-page').classList.remove('open');document.getElementById('account-page').setAttribute('aria-hidden','true');document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true');document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
+  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${itemCount} ITEM${itemCount===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card)=>card.addEventListener('click',(event)=>{event.preventDefault();event.stopPropagation();const orderIndex=Number(card.dataset.orderIndex);const order=filtered[orderIndex];if(order)openOrderDetails(order)}))}
+  async function openOrdersPage(){document.getElementById('order-confirmation').classList.remove('open');closeOrderDetails();document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
   window.openOrdersPage=openOrdersPage;
   document.getElementById('order-confirm-card').addEventListener('click',()=>{if(lastOrderForDetails)openOrderDetails(lastOrderForDetails)});
   document.getElementById('order-confirm-card').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&lastOrderForDetails){e.preventDefault();openOrderDetails(lastOrderForDetails)}});
   document.getElementById('order-details-close').addEventListener('click',closeOrderDetails);
   document.getElementById('orders-page-close').addEventListener('click',()=>{document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true')});
   document.querySelectorAll('.orders-filter').forEach(button=>button.addEventListener('click',()=>{orderHistoryFilter=button.dataset.status;document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b===button));renderOrderHistory()}));
-
-  /* ---------- DELIVERY ADMIN ---------- */
-  let adminOrderHistory=[];
-  let adminSelectedOrder=null;
-  const adminOrdersPage=document.getElementById('admin-orders-page');
-  const adminDeliveryModal=document.getElementById('admin-delivery-modal');
-  const adminOrdersList=document.getElementById('admin-orders-list');
-  const adminButton=document.getElementById('btn-admin-orders');
-  const adminDeliveryMsg=document.getElementById('admin-delivery-status-msg');
-  const ADMIN_BACKEND=BACKEND_URL;
-
-  async function adminToken(){
-    const user=window.__stayUnknownCurrentUser;
-    if(!user) throw new Error('Sign in first.');
-    return user.getIdToken();
-  }
-
-  async function checkAdminAccess(){
-    if(!window.__stayUnknownCurrentUser){adminButton.style.display='none';return false}
-    try{
-      const token=await adminToken();
-      const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`}});
-      const d=await r.json();
-      const allowed=Boolean(r.ok&&d.isAdmin);
-      adminButton.style.display=allowed?'block':'none';
-      return allowed;
-    }catch(_){adminButton.style.display='none';return false}
-  }
-  window.checkStayUnknownAdminAccess=checkAdminAccess;
-
-  function openAdminOrders(){
-    adminOrdersPage.style.display='flex';
-    adminOrdersPage.setAttribute('aria-hidden','false');
-    document.getElementById('account-page')?.classList.remove('open');
-    fetchAdminOrders();
-  }
-  function closeAdminOrders(){adminOrdersPage.style.display='none';adminOrdersPage.setAttribute('aria-hidden','true')}
-  function closeAdminDelivery(){adminDeliveryModal.style.display='none';adminDeliveryModal.setAttribute('aria-hidden','true')}
-
-  async function fetchAdminOrders(){
-    adminOrdersList.innerHTML='<div class="orders-empty">Loading paid orders…</div>';
-    try{
-      const token=await adminToken();
-      const r=await fetch(`${ADMIN_BACKEND}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`}});
-      const d=await r.json();
-      if(!r.ok) throw new Error(d.error||'Unable to load delivery orders.');
-      adminOrderHistory=Array.isArray(d.orders)?d.orders:[];
-      renderAdminOrders();
-    }catch(e){adminOrdersList.innerHTML=`<div class="orders-empty">${escapeHTML(e.message||'Unable to load delivery orders.')}</div>`}
-  }
-
-  function renderAdminOrders(){
-    if(!adminOrderHistory.length){adminOrdersList.innerHTML='<div class="orders-empty">NO PAID ORDERS YET.</div>';return}
-    adminOrdersList.innerHTML=adminOrderHistory.map((o,i)=>{
-      const status=String(o.deliveryStatus||o.paymentStatus||'PAID').toUpperCase();
-      const customer=o.customer||{};
-      const items=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);
-      return `<article class="order-history-card" data-admin-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(customer.name||'Customer')} · ${escapeHTML(formatOrderDate(o.createdAt))} · ${items} ITEM${items===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`
-    }).join('');
-    adminOrdersList.querySelectorAll('[data-admin-index]').forEach(card=>card.addEventListener('click',()=>openAdminDelivery(adminOrderHistory[Number(card.dataset.adminIndex)])));
-  }
-
-  function openAdminDelivery(order){
-    adminSelectedOrder=order;
-    const customer=order.customer||{};
-    document.getElementById('admin-delivery-order-summary').innerHTML=`<div><div class="order-detail-kicker">ORDER</div><strong>${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong><div style="font-size:10px;color:#777;margin-top:5px">${escapeHTML(customer.name||'Customer')} · ${escapeHTML(customer.phone||'No phone')}</div></div><span class="order-status ${statusClass(order.deliveryStatus||order.paymentStatus||'PAID')}">${escapeHTML(order.deliveryStatus||order.paymentStatus||'PAID')}</span>`;
-    document.getElementById('admin-delivery-status').value=String(order.deliveryStatus||order.paymentStatus||'PAID').toUpperCase();
-    document.getElementById('admin-estimated-delivery').value=order.estimatedDelivery||'';
-    document.getElementById('admin-courier').value=order.courier||order.deliveryPartner||order.carrier||'';
-    document.getElementById('admin-tracking-number').value=order.trackingNumber||order.tracking||'';
-    document.getElementById('admin-delivery-note').value=order.deliveryNote||order.deliveryNotes||'';
-    adminDeliveryMsg.textContent='';
-    adminDeliveryModal.style.display='flex';
-    adminDeliveryModal.setAttribute('aria-hidden','false');
-  }
-
-  async function saveAdminDelivery(){
-    if(!adminSelectedOrder)return;
-    const button=document.getElementById('admin-save-delivery');
-    button.disabled=true;
-    adminDeliveryMsg.textContent='Saving…';
-    try{
-      const token=await adminToken();
-      const status=document.getElementById('admin-delivery-status').value;
-      const payload={
-        deliveryStatus:status,
-        estimatedDelivery:document.getElementById('admin-estimated-delivery').value.trim(),
-        courier:document.getElementById('admin-courier').value.trim(),
-        trackingNumber:document.getElementById('admin-tracking-number').value.trim(),
-        deliveryNote:document.getElementById('admin-delivery-note').value.trim()
-      };
-      const r=await fetch(`${ADMIN_BACKEND}/api/admin/orders/${encodeURIComponent(adminSelectedOrder.id)}/delivery`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const d=await r.json();
-      if(!r.ok)throw new Error(d.error||'Unable to save delivery update.');
-      adminSelectedOrder=d.order;
-      adminDeliveryMsg.style.color='#5cb85c';
-      adminDeliveryMsg.textContent='Delivery update saved.';
-      await fetchAdminOrders();
-      setTimeout(closeAdminDelivery,500);
-    }catch(e){adminDeliveryMsg.style.color='#d9534f';adminDeliveryMsg.textContent=e.message||'Unable to save delivery update.'}
-    finally{button.disabled=false}
-  }
-
-  adminButton.addEventListener('click',openAdminOrders);
-  document.getElementById('admin-orders-close').addEventListener('click',closeAdminOrders);
-  document.getElementById('admin-delivery-close').addEventListener('click',closeAdminDelivery);
-  document.getElementById('admin-save-delivery').addEventListener('click',saveAdminDelivery);
+  document.getElementById('orders-refresh').addEventListener('click',async()=>{const button=document.getElementById('orders-refresh');if(!button)return;const original=button.textContent;button.textContent='LOADING…';button.disabled=true;try{await fetchMyOrders()}finally{button.textContent=original;button.disabled=false}});
 
   renderCart();
 
@@ -1784,7 +1688,6 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
-    if (window.checkStayUnknownAdminAccess) window.checkStayUnknownAdminAccess();
   } else {
     greeting.textContent = 'Welcome to Stay Unknown';
     subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
@@ -1793,7 +1696,6 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = '';
     headerGreeting.classList.remove('visible');
-    adminButton.style.display = 'none';
 
     emailInput.value = '';
     passwordInput.value = '';
