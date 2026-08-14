@@ -385,6 +385,24 @@ body{background:#101010}
 .product-options-add{width:100%;padding:13px;background:#f3f3f0;color:#111;border:0;font-weight:800;cursor:pointer}
 .product-options-add:disabled{opacity:.45;cursor:not-allowed}
 .catalog-card,.search-result-card,.new-drop-card,.best-seller-card{cursor:pointer}
+
+/* PHASE 2 — wishlist + order receipt/status timeline */
+#wishlist-panel{position:fixed;top:0;right:0;width:min(92vw,420px);height:100vh;z-index:2600;background:#0d0d0d;border-left:1px solid #292929;transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-12px 0 30px rgba(0,0,0,.35)}
+#wishlist-panel.open{transform:translateX(0)}
+.wishlist-head{display:flex;justify-content:space-between;align-items:center;padding:20px;border-bottom:1px solid #222}
+.wishlist-head strong{font-size:12px;letter-spacing:2px;text-transform:uppercase}
+.wishlist-close{background:none;border:0;color:#fff;font-size:22px;cursor:pointer}
+#wishlist-items{padding:16px;overflow:auto;flex:1}
+.wishlist-row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #222}
+.wishlist-row-main{min-width:0}.wishlist-row-name{font-size:12px;font-weight:900;text-transform:uppercase}.wishlist-row-meta{font-size:10px;color:#777;margin-top:5px;text-transform:uppercase}
+.wishlist-row-actions{display:flex;gap:6px;align-items:center}.wishlist-action{background:transparent;color:#fff;border:1px solid #333;padding:8px 9px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}
+.wishlist-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border:1px solid #333;background:rgba(10,10,10,.82);color:#fff;font-size:16px;line-height:1;cursor:pointer;z-index:3}
+.wishlist-btn.saved{background:#f3f3f0;color:#111}
+.order-timeline{display:flex;gap:0;margin:18px 0;border:1px solid #222;background:#101010}
+.order-step{flex:1;padding:10px 6px;text-align:center;border-right:1px solid #222;opacity:.38}.order-step:last-child{border-right:0}.order-step.done{opacity:1}.order-step.current{font-weight:900;background:#181818}.order-step-label{font-size:8px;letter-spacing:.7px;text-transform:uppercase}
+.order-retry{margin-top:18px;padding-top:16px;border-top:1px solid #222}.order-retry button{width:100%;padding:13px;background:#f3f3f0;color:#111;border:0;font-weight:900;cursor:pointer}
+@media(max-width:520px){#wishlist-panel{width:94vw}.order-step-label{font-size:7px}}
+
 .add-cart,.qty-btn,.cart-remove,.checkout-btn,.checkout-close,.close-drawer,.back-btn,.category-chip,.menu-nav-item,.search-close,.product-options-close,.product-options-add{touch-action:manipulation}
 #cart-panel.swipe-hint,#checkout-overlay.swipe-hint{box-shadow:0 0 0 1px #444 inset}
 @media(max-width:520px){#product-options-modal{padding:10px}.product-options-card{padding:18px}.product-options-head h3{font-size:24px}}
@@ -419,6 +437,7 @@ body{background:#101010}
     <button class="icon-btn profile-btn" id="profile-top-btn" aria-label="Account" title="Account">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.9-3.2 3.2-5 7-5s6.1 1.8 7 5"/><circle cx="12" cy="12" r="10"/></svg>
     </button>
+    <button class="icon-btn wishlist-top-btn" id="wishlist-top-btn" aria-label="Wishlist" title="Wishlist">♡<span class="cart-count" id="wishlist-count">0</span></button>
     <button class="icon-btn cart-btn" id="cart-btn" aria-label="404 Bag" title="404 Bag">
       <span class="bag-mark" aria-hidden="true"><span>404</span></span>
       <span class="cart-count" id="cart-count">0</span>
@@ -454,6 +473,8 @@ body{background:#101010}
     <div class="menu-nav-item" id="nav-account-toggle" role="button" tabindex="0">
       <span>ACCOUNT</span><span>↗</span>
     </div>
+
+    <div class="menu-nav-item" id="nav-wishlist-toggle" role="button" tabindex="0"><span>WISHLIST</span><span id="menu-wishlist-count">0</span></div>
 
     <div id="account-modal">
       <h3 id="welcome-greeting">Welcome to Stay Unknown</h3>
@@ -522,6 +543,11 @@ body{background:#101010}
   <button class="checkout-btn" id="checkout-btn" disabled>CHECKOUT</button>
 </div>
 
+
+<div id="wishlist-panel" aria-hidden="true">
+  <div class="wishlist-head"><strong>WISHLIST</strong><button class="wishlist-close" id="wishlist-close" type="button" aria-label="Close wishlist">✕</button></div>
+  <div id="wishlist-items"><div class="orders-empty">YOUR WISHLIST IS EMPTY.</div></div>
+</div>
 
 <!-- Product size + colour selection -->
 <div id="product-options-modal" aria-hidden="true">
@@ -875,6 +901,7 @@ body{background:#101010}
 
   function cardMarkup(p, cls=''){
     return `<article class="${cls} catalog-card" data-product-id="${p.id}">
+      <button class="wishlist-btn" type="button" data-wishlist-id="${escapeHTML(p.id)}" aria-label="Save ${escapeHTML(p.name)} to wishlist">♡</button>
       ${p.drop ? '<div class="tag">NEW</div>' : ''}
       ${productVisual(p)}
       <div class="catalog-info">
@@ -1073,6 +1100,40 @@ body{background:#101010}
     }));
     renderCheckoutSummary();
   }
+  /* ---------- WISHLIST ---------- */
+  let wishlistIds=[];
+  try{const saved=JSON.parse(localStorage.getItem('stayunknown_wishlist')||'[]');wishlistIds=Array.isArray(saved)?saved:[]}catch(_){wishlistIds=[]}
+  function isWishlisted(id){return wishlistIds.includes(id)}
+  function saveWishlist(){localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));updateWishlistCount()}
+  function updateWishlistCount(){
+    const count=wishlistIds.length;
+    const top=document.getElementById('wishlist-count');
+    const menu=document.getElementById('menu-wishlist-count');
+    if(top)top.textContent=count; if(menu)menu.textContent=count;
+    document.querySelectorAll('[data-wishlist-id]').forEach(btn=>{const saved=isWishlisted(btn.dataset.wishlistId);btn.classList.toggle('saved',saved);btn.textContent=saved?'♥':'♡';btn.setAttribute('aria-label',saved?'Remove from wishlist':'Save to wishlist')});
+  }
+  function toggleWishlist(id){
+    if(!id)return;
+    wishlistIds=isWishlisted(id)?wishlistIds.filter(x=>x!==id):[...wishlistIds,id];
+    saveWishlist(); renderWishlist();
+  }
+  function renderWishlist(){
+    const box=document.getElementById('wishlist-items'); if(!box)return;
+    const items=wishlistIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
+    if(!items.length){box.innerHTML='<div class="orders-empty">YOUR WISHLIST IS EMPTY.</div>';updateWishlistCount();return}
+    box.innerHTML=items.map(p=>`<div class="wishlist-row"><div class="wishlist-row-main"><div class="wishlist-row-name">${escapeHTML(p.name)}</div><div class="wishlist-row-meta">${escapeHTML(p.category)} · ${money(p.price)}</div></div><div class="wishlist-row-actions"><button class="wishlist-action" data-wish-view="${escapeHTML(p.id)}" type="button">VIEW</button><button class="wishlist-action" data-wish-remove="${escapeHTML(p.id)}" type="button">REMOVE</button></div></div>`).join('');
+    box.querySelectorAll('[data-wish-view]').forEach(btn=>btn.addEventListener('click',()=>{closeWishlist();openProductById(btn.dataset.wishView)}));
+    box.querySelectorAll('[data-wish-remove]').forEach(btn=>btn.addEventListener('click',()=>toggleWishlist(btn.dataset.wishRemove)));
+    updateWishlistCount();
+  }
+  function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
+  function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
+  document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
+  document.getElementById('wishlist-top-btn').addEventListener('click',openWishlist);
+  document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
+  document.getElementById('nav-wishlist-toggle').addEventListener('click',openWishlist);
+  updateWishlistCount();
+
   function bindAddButtons(root=document){
     root.querySelectorAll('.add-cart').forEach(btn=>{
       if(btn.dataset.bound)return; btn.dataset.bound='1';
@@ -1255,12 +1316,19 @@ body{background:#101010}
     const status=String(order?.paymentStatus||order?.status||'PENDING').toUpperCase();
     const items=Array.isArray(order?.items)?order.items:[];
     const customer=order?.customer||{};
+    const subtotal=items.reduce((sum,item)=>sum+Number(item.lineTotal||((item.price||0)*(item.quantity||1))),0);
+    const deliveryFee=Number(order.deliveryFee||order.shippingFee||0);
+    const timelineStatuses=['PENDING','PAID','PROCESSING','SHIPPED','DELIVERED'];
+    const currentIndex=timelineStatuses.indexOf(status);
+    const timeline=status==='FAILED'?`<div class=\"order-timeline\"><div class=\"order-step current done\"><div class=\"order-step-label\">FAILED</div></div></div>`:`<div class=\"order-timeline\">${timelineStatuses.map((step,i)=>`<div class=\"order-step ${currentIndex>=i?'done':''} ${currentIndex===i?'current':''}\"><div class=\"order-step-label\">${step}</div></div>`).join('')}</div>`;
     const pendingActions=status==='PENDING'?`<div style=\"margin-top:18px;padding-top:16px;border-top:1px solid #222\"><div style=\"font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px\">PENDING</div><div style=\"font-size:12px;line-height:1.6;color:#aaa;margin-bottom:14px\">This order hasn’t been paid for yet. Would you like to complete your checkout?</div><div style=\"display:flex;gap:8px;flex-wrap:wrap\"><button type=\"button\" class=\"checkout-submit\" id=\"pending-continue-checkout\">CONTINUE CHECKOUT</button><button type=\"button\" class=\"order-close\" id=\"pending-not-now\">NOT NOW</button></div></div>`:'';
-    body.innerHTML=`<div style=\"display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap\"><div><div style=\"font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px\">ORDER NUMBER</div><strong style=\"font-size:14px\">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class=\"order-status ${statusClass(status)}\">${escapeHTML(status)}</span></div><div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class=\"order-detail-box\"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class=\"order-detail-box\"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class=\"order-detail-box\"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class=\"order-detail-box\"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div><div style=\"font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px\">ITEMS</div><div class=\"order-items\">${items.length?items.map(item=>`<div class=\"order-item-row\"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class=\"orders-empty\">No item details available.</div>'}</div><div class=\"order-total-row\"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}`;
+    const retryActions=status==='FAILED'?`<div class=\"order-retry\"><button type=\"button\" id=\"failed-retry-payment\">RETRY PAYMENT</button></div>`:'';
+    body.innerHTML=`<div style=\"display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap\"><div><div style=\"font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px\">ORDER NUMBER</div><strong style=\"font-size:14px\">${escapeHTML(order.orderNumber||order.paymentReference||order.id||'—')}</strong></div><span class=\"order-status ${statusClass(status)}\">${escapeHTML(status)}</span></div><div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Date</small><strong>${escapeHTML(formatOrderDate(order.createdAt||order.paidAt))}</strong></div><div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||0))}</strong></div><div class=\"order-detail-box\"><small>Email</small><strong>${escapeHTML(customer.email||'—')}</strong></div><div class=\"order-detail-box\"><small>Phone</small><strong>${escapeHTML(customer.phone||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Reference</small><strong>${escapeHTML(order.paymentReference||'—')}</strong></div><div class=\"order-detail-box\"><small>Payment Channel</small><strong>${escapeHTML(order.paymentChannel||'—')}</strong></div>${customer.address||order.address?`<div class=\"order-detail-box\"><small>Delivery Address</small><strong>${escapeHTML(customer.address||order.address)}</strong></div>`:''}${customer.note||order.note?`<div class=\"order-detail-box\"><small>Order Note</small><strong>${escapeHTML(customer.note||order.note)}</strong></div>`:''}</div>${timeline}<div class=\"order-detail-grid\"><div class=\"order-detail-box\"><small>Subtotal</small><strong>${money(subtotal)}</strong></div>${deliveryFee?`<div class=\"order-detail-box\"><small>Delivery</small><strong>${money(deliveryFee)}</strong></div>`:''}<div class=\"order-detail-box\"><small>Total</small><strong>${money(Number(order.total||subtotal+deliveryFee))}</strong></div></div><div style=\"font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px\">ITEMS</div><div class=\"order-items\">${items.length?items.map(item=>`<div class=\"order-item-row\"><div><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><small>${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</small></div><strong>${money(Number(item.lineTotal||((item.price||0)*(item.quantity||1))))}</strong></div>`).join(''):'<div class=\"orders-empty\">No item details available.</div>'}</div><div class=\"order-total-row\"><span>TOTAL</span><span>${money(Number(order.total||0))}</span></div>${pendingActions}${retryActions}`;
     if(status==='PENDING'){
       document.getElementById('pending-not-now').addEventListener('click',closeOrderDetails);
       document.getElementById('pending-continue-checkout').addEventListener('click',()=>resumePendingOrder(order));
     }
+    if(status==='FAILED'){document.getElementById('failed-retry-payment').addEventListener('click',()=>retryFailedOrder(order));}
   }
   function resumePendingOrder(order){
     let pending=null;
@@ -1284,6 +1352,22 @@ body{background:#101010}
     }
     alert('This older pending order no longer has its original checkout session on this device, so it cannot be safely resumed without creating a duplicate order. The order has not been changed.');
   }
+  async function retryFailedOrder(order){
+    const items=Array.isArray(order?.items)?order.items:[];
+    if(!items.length){alert('This failed order has no item details available to retry.');return}
+    cart=items.map(item=>({id:item.productId||item.id,name:item.name||item.productId||'Item',price:Number(item.price||0),size:item.size||'ONE SIZE',color:item.color||'BLACK',quantity:Number(item.quantity||1)}));
+    renderCart();
+    const customer=order.customer||{};
+    document.getElementById('checkout-name').value=customer.name||customer.fullName||'';
+    document.getElementById('checkout-email').value=customer.email||'';
+    document.getElementById('checkout-phone').value=customer.phone||'';
+    document.getElementById('checkout-address').value=customer.address||order.address||'';
+    document.getElementById('checkout-note').value=customer.note||order.note||'';
+    closeOrderDetails();
+    openCheckout();
+    checkoutStatus.innerHTML='<div class=\"checkout-success\"><strong>RETRY PAYMENT</strong><br>Review your checkout details and continue to Paystack.</div>';
+  }
+
   function openOrderDetails(order){lastOrderForDetails=order;document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('orders-page').classList.remove('open');document.getElementById('orders-page').setAttribute('aria-hidden','true');renderOrderDetails(order);document.getElementById('order-details-modal').classList.add('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','false')}
   function openOrderConfirmation(order,customerName){lastOrderForDetails=order;document.getElementById('order-confirm-card').querySelector('p').textContent=`THANK YOU FOR SHOPPING WITH US${customerName?`, ${customerName.toUpperCase()}`:''}.`;document.getElementById('order-confirmation').classList.add('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','false')}
   function closeOrderDetails(){document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true');if(orderHistory.length){document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false')}}
@@ -1345,7 +1429,7 @@ body{background:#101010}
 
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
-    closeDrawer();closeCart();closeCheckout();closeProductOptions();
+    closeDrawer();closeCart();closeCheckout();closeProductOptions();closeWishlist();
     if(accountPage.classList.contains('open')) closeAccountPage();
     if(searchPanel.classList.contains('open')){searchPanel.classList.remove('open');searchInput.value='';doSearch('')}
   });
