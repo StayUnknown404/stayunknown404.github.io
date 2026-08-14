@@ -437,7 +437,6 @@ body{background:#101010}
     <button class="icon-btn profile-btn" id="profile-top-btn" aria-label="Account" title="Account">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.9-3.2 3.2-5 7-5s6.1 1.8 7 5"/><circle cx="12" cy="12" r="10"/></svg>
     </button>
-    <button class="icon-btn wishlist-top-btn" id="wishlist-top-btn" aria-label="Wishlist" title="Wishlist">♡<span class="cart-count" id="wishlist-count">0</span></button>
     <button class="icon-btn cart-btn" id="cart-btn" aria-label="404 Bag" title="404 Bag">
       <span class="bag-mark" aria-hidden="true"><span>404</span></span>
       <span class="cart-count" id="cart-count">0</span>
@@ -1129,7 +1128,6 @@ body{background:#101010}
   function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
-  document.getElementById('wishlist-top-btn').addEventListener('click',openWishlist);
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
   document.getElementById('nav-wishlist-toggle').addEventListener('click',openWishlist);
   updateWishlistCount();
@@ -1257,11 +1255,8 @@ body{background:#101010}
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          name:customerName,
           email,
           phone,
-          address:document.getElementById('checkout-address').value.trim(),
-          note:document.getElementById('checkout-note').value.trim(),
           userId:window.__stayUnknownCurrentUser?.uid || '',
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
