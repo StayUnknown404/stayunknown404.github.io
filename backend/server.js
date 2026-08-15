@@ -1447,6 +1447,26 @@ function getAdminEmails() {
     .filter(Boolean);
 }
 
+/*
+  Compatibility middleware for the newer support/promo/admin routes.
+  The main authentication middleware stores the decoded Firebase user on
+  req.firebaseUser; these routes expect req.user and req.user.isAdmin.
+*/
+function authenticate(req, res, next) {
+  return requireFirebaseUser(req, res, () => {
+    const email = String(req.firebaseUser?.email || "")
+      .trim()
+      .toLowerCase();
+
+    req.user = {
+      ...req.firebaseUser,
+      isAdmin: Boolean(email && getAdminEmails().includes(email))
+    };
+
+    next();
+  });
+}
+
 async function requireAdmin(req, res, next) {
   try {
     await new Promise((resolve, reject) => {
@@ -1852,19 +1872,6 @@ app.post(
   }
 );
 
-/*
-  Start server.
-*/
-app.listen(
-  PORT,
-  () => {
-    console.log(
-      `STAYUNKNOWN backend running on port ${PORT}`
-    );
-  }
-);
-
-
 // ---------- STAYUNKNOWN CUSTOMER SUPPORT / RESTOCK / PROMO ADDITIONS ----------
 const supportTickets = new Map();
 const restockSubscriptions = new Map();
@@ -2020,4 +2027,11 @@ app.get('/api/admin/restock-subscriptions', authenticate, async (req,res)=>{
 app.get('/api/admin/support', authenticate, async (req,res)=>{
   if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
   res.json({tickets:[...supportTickets.values()].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))});
+});
+
+/*
+  Start server only after ALL routes have been registered.
+*/
+app.listen(PORT, () => {
+  console.log(`STAYUNKNOWN backend running on port ${PORT}`);
 });
