@@ -407,6 +407,9 @@ body{background:#101010}
 #cart-panel.swipe-hint,#checkout-overlay.swipe-hint{box-shadow:0 0 0 1px #444 inset}
 @media(max-width:520px){#product-options-modal{padding:10px}.product-options-card{padding:18px}.product-options-head h3{font-size:24px}}
 
+
+/* ===== CUSTOMER NOTIFICATIONS ===== */
+#notification-fab{position:fixed;right:18px;bottom:22px;z-index:4300;display:none;touch-action:none;user-select:none}#notification-fab.visible{display:block}#notification-fab-button{width:58px;height:58px;border:1px solid #555;border-radius:50%;background:#151515;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.45);display:grid;place-items:center;position:relative;cursor:pointer;font-size:23px}.notification-bell{display:block;line-height:1}#notification-fab-count{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#f3f3f0;color:#111;border:2px solid #151515;font-size:9px;font-weight:900;line-height:16px;text-align:center}#notifications-modal{position:fixed;inset:0;z-index:4200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}#notifications-modal.open{display:flex}.notifications-card{width:min(520px,100%);max-height:82vh;overflow:auto;background:#111;border:1px solid #333;box-shadow:0 24px 80px rgba(0,0,0,.65)}.notifications-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px;background:#111;border-bottom:1px solid #292929}.notifications-head strong{font:24px/1 Anton,sans-serif;text-transform:uppercase}.notifications-list{padding:14px}.notification-row{border:1px solid #292929;padding:15px;margin-bottom:9px;background:#151515}.notification-row.unread{border-color:#555;background:#181818}.notification-row-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.notification-row-title{font-size:12px;font-weight:900;text-transform:uppercase}.notification-row-time{color:#777;font-size:9px;white-space:nowrap}.notification-row-message{color:#aaa;font-size:11px;line-height:1.65;margin-top:8px}.notification-row-action{margin-top:12px;background:transparent;color:#fff;border:1px solid #444;padding:8px 10px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}#menu-notification-count{min-width:20px;text-align:right}@media(max-width:520px){#notification-fab{right:14px;bottom:16px}#notification-fab-button{width:54px;height:54px}.notifications-card{max-height:88vh}.notifications-head{padding:18px}.notifications-head strong{font-size:22px}}
 </style>
 </head>
 <body class="intro-active">
@@ -474,6 +477,7 @@ body{background:#101010}
     </div>
 
     <div class="menu-nav-item" id="nav-wishlist-toggle" role="button" tabindex="0"><span>WISHLIST</span><span id="menu-wishlist-count">0</span></div>
+    <div class="menu-nav-item" id="nav-notifications-toggle" role="button" tabindex="0" aria-label="Notifications"><span>NOTIFICATIONS</span><span id="menu-notification-count">0</span></div>
 
     <div id="account-modal">
       <h3 id="welcome-greeting">Welcome to Stay Unknown</h3>
@@ -717,6 +721,10 @@ body{background:#101010}
     </div>
   </div>
 </div>
+
+<!-- CUSTOMER NOTIFICATIONS -->
+<div id="notification-fab" aria-hidden="true"><button id="notification-fab-button" type="button" aria-label="Open notifications"><span class="notification-bell" aria-hidden="true">♢</span><span id="notification-fab-count">0</span></button></div>
+<div id="notifications-modal" aria-hidden="true"><div class="notifications-card" role="dialog" aria-modal="true" aria-labelledby="notifications-title"><div class="notifications-head"><strong id="notifications-title">NOTIFICATIONS</strong><button id="notifications-close" type="button" class="order-close">CLOSE</button></div><div id="notifications-list" class="notifications-list"><div class="orders-empty">NO NOTIFICATIONS.</div></div></div></div>
 
 <div id="order-confirmation" aria-hidden="true">
   <div class="order-confirm-card" id="order-confirm-card" role="button" tabindex="0" aria-label="Order confirmed. Tap to view order details.">
@@ -1573,6 +1581,33 @@ body{background:#101010}
 
   renderCart();
 
+
+  /* ---------- CUSTOMER NOTIFICATIONS ---------- */
+  const notificationFab=document.getElementById('notification-fab');
+  const notificationFabButton=document.getElementById('notification-fab-button');
+  const notificationFabCount=document.getElementById('notification-fab-count');
+  const notificationModal=document.getElementById('notifications-modal');
+  const notificationList=document.getElementById('notifications-list');
+  const notificationMenu=document.getElementById('nav-notifications-toggle');
+  const notificationMenuCount=document.getElementById('menu-notification-count');
+  const notificationClose=document.getElementById('notifications-close');
+  let stayUnknownNotifications=[];
+  let notificationDrag=null;
+  function notificationTime(value){if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
+  function updateNotificationIndicators(){const unread=stayUnknownNotifications.filter(n=>!n.read).length;const compact=unread>9?'9+':String(unread);notificationFabCount.textContent=compact;notificationMenuCount.textContent=compact;notificationFab.classList.toggle('visible',unread>0);notificationFab.setAttribute('aria-hidden',unread>0?'false':'true')}
+  function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async()=>{const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));updateNotificationIndicators()}
+  async function fetchNotifications(){const user=window.__stayUnknownCurrentUser;if(!user){stayUnknownNotifications=[];renderNotifications();return}try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load notifications.');stayUnknownNotifications=Array.isArray(data.notifications)?data.notifications:[];renderNotifications()}catch(error){console.error('Notification load error:',error)}}
+  async function markNotificationRead(notification){if(!notification||notification.read)return;const user=window.__stayUnknownCurrentUser;if(!user)return;try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();renderNotifications()}catch(error){console.error('Notification read error:',error)}}
+  function openNotifications(){notificationModal.classList.add('open');notificationModal.setAttribute('aria-hidden','false');renderNotifications()}
+  function closeNotifications(){notificationModal.classList.remove('open');notificationModal.setAttribute('aria-hidden','true')}
+  notificationMenu?.addEventListener('click',()=>{closeDrawer();openNotifications()});notificationMenu?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();closeDrawer();openNotifications()}});notificationClose?.addEventListener('click',closeNotifications);notificationModal?.addEventListener('click',e=>{if(e.target===notificationModal)closeNotifications()});notificationFabButton?.addEventListener('click',openNotifications);
+  notificationFabButton?.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;notificationDrag={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,startLeft:notificationFab.getBoundingClientRect().left,startTop:notificationFab.getBoundingClientRect().top,moved:false};notificationFabButton.setPointerCapture?.(e.pointerId)});
+  notificationFabButton?.addEventListener('pointermove',e=>{if(!notificationDrag||e.pointerId!==notificationDrag.pointerId)return;const dx=e.clientX-notificationDrag.startX,dy=e.clientY-notificationDrag.startY;if(Math.abs(dx)+Math.abs(dy)>8)notificationDrag.moved=true;const maxLeft=Math.max(6,window.innerWidth-notificationFab.offsetWidth-6),maxTop=Math.max(6,window.innerHeight-notificationFab.offsetHeight-6),left=Math.min(maxLeft,Math.max(6,notificationDrag.startLeft+dx)),top=Math.min(maxTop,Math.max(6,notificationDrag.startTop+dy));notificationFab.style.left=`${left}px`;notificationFab.style.top=`${top}px`;notificationFab.style.right='auto';notificationFab.style.bottom='auto'});
+  notificationFabButton?.addEventListener('pointerup',e=>{if(notificationDrag&&e.pointerId===notificationDrag.pointerId)notificationDrag=null});
+  window.refreshStayUnknownNotifications=fetchNotifications;
+  window.openStayUnknownNotifications=openNotifications;
+  updateNotificationIndicators();
+
   /* ---------- MOBILE SWIPE BACK ---------- */
   function addSwipeBack(target, onBack){
     let startX=0,startY=0,tracking=false;
@@ -1788,6 +1823,7 @@ function updateAccountUI(user) {
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
     if (window.checkStayUnknownAdminAccess) window.checkStayUnknownAdminAccess();
+    if (window.refreshStayUnknownNotifications) window.refreshStayUnknownNotifications();
   } else {
     greeting.textContent = 'Welcome to Stay Unknown';
     subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
