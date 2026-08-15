@@ -486,10 +486,13 @@ body{background:#101010}
 .notification-row-action{position:relative;z-index:2}
 </style>
 
-<style id="account-dashboard-shortcuts-style">
+<style id="account-dashboard-corrected-style">
 .account-dashboard-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
 .account-dashboard-card{width:100%;text-align:left;background:transparent;border:1px solid rgba(255,255,255,.18);padding:15px;border-radius:12px;color:inherit;cursor:pointer}
-.account-dashboard-card span{display:block;font-weight:700;letter-spacing:.04em}.account-dashboard-card small{display:block;opacity:.65;margin-top:5px}.account-dashboard-card b{font-size:.8em;margin-left:4px}
+.account-dashboard-card span{display:block;font-weight:700;letter-spacing:.04em}
+.account-dashboard-card small{display:block;opacity:.65;margin-top:5px}
+.account-dashboard-card b{font-size:.8em;margin-left:4px}
+.saved-checkout-account-section{border-top:1px solid #292929;margin-top:20px;padding-top:20px}
 @media(max-width:520px){.account-dashboard-shortcuts{grid-template-columns:1fr}}
 </style>
 </head>
@@ -554,29 +557,8 @@ body{background:#101010}
     <div class="shop-category-menu" id="menu-shop-categories"></div>
 
     <div class="menu-nav-item" id="nav-account-toggle" role="button" tabindex="0">
-      <span>ACCOUNT</span>
-<div class="account-dashboard-shortcuts" id="account-dashboard-shortcuts">
-  <button type="button" class="account-dashboard-card" data-account-action="orders">
-    <span>MY ORDERS</span><small>View your orders</small>
-  </button>
-  <button type="button" class="account-dashboard-card" data-account-action="wishlist">
-    <span>WISHLIST <b id="account-wishlist-count">0</b></span><small>Saved pieces</small>
-  </button>
-  <button type="button" class="account-dashboard-card" data-account-action="notifications">
-    <span>NOTIFICATIONS <b id="account-notification-count">0</b></span><small>Order updates</small>
-  </button>
-  <button type="button" class="account-dashboard-card" data-account-action="details">
-    <span>ACCOUNT DETAILS</span><small>Manage your account</small>
-  </button>
-  <button type="button" class="account-dashboard-card" data-account-action="saved-checkout">
-    <span>SAVED CHECKOUT</span><small>Phone &amp; address</small>
-  </button>
-</div>
-<span>↗</span>
+      <span>ACCOUNT</span><span>↗</span>
     </div>
-
-    <div class="menu-nav-item" id="nav-wishlist-toggle" role="button" tabindex="0"><span>WISHLIST</span><span id="menu-wishlist-count">0</span></div>
-    <div class="menu-nav-item" id="nav-notifications-toggle" role="button" tabindex="0" aria-label="Notifications"><span>NOTIFICATIONS</span><span id="menu-notification-count">0</span></div>
 
     <div id="account-modal">
       <h3 id="welcome-greeting">Welcome to Stay Unknown</h3>
@@ -606,6 +588,39 @@ body{background:#101010}
       </div>
 
       <div id="user-dashboard">
+<div class="account-dashboard-shortcuts" id="account-dashboard-shortcuts">
+  <button type="button" class="account-dashboard-card" data-account-action="orders">
+    <span>MY ORDERS</span><small>See your orders</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="notifications">
+    <span>NOTIFICATIONS <b id="account-notification-count">0</b></span><small>See order updates</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="wishlist">
+    <span>WISHLIST <b id="account-wishlist-count">0</b></span><small>See saved pieces</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="manage-account">
+    <span>MANAGE ACCOUNT</span><small>Password and account security</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="saved-checkout">
+    <span>SAVED CHECKOUT</span><small>Phone and delivery address</small>
+  </button>
+</div>
+
+<div class="saved-checkout-account-section" id="saved-checkout-account-section">
+  <div class="account-dashboard-label">SAVED CHECKOUT INFORMATION</div>
+  <p class="account-dashboard-note">Your saved phone number and delivery address for future orders.</p>
+  <div class="auth-field">
+    <label class="auth-label" for="account-saved-phone">PHONE</label>
+    <input id="account-saved-phone" class="auth-input" type="tel" autocomplete="tel" placeholder="Your phone number">
+  </div>
+  <div class="auth-field">
+    <label class="auth-label" for="account-saved-address">DELIVERY ADDRESS</label>
+    <textarea id="account-saved-address" class="auth-input" rows="3" autocomplete="street-address" placeholder="Your delivery address"></textarea>
+  </div>
+  <button id="account-save-checkout" class="auth-alt" type="button">SAVE CHECKOUT INFORMATION</button>
+  <div id="account-saved-checkout-status" class="account-dashboard-note" aria-live="polite"></div>
+</div>
+
         <div class="account-dashboard-wrap">
           <div class="account-dashboard-section">
             <div class="account-dashboard-label">SHOPPING</div>
@@ -1352,7 +1367,7 @@ body{background:#101010}
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
-  document.getElementById('nav-wishlist-toggle').addEventListener('click',openWishlist);
+  document.getElementById('nav-wishlist-toggle')?.addEventListener('click',openWishlist);
   updateWishlistCount();
 
   function bindAddButtons(root=document){
@@ -2042,27 +2057,79 @@ function updateAccountUI(user) {
 onAuthStateChanged(auth, updateAccountUI);
 </script>
 
-<script id="account-dashboard-shortcuts-script">
+<script id="account-dashboard-corrected-script">
 (function(){
-  function accountAction(action){
-    if(action==='wishlist'){
-      if(typeof openWishlist==='function') return openWishlist();
-      const el=document.querySelector('[data-section="wishlist"],#wishlist'); if(el) el.click();
-    } else if(action==='notifications'){
-      if(typeof openNotifications==='function') return openNotifications();
-      const el=document.querySelector('[data-section="notifications"],#notifications'); if(el) el.click();
-    } else if(action==='orders'){
-      if(typeof openAccountOrders==='function') return openAccountOrders();
-      const el=document.querySelector('[data-section="orders"],#orders'); if(el) el.click();
-    } else if(action==='details'){
-      const el=document.querySelector('[data-section="account-details"],#account-details'); if(el) el.click();
-    } else if(action==='saved-checkout'){
-      const el=document.querySelector('[data-section="saved-checkout"],#saved-checkout'); if(el) el.click();
+  async function loadSavedCheckout(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user)return;
+    try{
+      const token=await user.getIdToken();
+      const r=await fetch(`${BACKEND_URL}/api/profile`,{headers:{Authorization:`Bearer ${token}`}});
+      if(!r.ok)return;
+      const d=await r.json();
+      const phone=document.getElementById('account-saved-phone');
+      const address=document.getElementById('account-saved-address');
+      if(phone)phone.value=d.profile?.phone||'';
+      if(address)address.value=d.profile?.address||'';
+    }catch(e){console.error('Saved checkout load error:',e)}
+  }
+
+  async function saveSavedCheckout(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user)return;
+    const status=document.getElementById('account-saved-checkout-status');
+    try{
+      const token=await user.getIdToken();
+      const r=await fetch(`${BACKEND_URL}/api/profile`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+        body:JSON.stringify({
+          phone:document.getElementById('account-saved-phone')?.value.trim()||'',
+          address:document.getElementById('account-saved-address')?.value.trim()||''
+        })
+      });
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.error||'Unable to save checkout information.');
+      if(status)status.textContent='SAVED.';
+    }catch(e){
+      if(status)status.textContent='Unable to save. Please try again.';
+      console.error('Saved checkout save error:',e);
     }
   }
+
+  function accountAction(action){
+    if(action==='orders' && typeof window.openOrdersPage==='function'){
+      return window.openOrdersPage();
+    }
+    if(action==='notifications' && typeof window.openStayUnknownNotifications==='function'){
+      if(typeof window.closeAccountPage==='function')window.closeAccountPage();
+      return window.openStayUnknownNotifications();
+    }
+    if(action==='wishlist' && typeof window.openWishlist==='function'){
+      if(typeof window.closeAccountPage==='function')window.closeAccountPage();
+      return window.openWishlist();
+    }
+    if(action==='manage-account'){
+      const sections=document.querySelectorAll('#user-dashboard .account-dashboard-section');
+      const security=[...sections].find(s=>s.querySelector('.account-dashboard-label')?.textContent.trim()==='ACCOUNT SECURITY');
+      if(security)security.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+    if(action==='saved-checkout'){
+      const section=document.getElementById('saved-checkout-account-section');
+      if(section){
+        section.scrollIntoView({behavior:'smooth',block:'start'});
+        loadSavedCheckout();
+      }
+    }
+  }
+
   document.addEventListener('click',function(e){
-    const b=e.target.closest('[data-account-action]'); if(b) accountAction(b.dataset.accountAction);
+    const b=e.target.closest('[data-account-action]');
+    if(b)accountAction(b.dataset.accountAction);
   });
+  document.getElementById('account-save-checkout')?.addEventListener('click',saveSavedCheckout);
+  window.refreshStayUnknownSavedCheckout=loadSavedCheckout;
 })();
 </script>
 </body>
