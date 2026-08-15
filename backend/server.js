@@ -1447,6 +1447,39 @@ function getAdminEmails() {
     .filter(Boolean);
 }
 
+/*
+  Compatibility authentication middleware for the newer support/promo
+  routes. The existing backend uses req.firebaseUser; these routes expect
+  req.user and req.user.isAdmin. Keep both forms available without changing
+  the existing authentication flow.
+*/
+async function authenticate(req, res, next) {
+  try {
+    await requireFirebaseUser(req, res, () => {
+      const email = String(
+        req.firebaseUser?.email || ""
+      ).trim().toLowerCase();
+
+      req.user = {
+        ...req.firebaseUser,
+        isAdmin: Boolean(
+          email && getAdminEmails().includes(email)
+        )
+      };
+
+      next();
+    });
+  } catch (error) {
+    console.error("Authentication middleware error:", error);
+
+    if (!res.headersSent) {
+      return res.status(401).json({
+        error: "Authentication required."
+      });
+    }
+  }
+}
+
 async function requireAdmin(req, res, next) {
   try {
     await new Promise((resolve, reject) => {
@@ -1877,104 +1910,20 @@ function safeCustomerEmail(req){
   return req.user?.email || req.body?.email || '';
 }
 
-async function createSupportNotification(ticket, title, message){
-  try{
-    const firestore = typeof initFirebase === 'function' ? initFirebase() : null;
-    if(!firestore || !ticket?.userId) return;
-    await firestore.collection('notifications').add({
-      uid:String(ticket.userId),
-      supportTicketId:String(ticket.id),
-      title:String(title || 'SUPPORT UPDATE'),
-      message:String(message || 'Your STAYUNKNOWN support request has been updated.'),
-      read:false,
-      readAt:null,
-      createdAt:new Date().toISOString()
-    });
-  }catch(error){
-    console.error('Support notification error:', error);
-  }
-}
-
 app.post('/api/support', authenticate, async (req,res)=>{
   try{
     const {subject='',message='',orderNumber=''}=req.body||{};
     if(!String(message).trim()) return res.status(400).json({error:'Message is required.'});
     const id=`SUP-${Date.now()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
-    const ticket={
-      id,
-      userId:req.user.uid,
-      email:safeCustomerEmail(req),
-      subject:String(subject).trim().slice(0,120) || 'SUPPORT REQUEST',
-      message:String(message).trim().slice(0,5000),
-      orderNumber:String(orderNumber).trim().slice(0,80),
-      status:'OPEN',
-      replies:[],
-      createdAt:new Date().toISOString(),
-      updatedAt:new Date().toISOString()
-    };
+    const ticket={id,userId:req.user.uid,email:safeCustomerEmail(req),subject:String(subject).trim().slice(0,120),message:String(message).trim().slice(0,5000),orderNumber:String(orderNumber).trim().slice(0,80),status:'OPEN',createdAt:new Date().toISOString()};
     supportTickets.set(id,ticket);
     return res.json({ok:true,ticket});
-  }catch(e){
-    console.error('Support create error:',e);
-    return res.status(500).json({error:'Unable to create support request.'});
-  }
+  }catch(e){return res.status(500).json({error:'Unable to create support request.'})}
 });
 
 app.get('/api/support', authenticate, async (req,res)=>{
-  const mine=[...supportTickets.values()]
-    .filter(t=>t.userId===req.user.uid)
-    .sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  const mine=[...supportTickets.values()].filter(t=>t.userId===req.user.uid);
   res.json({tickets:mine});
-});
-
-app.patch('/api/admin/support/:ticketId', authenticate, async (req,res)=>{
-  try{
-    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-
-    const id=String(req.params.ticketId||'').trim();
-    const ticket=supportTickets.get(id);
-    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
-
-    const allowed=['OPEN','IN PROGRESS','RESOLVED','CLOSED'];
-    const requestedStatus=String(req.body?.status||ticket.status||'OPEN').trim().toUpperCase();
-    if(!allowed.includes(requestedStatus)){
-      return res.status(400).json({error:'Invalid support status.'});
-    }
-
-    const replyText=String(req.body?.reply||'').trim().slice(0,5000);
-    const now=new Date().toISOString();
-
-    ticket.status=requestedStatus;
-    ticket.updatedAt=now;
-
-    if(!Array.isArray(ticket.replies)) ticket.replies=[];
-    if(replyText){
-      ticket.replies.push({
-        from:'ADMIN',
-        email:String(req.user.email||'').toLowerCase(),
-        message:replyText,
-        createdAt:now
-      });
-    }
-
-    supportTickets.set(id,ticket);
-
-    if(replyText || requestedStatus !== String(req.body?.previousStatus||ticket.status)){
-      const notificationMessage=replyText
-        ? replyText
-        : `Your support request is now ${requestedStatus}.`;
-      await createSupportNotification(
-        ticket,
-        'SUPPORT REQUEST UPDATED',
-        notificationMessage
-      );
-    }
-
-    return res.json({ok:true,ticket});
-  }catch(e){
-    console.error('Admin support update error:',e);
-    return res.status(500).json({error:'Unable to update support ticket.'});
-  }
 });
 
 app.post('/api/restock-subscriptions', async (req,res)=>{
