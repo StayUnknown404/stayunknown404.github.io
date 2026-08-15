@@ -310,6 +310,36 @@ async function createOrderStatusNotification(order, deliveryStatus, delivery = {
   return { id: doc.id, ...notification };
 }
 
+app.get("/api/wishlist", requireFirebaseUser, async (req, res) => {
+  try {
+    const firestore = initFirebase();
+    if (!firestore) return res.status(503).json({ error: "Firebase is not configured." });
+    const uid = String(req.firebaseUser.uid || "").trim();
+    const snap = await firestore.collection("users").doc(uid).get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    const wishlistIds = Array.isArray(data.wishlistIds) ? data.wishlistIds.slice(0, 100) : [];
+    return res.json({ ok: true, wishlistIds });
+  } catch (error) {
+    console.error("Wishlist load error:", error);
+    return res.status(500).json({ error: "Unable to load wishlist." });
+  }
+});
+
+app.put("/api/wishlist", requireFirebaseUser, async (req, res) => {
+  try {
+    const firestore = initFirebase();
+    if (!firestore) return res.status(503).json({ error: "Firebase is not configured." });
+    const uid = String(req.firebaseUser.uid || "").trim();
+    const incoming = Array.isArray(req.body?.wishlistIds) ? req.body.wishlistIds : [];
+    const wishlistIds = [...new Set(incoming.map(id => String(id || "").trim()).filter(Boolean))].slice(0, 100);
+    await firestore.collection("users").doc(uid).set({ wishlistIds, updatedAt: new Date().toISOString() }, { merge: true });
+    return res.json({ ok: true, wishlistIds });
+  } catch (error) {
+    console.error("Wishlist save error:", error);
+    return res.status(500).json({ error: "Unable to save wishlist." });
+  }
+});
+
 app.get("/api/notifications", requireFirebaseUser, async (req, res) => {
   try {
     const firestore = initFirebase();
