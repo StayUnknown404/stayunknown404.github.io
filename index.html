@@ -129,7 +129,7 @@ button,input,textarea{font:inherit}
 #account-page{position:fixed;inset:0;z-index:2800;display:none;background:#111;overflow-y:auto;padding:92px 18px 40px}
 #account-page.open{display:block}
 .account-page-card{width:min(720px,100%);margin:0 auto;background:#111;border:1px solid #2b2b2b;min-height:calc(100vh - 132px);box-shadow:0 24px 80px rgba(0,0,0,.5)}
-.account-page-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:22px;border-bottom:1px solid #292929;position:sticky;top:0;background:#111;z-index:2}
+.account-page-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:22px;border-bottom:1px solid #292929;position:relative;background:#111;z-index:1}
 .account-page-head h2{font:30px/1 Anton,sans-serif;margin:0;text-transform:uppercase}
 .account-page-back{background:none;border:1px solid #444;color:#fff;padding:9px 12px;cursor:pointer;font-size:10px;font-weight:800;text-transform:uppercase}
 #account-page #account-modal{display:block!important;margin:0;padding:22px;background:transparent;border:0;border-radius:0}
@@ -525,6 +525,41 @@ body{background:#101010}
 .admin-promo-list{margin-top:18px}
 @media(max-width:520px){.admin-dashboard-grid{grid-template-columns:1fr}.admin-stat-grid{grid-template-columns:1fr}}
 </style>
+<style id="stayunknown-admin-performance-fixes">
+/* Keep the account header in the document flow instead of making it float. */
+.account-page-head{position:relative!important;top:auto!important}
+/* Render long sections lazily to reduce first-paint and scrolling work. */
+.section{content-visibility:auto;contain-intrinsic-size:1px 620px}
+.catalog-card,.carousel-slide{contain:layout paint}
+.admin-promo-panel{display:grid;gap:10px;padding:4px 0 18px}
+.admin-promo-panel .auth-input{width:100%;box-sizing:border-box}
+.admin-promo-check{font-size:11px;letter-spacing:1px;color:#aaa;display:flex;gap:8px;align-items:center}
+.admin-promo-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.admin-promo-item{align-items:flex-start}
+.account-subpage-action.danger{border-color:#733;color:#ffb3b3}
+.admin-order-row{cursor:pointer}
+@media(max-width:520px){.admin-promo-actions{width:100%}.admin-promo-actions .account-subpage-action{flex:1}}
+</style>
+<style id="stayunknown-final-ui-fixes">
+.account-page{overflow:auto;overscroll-behavior:contain}
+.account-page-card{position:relative}
+.account-page-head{position:relative!important;top:auto!important}
+#account-subpage{min-height:100%;background:#111}
+.account-subpage-head{position:sticky;top:0;z-index:20}
+.admin-route-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 0 16px;margin-bottom:4px;border-bottom:1px solid #292929}
+.admin-route-head span{font:27px/1 Anton,sans-serif;text-transform:uppercase;text-align:right}
+.admin-route-body{padding-top:8px}
+.admin-dashboard-route{padding-bottom:24px}
+.admin-promo-panel{background:#111}
+.admin-promo-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.admin-promo-actions .danger{border-color:#733;color:#ffb3b3}
+.admin-order-row{cursor:pointer}
+button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{touch-action:manipulation}
+@media(max-width:520px){
+  .admin-route-head span{font-size:23px}
+  .admin-route-head{align-items:flex-start}
+}
+</style>
 </head>
 <body class="intro-active">
 
@@ -646,7 +681,7 @@ body{background:#101010}
           <div class="account-dashboard-section" id="admin-account-section" style="display:none !important">
             <div class="account-dashboard-label">ADMIN</div>
             <div class="account-dashboard-actions">
-              <button id="btn-admin-orders" class="orders-open-btn" type="button">DELIVERY ORDERS</button>
+              <button id="btn-admin-orders" class="orders-open-btn" type="button" style="display:none">DELIVERY ORDERS</button>
             </div>
           </div>
           <div class="account-dashboard-section">
@@ -1382,17 +1417,13 @@ body{background:#101010}
         body:JSON.stringify({wishlistIds:payload})
       });
       if(!response.ok)throw new Error('Wishlist sync failed');
-      const data=await response.json().catch(()=>({}));
-      if(Array.isArray(data.wishlistIds)){
-        const serverIds=normalizeWishlistIds(data.wishlistIds);
-        /* Only adopt the server response if the wishlist has not changed
-           while the request was in flight. */
-        if(payload.length===wishlistIds.length && payload.every((id,i)=>id===wishlistIds[i])){
-          wishlistIds=serverIds;
-          persistWishlistLocal();
-          updateWishlistCount();
-        }
-      }
+      /* The local wishlist is the immediate UI source of truth.
+         Do NOT replace it with a server response here: an older/slow
+         response can otherwise make the heart flash on and then off.
+         The authenticated GET path merges server + local state separately. */
+      await response.json().catch(()=>({}));
+      persistWishlistLocal();
+      updateWishlistCount();
       return true;
     }catch(_){
       return false;
@@ -1404,30 +1435,36 @@ body{background:#101010}
     const localBefore=normalizeWishlistIds(wishlistIds);
     try{
       const token=await user.getIdToken();
-      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{headers:{Authorization:`Bearer ${token}`}});
+      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{
+        headers:{Authorization:`Bearer ${token}`},
+        cache:'no-store'
+      });
       if(!response.ok)return;
       const data=await response.json();
       const serverIds=normalizeWishlistIds(data.wishlistIds);
 
-      /* If the customer already has locally saved pieces, merge them with
-         the account copy instead of wiping the local wishlist. This also
-         lets a guest save a piece before/while Firebase finishes signing in. */
+      /* Never let a server response erase a local tap. */
+      const merged=normalizeWishlistIds([...serverIds,...localBefore]);
       if(requestRevision!==wishlistRevision){
+        /* The customer changed the wishlist while this request was in flight.
+           Keep the newest local state and sync that exact state. */
+        wishlistIds=normalizeWishlistIds(wishlistIds);
+        persistWishlistLocal();
+        updateWishlistCount();
+        renderWishlist();
         await syncWishlistToAccount(wishlistIds);
         return;
       }
 
-      const merged=normalizeWishlistIds([...serverIds,...localBefore]);
-      const changed=merged.length!==serverIds.length || merged.some(id=>!serverIds.includes(id));
+      const localChanged=merged.length!==serverIds.length || merged.some(id=>!serverIds.includes(id));
       wishlistIds=merged;
       persistWishlistLocal();
       updateWishlistCount();
       if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
 
-      /* Migrate local-only wishlist items into the authenticated account. */
-      if(changed)await syncWishlistToAccount(merged);
+      if(localChanged)await syncWishlistToAccount(merged);
     }catch(_){
-      /* Keep the cached wishlist if the account request is unavailable. */
+      /* Local wishlist remains the source of truth when the network is slow. */
       updateWishlistCount();
     }
   }
@@ -1436,14 +1473,19 @@ body{background:#101010}
     if(!id)return;
     const key=String(id);
     wishlistRevision++;
-    wishlistIds=isWishlisted(key)
+    const currentlySaved=isWishlisted(key);
+    wishlistIds=currentlySaved
       ? wishlistIds.filter(x=>String(x)!==key)
       : [...wishlistIds,key];
     wishlistIds=normalizeWishlistIds(wishlistIds);
     persistWishlistLocal();
     updateWishlistCount();
     renderWishlist();
-    if(window.__stayUnknownCurrentUser)await syncWishlistToAccount(wishlistIds);
+
+    /* Sync in the background; never await it before updating the UI. */
+    if(window.__stayUnknownCurrentUser){
+      void syncWishlistToAccount(wishlistIds);
+    }
   }
   window.toggleStayUnknownWishlist=toggleWishlist;
   window.getStayUnknownWishlistIds=()=>[...wishlistIds];
@@ -1463,7 +1505,13 @@ body{background:#101010}
   function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
   window.openWishlist=openWishlist;
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
-  document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();e.preventDefault();toggleWishlist(btn.dataset.wishlistId)}});
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-wishlist-id]');
+    if(!btn)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    toggleWishlist(btn.dataset.wishlistId);
+  },true);
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
   document.getElementById('nav-wishlist-toggle')?.addEventListener('click',openWishlist);
   updateWishlistCount();
@@ -2172,7 +2220,11 @@ function updateAccountUI(user) {
       window.refreshStayUnknownAccountAdminShortcut?.();
     }
     if (window.refreshStayUnknownNotifications) window.refreshStayUnknownNotifications();
-    if (window.syncStayUnknownWishlist) window.syncStayUnknownWishlist(user);
+    if (window.syncStayUnknownWishlist) {
+      /* Let the immediate local wishlist render first; then merge server data
+         without allowing a stale response to undo a tap. */
+      window.setTimeout(() => window.syncStayUnknownWishlist(user), 0);
+    }
   } else {
     greeting.textContent = 'Welcome to Stay Unknown';
     subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
@@ -2494,162 +2546,260 @@ onAuthStateChanged(auth, updateAccountUI);
     return `<button type="button" class="account-subpage-action ${action==='overview'?'primary':''}" data-admin-action="${action}">${label}</button>`;
   }
 
+  function renderAdminRouteShell(title, content='<div class="account-subpage-empty">LOADING…</div>'){
+    showSubPage(title);
+    body.innerHTML=`
+      <div class="admin-route-head">
+        <button type="button" class="account-subpage-action" id="admin-route-back">← ADMIN DASHBOARD</button>
+        <span>${esc(title)}</span>
+      </div>
+      <div class="admin-route-body">${content}</div>`;
+    document.getElementById('admin-route-back')?.addEventListener('click',openAdminDashboardPage);
+    return document.querySelector('.admin-route-body');
+  }
+
   async function openAdminDashboardPage(){
     const allowed=Boolean(await window.checkStayUnknownAdminAccess?.());
     if(!allowed){alert('Admin access required.');return}
     showSubPage('ADMIN DASHBOARD');
     body.innerHTML=`
-      <p class="account-subpage-note">STAYUNKNOWN ADMIN CONTROL CENTER.</p>
-      <div class="admin-dashboard-grid">
-        ${adminButton('SALES / ORDER OVERVIEW','overview')}
-        ${adminButton('ORDERS & DELIVERY','orders')}
-        ${adminButton('PROMO CODES','promos')}
-        ${adminButton('INVENTORY / LOW STOCK','inventory')}
-        ${adminButton('RESTOCK SUBSCRIPTIONS','restock')}
-        ${adminButton('HELP & SUPPORT','support')}
-      </div>
-      <div id="admin-dashboard-panel" class="admin-dashboard-panel">
-        <div class="account-subpage-empty">SELECT A SECTION.</div>
+      <div class="admin-dashboard-route">
+        <p class="account-subpage-note">STAYUNKNOWN ADMIN CONTROL CENTER.</p>
+        <div class="admin-dashboard-grid">
+          ${adminButton('SALES / ORDER OVERVIEW','overview')}
+          ${adminButton('ORDERS & DELIVERY','orders')}
+          ${adminButton('PROMO CODES','promos')}
+          ${adminButton('INVENTORY / LOW STOCK','inventory')}
+          ${adminButton('RESTOCK SUBSCRIPTIONS','restock')}
+          ${adminButton('HELP & SUPPORT','support')}
+        </div>
       </div>`;
     body.querySelectorAll('[data-admin-action]').forEach(b=>b.addEventListener('click',()=>openAdminSection(b.dataset.adminAction)));
   }
 
   async function openAdminSection(section){
-    const panel=document.getElementById('admin-dashboard-panel');
-    if(!panel)return;
-    panel.innerHTML='<div class="account-subpage-empty">LOADING…</div>';
+    const titles={
+      overview:'SALES / ORDER OVERVIEW',
+      orders:'ORDERS & DELIVERY',
+      promos:'PROMO CODES',
+      inventory:'INVENTORY / LOW STOCK',
+      restock:'RESTOCK SUBSCRIPTIONS',
+      support:'HELP & SUPPORT'
+    };
+    if(!titles[section])return;
 
-    if(section==='orders'){
-      hideSubPage();
-      if(await window.checkStayUnknownAdminAccess?.())openAdminOrders();
-      return;
-    }
+    const routeBody=renderAdminRouteShell(titles[section]);
 
     try{
       const {token}=await adminAuth();
 
       if(section==='overview'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`}});
+        const r=await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
         const d=await r.json();
         if(!r.ok)throw new Error(d.error||'Unable to load orders.');
         const orders=Array.isArray(d.orders)?d.orders:[];
         const paid=orders.filter(o=>['PAID','PROCESSING','SHIPPED','DELIVERED'].includes(String(o.deliveryStatus||o.paymentStatus||'').toUpperCase()));
-        const revenue=paid.reduce((s,o)=>s+Number(o.total||0),0);
+        const revenue=paid.reduce((sum,o)=>sum+Number(o.total||0),0);
         const processing=paid.filter(o=>['PAID','PROCESSING'].includes(String(o.deliveryStatus||'').toUpperCase())).length;
         const shipped=paid.filter(o=>String(o.deliveryStatus||'').toUpperCase()==='SHIPPED').length;
         const delivered=paid.filter(o=>String(o.deliveryStatus||'').toUpperCase()==='DELIVERED').length;
-        panel.innerHTML=`<div class="admin-stat-grid">
-          <div class="admin-stat"><small>PAID ORDERS</small><strong>${paid.length}</strong></div>
-          <div class="admin-stat"><small>REVENUE</small><strong>₦${revenue.toLocaleString('en-NG')}</strong></div>
-          <div class="admin-stat"><small>PROCESSING</small><strong>${processing}</strong></div>
-          <div class="admin-stat"><small>SHIPPED</small><strong>${shipped}</strong></div>
-          <div class="admin-stat"><small>DELIVERED</small><strong>${delivered}</strong></div>
-        </div>`;
+        routeBody.innerHTML=`<p class="account-subpage-note">CURRENT STORE PERFORMANCE.</p>
+          <div class="admin-stat-grid">
+            <div class="admin-stat"><small>PAID ORDERS</small><strong>${paid.length}</strong></div>
+            <div class="admin-stat"><small>REVENUE</small><strong>₦${revenue.toLocaleString('en-NG')}</strong></div>
+            <div class="admin-stat"><small>PROCESSING</small><strong>${processing}</strong></div>
+            <div class="admin-stat"><small>SHIPPED</small><strong>${shipped}</strong></div>
+            <div class="admin-stat"><small>DELIVERED</small><strong>${delivered}</strong></div>
+          </div>`;
         return;
       }
 
-      if(section==='promos'){
-        panel.innerHTML=window.stayunknownPromoAdminForm?window.stayunknownPromoAdminForm():'<div class="account-subpage-empty">Promo controls unavailable.</div>';
-        const list=document.createElement('div');
-        list.className='admin-promo-list';
-        panel.appendChild(list);
-        const r=await fetch(`${BACKEND_URL}/api/admin/promos`,{headers:{Authorization:`Bearer ${token}`}});
+      if(section==='orders'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
         const d=await r.json();
-        if(r.ok&&Array.isArray(d.promos)){
-          list.innerHTML='<div class="account-subpage-note">EXISTING PROMOS</div>'+
-            d.promos.map(p=>`<div class="admin-list-row"><div><strong>${esc(p.code)}</strong><small>${esc(p.type)} · ${esc(p.value)}${p.type==='percent'?'%':' NGN'} · ${p.isCurrentlyActive?'ACTIVE':'INACTIVE'}</small></div><button type="button" class="account-subpage-action" data-promo-toggle="${esc(p.code)}">${p.active?'DISABLE':'ENABLE'}</button></div>`).join('');
-          list.querySelectorAll('[data-promo-toggle]').forEach(btn=>btn.addEventListener('click',async()=>{
-            const code=btn.dataset.promoToggle,current=d.promos.find(x=>x.code===code);
-            await fetch(`${BACKEND_URL}/api/admin/promos/${encodeURIComponent(code)}`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({active:!current.active})});
-            openAdminSection('promos');
-          }));
+        if(!r.ok)throw new Error(d.error||'Unable to load delivery orders.');
+        const orders=Array.isArray(d.orders)?d.orders:[];
+        if(!orders.length){
+          routeBody.innerHTML='<div class="account-subpage-empty">NO PAID ORDERS YET.</div>';
+          return;
         }
-        return;
-      }
-
-      if(section==='inventory'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/inventory`,{headers:{Authorization:`Bearer ${token}`}});
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to load inventory.');
-        const items=Array.isArray(d.items)?d.items:[];
-        const low=items.filter(i=>Number(i.stock)<=Number(i.lowStockThreshold));
-        panel.innerHTML=`<div class="admin-stat-grid">
-          <div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.length}</strong></div>
-          <div class="admin-stat"><small>LOW STOCK</small><strong>${low.length}</strong></div>
-        </div><div class="admin-list">${items.map(i=>`<div class="admin-list-row"><div><strong>${esc(i.name)}</strong><small>${esc(i.category||'')} · STOCK ${Number(i.stock)}</small></div><span class="order-status ${Number(i.stock)<=Number(i.lowStockThreshold)?'processing':'delivered'}">${Number(i.stock)<=Number(i.lowStockThreshold)?'LOW':'OK'}</span></div>`).join('')}</div>`;
-        return;
-      }
-
-      if(section==='restock'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/restock-subscriptions`,{headers:{Authorization:`Bearer ${token}`}});
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to load restock subscriptions.');
-        const rows=Object.entries(d.subscriptions||{});
-        panel.innerHTML=rows.length?`<div class="admin-list">${rows.map(([id,emails])=>`<div class="admin-list-row"><div><strong>PRODUCT ${esc(id)}</strong><small>${emails.length} subscriber${emails.length===1?'':'s'}</small></div><span>${emails.map(esc).join(', ')}</span></div>`).join('')}</div>`:'<div class="account-subpage-empty">NO RESTOCK SUBSCRIPTIONS YET.</div>';
-        return;
-      }
-
-      if(section==='support'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/support`,{
-          headers:{Authorization:`Bearer ${token}`},
-          cache:'no-store'
-        });
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
-        const tickets=Array.isArray(d.tickets)?d.tickets:[];
-
-        panel.innerHTML=tickets.length?`<div class="admin-list">${
-          tickets.map(t=>`<article class="admin-ticket" data-support-ticket="${esc(t.id)}">
-            <strong>${esc(t.subject||'SUPPORT REQUEST')}</strong>
-            <small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')} · ${esc(t.id||'')}</small>
-            <p>${esc(t.message||'')}</p>
-            ${(Array.isArray(t.replies)?t.replies:[]).map(r=>`<div style="margin:10px 0;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}
-            <span>STATUS: ${esc(t.status||'OPEN')} · ${esc(t.createdAt||'')}</span>
-
-            <div style="display:grid;gap:10px;margin-top:14px">
-              <select data-support-status="${esc(t.id)}" class="checkout-input">
-                ${['OPEN','IN PROGRESS','RESOLVED','CLOSED'].map(s=>`<option value="${s}" ${String(t.status||'OPEN')===s?'selected':''}>${s}</option>`).join('')}
-              </select>
-              <textarea data-support-reply="${esc(t.id)}" class="checkout-textarea" placeholder="REPLY TO CUSTOMER" style="min-height:90px"></textarea>
-              <button type="button" class="account-subpage-action primary" data-support-save="${esc(t.id)}">UPDATE TICKET</button>
-              <div data-support-message="${esc(t.id)}" class="account-subpage-note"></div>
-            </div>
-          </article>`).join('')
-        }</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
-
-        panel.querySelectorAll('[data-support-save]').forEach(button=>{
-          button.addEventListener('click',async()=>{
-            const id=button.dataset.supportSave;
-            const statusEl=panel.querySelector(`[data-support-status="${CSS.escape(id)}"]`);
-            const replyEl=panel.querySelector(`[data-support-reply="${CSS.escape(id)}"]`);
-            const msgEl=panel.querySelector(`[data-support-message="${CSS.escape(id)}"]`);
-            button.disabled=true;
-            msgEl.textContent='UPDATING…';
-            try{
-              const rr=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(id)}`,{
-                method:'PATCH',
-                headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
-                body:JSON.stringify({
-                  status:statusEl?.value||'OPEN',
-                  reply:replyEl?.value.trim()||''
-                })
-              });
-              const dd=await rr.json();
-              if(!rr.ok)throw new Error(dd.error||'Unable to update support ticket.');
-              msgEl.textContent='TICKET UPDATED.';
-              if(replyEl)replyEl.value='';
-              await loadAdminSection('support');
-            }catch(e){
-              msgEl.textContent=e.message||'Unable to update support ticket.';
-            }finally{
-              button.disabled=false;
-            }
+        routeBody.innerHTML=`<p class="account-subpage-note">TAP AN ORDER TO UPDATE ITS DELIVERY STATUS.</p>
+          <div class="admin-list">${orders.map((o,i)=>{
+            const status=String(o.deliveryStatus||o.paymentStatus||'PAID').toUpperCase();
+            const customer=o.customer||{};
+            const items=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);
+            return `<article class="admin-list-row admin-order-row" data-admin-order-index="${i}">
+              <div><strong>${esc(o.orderNumber||o.paymentReference||o.id||'ORDER')}</strong>
+              <small>${esc(customer.name||'Customer')} · ${esc(formatOrderDate(o.createdAt))} · ${items} ITEM${items===1?'':'S'} · ${money(Number(o.total||0))}</small></div>
+              <span class="order-status ${statusClass(status)}">${esc(status)}</span>
+            </article>`;
+          }).join('')}</div>`;
+        routeBody.querySelectorAll('[data-admin-order-index]').forEach(card=>{
+          card.addEventListener('click',()=>{
+            const order=orders[Number(card.dataset.adminOrderIndex)];
+            if(order)openAdminDelivery(order);
           });
         });
         return;
       }
+
+      if(section==='promos'){
+        const collections=[...new Set((window.stayUnknownProducts||[]).map(p=>p.category).filter(Boolean))];
+        const productOptions=(window.stayUnknownProducts||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+        routeBody.innerHTML=`<p class="account-subpage-note">CREATE, ENABLE, DISABLE OR DELETE PROMO CODES.</p>
+          <section class="admin-promo-panel">
+            <input id="admin-promo-code" class="auth-input" placeholder="PROMO CODE" autocomplete="off">
+            <select id="admin-promo-type" class="auth-input"><option value="percent">PERCENTAGE</option><option value="fixed">FIXED AMOUNT</option></select>
+            <input id="admin-promo-value" class="auth-input" type="number" min="1" placeholder="DISCOUNT VALUE">
+            <select id="admin-promo-scope" class="auth-input">
+              <option value="store">ENTIRE STORE</option>
+              <option value="collection">COLLECTION</option>
+              <option value="products">SPECIFIC PRODUCTS</option>
+            </select>
+            <select id="admin-promo-collection" class="auth-input" style="display:none">${collections.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+            <select id="admin-promo-products" class="auth-input" multiple size="5" style="display:none">${productOptions}</select>
+            <input id="admin-promo-start" class="auth-input" type="datetime-local">
+            <input id="admin-promo-end" class="auth-input" type="datetime-local">
+            <input id="admin-promo-min" class="auth-input" type="number" min="0" placeholder="MINIMUM ORDER (OPTIONAL)">
+            <input id="admin-promo-max" class="auth-input" type="number" min="1" placeholder="MAX USES (OPTIONAL)">
+            <label class="admin-promo-check"><input id="admin-promo-active" type="checkbox" checked> ACTIVE</label>
+            <button type="button" id="admin-promo-create" class="account-subpage-action primary">CREATE PROMO</button>
+            <div id="admin-promo-message" class="account-subpage-note"></div>
+          </section>
+          <div id="admin-promo-list" class="admin-promo-list"><div class="account-subpage-empty">LOADING PROMOS…</div></div>`;
+
+        const scopeEl=document.getElementById('admin-promo-scope');
+        const collectionEl=document.getElementById('admin-promo-collection');
+        const productsEl=document.getElementById('admin-promo-products');
+        const message=document.getElementById('admin-promo-message');
+
+        const updateScope=()=>{
+          const scope=scopeEl.value;
+          collectionEl.style.display=scope==='collection'?'block':'none';
+          productsEl.style.display=scope==='products'?'block':'none';
+        };
+        scopeEl.addEventListener('change',updateScope);
+        updateScope();
+
+        async function loadPromos(){
+          const list=document.getElementById('admin-promo-list');
+          list.innerHTML='<div class="account-subpage-empty">LOADING PROMOS…</div>';
+          const r=await fetch(`${BACKEND_URL}/api/admin/promos`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+          const d=await r.json();
+          if(!r.ok)throw new Error(d.error||'Unable to load promos.');
+          const promos=Array.isArray(d.promos)?d.promos:[];
+          if(!promos.length){list.innerHTML='<div class="account-subpage-empty">NO PROMO CODES CREATED.</div>';return}
+          list.innerHTML='<div class="account-subpage-note">EXISTING PROMOS</div>'+promos.map(p=>{
+            const active=Boolean(p.active);
+            const scope=p.appliesTo?.type==='collection'?`COLLECTION: ${p.appliesTo.collection}`:p.appliesTo?.type==='products'?`PRODUCTS: ${(p.appliesTo.productIds||[]).length}`:'ENTIRE STORE';
+            return `<div class="admin-list-row admin-promo-item">
+              <div><strong>${esc(p.code)}</strong><small>${esc(p.type)} · ${esc(p.value)}${p.type==='percent'?'%':' NGN'} · ${esc(scope)} · ${active?'ACTIVE':'DISABLED'}</small></div>
+              <div class="admin-promo-actions">
+                <button type="button" class="account-subpage-action" data-promo-toggle="${esc(p.code)}">${active?'DISABLE':'ENABLE'}</button>
+                <button type="button" class="account-subpage-action danger" data-promo-delete="${esc(p.code)}">DELETE</button>
+              </div>
+            </div>`;
+          }).join('');
+
+          list.querySelectorAll('[data-promo-toggle]').forEach(btn=>btn.addEventListener('click',async()=>{
+            const code=btn.dataset.promoToggle;
+            btn.disabled=true;
+            try{
+              const rr=await fetch(`${BACKEND_URL}/api/admin/promos/${encodeURIComponent(code)}`,{
+                method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+                body:JSON.stringify({active:btn.textContent.trim()==='ENABLE'})
+              });
+              const dd=await rr.json();
+              if(!rr.ok)throw new Error(dd.error||'Unable to update promo.');
+              await loadPromos();
+            }catch(e){message.textContent=e.message||'Unable to update promo.';btn.disabled=false}
+          }));
+          list.querySelectorAll('[data-promo-delete]').forEach(btn=>btn.addEventListener('click',async()=>{
+            const code=btn.dataset.promoDelete;
+            if(!confirm(`DELETE ${code}? This cannot be undone.`))return;
+            btn.disabled=true;
+            try{
+              const rr=await fetch(`${BACKEND_URL}/api/admin/promos/${encodeURIComponent(code)}`,{
+                method:'DELETE',headers:{Authorization:`Bearer ${token}`}
+              });
+              const dd=await rr.json().catch(()=>({}));
+              if(!rr.ok)throw new Error(dd.error||'Unable to delete promo.');
+              await loadPromos();
+            }catch(e){message.textContent=e.message||'Unable to delete promo.';btn.disabled=false}
+          }));
+        }
+
+        document.getElementById('admin-promo-create').addEventListener('click',async()=>{
+          const button=document.getElementById('admin-promo-create');
+          message.textContent='CREATING…';
+          button.disabled=true;
+          try{
+            const scope=scopeEl.value;
+            const appliesTo={type:scope};
+            if(scope==='collection')appliesTo.collection=collectionEl.value;
+            if(scope==='products')appliesTo.productIds=[...productsEl.selectedOptions].map(o=>o.value);
+            const payload={
+              code:document.getElementById('admin-promo-code').value.trim().toUpperCase(),
+              type:document.getElementById('admin-promo-type').value,
+              value:Number(document.getElementById('admin-promo-value').value),
+              appliesTo,
+              startsAt:document.getElementById('admin-promo-start').value||null,
+              endsAt:document.getElementById('admin-promo-end').value||null,
+              minOrder:Number(document.getElementById('admin-promo-min').value||0),
+              maxUses:document.getElementById('admin-promo-max').value||null,
+              active:document.getElementById('admin-promo-active').checked
+            };
+            if(!payload.code||!Number.isFinite(payload.value)||payload.value<=0)throw new Error('Enter a valid promo code and discount.');
+            if(scope==='products'&&!payload.appliesTo.productIds.length)throw new Error('Select at least one product.');
+            const rr=await fetch(`${BACKEND_URL}/api/admin/promos`,{
+              method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+              body:JSON.stringify(payload)
+            });
+            const dd=await rr.json();
+            if(!rr.ok)throw new Error(dd.error||'Unable to create promo.');
+            message.textContent=`${dd.promo?.code||payload.code} CREATED.`;
+            document.getElementById('admin-promo-code').value='';
+            document.getElementById('admin-promo-value').value='';
+            await loadPromos();
+          }catch(e){message.textContent=e.message||'Unable to create promo.'}
+          finally{button.disabled=false}
+        });
+
+        await loadPromos();
+        return;
+      }
+
+      if(section==='inventory'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/inventory`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load inventory.');
+        const items=Array.isArray(d.items)?d.items:[];
+        const low=items.filter(i=>Number(i.stock)<=Number(i.lowStockThreshold));
+        routeBody.innerHTML=`<p class="account-subpage-note">PRODUCT STOCK AND LOW-STOCK ALERTS.</p>
+          <div class="admin-stat-grid"><div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.length}</strong></div><div class="admin-stat"><small>LOW STOCK</small><strong>${low.length}</strong></div></div>
+          <div class="admin-list">${items.map(i=>`<div class="admin-list-row"><div><strong>${esc(i.name)}</strong><small>${esc(i.category||'')} · STOCK ${Number(i.stock)}</small></div><span class="order-status ${Number(i.stock)<=Number(i.lowStockThreshold)?'processing':'delivered'}">${Number(i.stock)<=Number(i.lowStockThreshold)?'LOW':'OK'}</span></div>`).join('')}</div>`;
+        return;
+      }
+
+      if(section==='restock'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/restock-subscriptions`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load restock subscriptions.');
+        const rows=Object.entries(d.subscriptions||{});
+        routeBody.innerHTML=rows.length?`<p class="account-subpage-note">CUSTOMERS WAITING FOR RESTOCK NOTIFICATIONS.</p><div class="admin-list">${rows.map(([id,emails])=>`<div class="admin-list-row"><div><strong>PRODUCT ${esc(id)}</strong><small>${emails.length} subscriber${emails.length===1?'':'s'}</small></div><span>${emails.map(esc).join(', ')}</span></div>`).join('')}</div>`:'<div class="account-subpage-empty">NO RESTOCK SUBSCRIPTIONS YET.</div>';
+        return;
+      }
+
+      if(section==='support'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
+        const tickets=Array.isArray(d.tickets)?d.tickets:[];
+        routeBody.innerHTML=tickets.length?`<p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS.</p><div class="admin-list">${tickets.map(t=>`<article class="admin-ticket"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small><p>${esc(t.message||'')}</p><span>${esc(t.status||'OPEN')} · ${esc(t.createdAt||'')}</span></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+        return;
+      }
     }catch(e){
-      panel.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load admin section.')}</div>`;
+      routeBody.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load admin section.')}</div>`;
     }
   }
 
@@ -2741,7 +2891,7 @@ function renderStayUnknownRestockBox(product){
 }
 </script>
 
-<script id="stayunknown-admin-promos">
+<script id="stayunknown-admin-promos" data-legacy="true">
 (function(){
   window.stayunknownPromoAdminForm=function(){
     const collections=[...new Set((window.stayUnknownProducts||[]).map(p=>p.category).filter(Boolean))];
