@@ -1192,6 +1192,7 @@ body{background:#101010}
   const productSize=document.getElementById('product-size');
   const productColor=document.getElementById('product-color');
   const productOptionsAdd=document.getElementById('product-options-add');
+  const productOptionsWishlist=document.getElementById('product-options-wishlist');
   const productStock=document.getElementById('product-stock');
   const productGallery=document.getElementById('product-gallery');
   const sizeGuideToggle=document.getElementById('size-guide-toggle');
@@ -1229,6 +1230,12 @@ body{background:#101010}
     selectedProduct=product;
     productOptionsTitle.textContent=product.name;
     productOptionsMeta.textContent=`${product.category} · SELECT YOUR SIZE + COLOUR`;
+    if(productOptionsWishlist){
+      const saved=isWishlisted(product.id);
+      productOptionsWishlist.classList.toggle('saved',saved);
+      productOptionsWishlist.textContent=saved?'♥ SAVED TO WISHLIST':'♡ SAVE TO WISHLIST';
+      productOptionsWishlist.setAttribute('aria-pressed',saved?'true':'false');
+    }
     productOptionsPrice.textContent=money(product.price);
     productStock.textContent=product.comingSoon?'COMING SOON':'IN STOCK';
     productStock.className=`product-stock ${product.comingSoon?'sold':''}`;
@@ -1250,6 +1257,14 @@ body{background:#101010}
     productOptionsModal.setAttribute('aria-hidden','true');
   }
   document.getElementById('product-options-close').addEventListener('click',closeProductOptions);
+  productOptionsWishlist?.addEventListener('click',()=>{
+    if(!selectedProduct)return;
+    toggleWishlist(selectedProduct.id);
+    const saved=isWishlisted(selectedProduct.id);
+    productOptionsWishlist.classList.toggle('saved',saved);
+    productOptionsWishlist.textContent=saved?'♥ SAVED TO WISHLIST':'♡ SAVE TO WISHLIST';
+    productOptionsWishlist.setAttribute('aria-pressed',saved?'true':'false');
+  });
   sizeGuideToggle.addEventListener('click',()=>sizeGuide.classList.toggle('open'));
   productOptionsModal.addEventListener('click',e=>{if(e.target===productOptionsModal)closeProductOptions()});
   productOptionsAdd.addEventListener('click',()=>{
@@ -1401,6 +1416,38 @@ body{background:#101010}
   /* ---------- SECURE PAYSTACK CHECKOUT ---------- */
   const BACKEND_URL='https://stayunknown404-backend.onrender.com';
 
+  async function saveCheckoutProfileForCurrentUser(phone,address){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user)throw new Error('Sign in to save checkout information.');
+    phone=String(phone||'').trim();
+    address=String(address||'').trim();
+    if(!phone||!address)throw new Error('ENTER YOUR PHONE AND DELIVERY ADDRESS TO SAVE THEM.');
+    const token=await user.getIdToken();
+    const response=await fetch(`${BACKEND_URL}/api/profile`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+      body:JSON.stringify({phone,address})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'Unable to save checkout information.');
+    try{localStorage.setItem('stayunknown_saved_checkout',JSON.stringify({phone,address,updatedAt:new Date().toISOString()}))}catch(_){}
+    return data.profile||{phone,address};
+  }
+  window.saveStayUnknownCheckoutProfile=saveCheckoutProfileForCurrentUser;
+
+  document.getElementById('save-checkout-info')?.addEventListener('change',async e=>{
+    if(!e.target.checked)return;
+    const phone=document.getElementById('checkout-phone')?.value.trim();
+    const address=document.getElementById('checkout-address')?.value.trim();
+    try{
+      await saveCheckoutProfileForCurrentUser(phone,address);
+      checkoutStatus.textContent='CHECKOUT DETAILS SAVED.';
+    }catch(error){
+      e.target.checked=false;
+      checkoutStatus.textContent=error.message||'Unable to save checkout details.';
+    }
+  });
+
   function getSupersededPendingRefs(){
     try{
       const refs=JSON.parse(localStorage.getItem('stayunknown_superseded_pending_refs')||'[]');
@@ -1473,7 +1520,7 @@ body{background:#101010}
 
     checkoutStatus.innerHTML='<div class="checkout-success">SECURE PAYMENT INITIALIZING…</div>';
     const currentUser=window.__stayUnknownCurrentUser;
-    if(currentUser && document.getElementById('save-checkout-info').checked){try{const token=await currentUser.getIdToken();await fetch(`${BACKEND_URL}/api/profile`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({phone:document.getElementById('checkout-phone').value.trim(),address:document.getElementById('checkout-address').value.trim()})})}catch(e){console.error(e)}}
+    if(currentUser && document.getElementById('save-checkout-info').checked){try{await saveCheckoutProfileForCurrentUser(document.getElementById('checkout-phone').value.trim(),document.getElementById('checkout-address').value.trim())}catch(e){console.error('Saved checkout update failed:',e)}}
 
     try{
       const response=await fetch(`${BACKEND_URL}/api/paystack/initialize`,{
@@ -2124,7 +2171,7 @@ onAuthStateChanged(auth, updateAccountUI);
     shortcuts.appendChild(b);
   }
   addShortcut('saved-checkout','SAVED CHECKOUT','Create or edit your saved checkout information');
-  addShortcut('order-tracking','ORDER TRACKING','Track your orders and delivery status');
+  shortcuts.querySelector('[data-account-action="order-tracking"]')?.remove();
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
   function products(){return Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:[]}
@@ -2149,12 +2196,20 @@ onAuthStateChanged(auth, updateAccountUI);
     if(!user){alert('Please sign in to use Saved Checkout.');return}
     showSubPage('SAVED CHECKOUT');
     body.innerHTML='<div class="account-subpage-empty">LOADING SAVED CHECKOUT…</div>';
+
     let profile={};
     try{
       const token=await user.getIdToken();
       const r=await fetch('https://stayunknown404-backend.onrender.com/api/profile',{headers:{Authorization:`Bearer ${token}`}});
       if(r.ok){const d=await r.json();profile=d.profile||{}}
     }catch(_){ }
+
+    // Keep a local copy as a fallback so the Saved Checkout page remains editable
+    // even if the profile request is temporarily unavailable.
+    if(!profile.phone && !profile.address){
+      try{profile=JSON.parse(localStorage.getItem('stayunknown_saved_checkout')||'{}')||{}}catch(_){profile={}}
+    }
+
     const name=user.displayName||'';
     const email=user.email||'';
     const phone=profile.phone||'';
@@ -2169,17 +2224,25 @@ onAuthStateChanged(auth, updateAccountUI);
         <div class="saved-checkout-message" id="saved-checkout-message"></div>
         <div class="saved-checkout-actions"><button type="button" class="account-subpage-action primary" id="saved-checkout-save">${phone||address?'SAVE CHANGES':'CREATE SAVED CHECKOUT'}</button><button type="button" class="account-subpage-action" id="saved-checkout-use">USE FOR CHECKOUT</button></div>
       </div>`;
+
     document.getElementById('saved-checkout-save').addEventListener('click',async()=>{
-      const button=document.getElementById('saved-checkout-save'),msg=document.getElementById('saved-checkout-message');button.disabled=true;msg.textContent='SAVING…';
+      const button=document.getElementById('saved-checkout-save');
+      const msg=document.getElementById('saved-checkout-message');
+      button.disabled=true;msg.textContent='SAVING…';
       try{
-        const token=await user.getIdToken();
-        const r=await fetch('https://stayunknown404-backend.onrender.com/api/profile',{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({phone:document.getElementById('saved-phone').value.trim(),address:document.getElementById('saved-address').value.trim()})});
-        const d=await r.json().catch(()=>({}));
-        if(!r.ok)throw new Error(d.error||'Unable to save checkout information.');
+        const saved=await window.saveStayUnknownCheckoutProfile(
+          document.getElementById('saved-phone').value,
+          document.getElementById('saved-address').value
+        );
+        document.getElementById('saved-phone').value=saved.phone||document.getElementById('saved-phone').value;
+        document.getElementById('saved-address').value=saved.address||document.getElementById('saved-address').value;
+        button.textContent='SAVE CHANGES';
         msg.textContent='SAVED CHECKOUT UPDATED.';
-      }catch(e){msg.textContent=e.message||'Unable to save checkout information.'}
-      finally{button.disabled=false}
+      }catch(e){
+        msg.textContent=e.message||'Unable to save checkout information.';
+      }finally{button.disabled=false}
     });
+
     document.getElementById('saved-checkout-use').addEventListener('click',()=>{
       document.getElementById('checkout-name').value=name;
       document.getElementById('checkout-email').value=email;
@@ -2190,18 +2253,12 @@ onAuthStateChanged(auth, updateAccountUI);
     });
   }
 
-  function openTrackingPage(){
-    hideSubPage();
-    if(typeof window.openOrdersPage==='function')window.openOrdersPage();
-  }
-
   document.addEventListener('click',e=>{
     const card=e.target.closest('[data-account-action]');
     if(!card)return;
     const action=card.dataset.accountAction;
     if(action==='wishlist'){e.preventDefault();openWishlistPage();}
     if(action==='saved-checkout'){e.preventDefault();openSavedCheckoutPage();}
-    if(action==='order-tracking'){e.preventDefault();openTrackingPage();}
   });
 
   /* Robust swipe-back: only when Cart or Checkout is actually open. */
