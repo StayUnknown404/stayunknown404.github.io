@@ -1650,7 +1650,7 @@ body{background:#101010}
       if(match)openOrderDetails(match);
     }
   }
-  function openNotifications(){notificationModal.classList.add('open');notificationModal.setAttribute('aria-hidden','false');renderNotifications()}
+  async function openNotifications(){notificationModal.classList.add('open');notificationModal.setAttribute('aria-hidden','false');await fetchNotifications();renderNotifications()}
   function closeNotifications(){notificationModal.classList.remove('open');notificationModal.setAttribute('aria-hidden','true')}
   notificationMenu?.addEventListener('click',()=>{closeDrawer();openNotifications()});notificationMenu?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();closeDrawer();openNotifications()}});notificationClose?.addEventListener('click',closeNotifications);notificationModal?.addEventListener('click',e=>{if(e.target===notificationModal)closeNotifications()});notificationFabButton?.addEventListener('click',openNotifications);
   notificationFabButton?.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;notificationDrag={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,startLeft:notificationFab.getBoundingClientRect().left,startTop:notificationFab.getBoundingClientRect().top,moved:false};notificationFabButton.setPointerCapture?.(e.pointerId)});
@@ -1658,6 +1658,9 @@ body{background:#101010}
   notificationFabButton?.addEventListener('pointerup',e=>{if(notificationDrag&&e.pointerId===notificationDrag.pointerId)notificationDrag=null});
   window.refreshStayUnknownNotifications=fetchNotifications;
   window.openStayUnknownNotifications=openNotifications;
+  setInterval(()=>{
+    if (window.__stayUnknownCurrentUser) fetchNotifications();
+  },15000);
   updateNotificationIndicators();
 
   /* ---------- MOBILE SWIPE BACK ---------- */
@@ -1864,6 +1867,8 @@ deleteButton.addEventListener('click', async () => {
 
 function updateAccountUI(user) {
   window.__stayUnknownCurrentUser = user || null;
+  const checkoutSubmitButton = document.querySelector('.checkout-submit');
+  if (checkoutSubmitButton) checkoutSubmitButton.textContent = user ? 'CONTINUE' : 'CONTINUE AS GUEST';
 
   if (user) {
     const username = user.displayName || 'VALUED CUSTOMER';
