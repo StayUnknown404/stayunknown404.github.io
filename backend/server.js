@@ -1997,7 +1997,7 @@ app.get('/api/admin/promos', authenticate, async (req,res)=>{
   res.json({promos:[...promoCodes.values()].map(p=>({...p,isCurrentlyActive:promoIsCurrentlyActive(p)}))});
 });
 
-app.get('/api/admin/inventory',, authenticate, async (req,res)=>{
+app.get('/api/admin/inventory', authenticate, async (req,res)=>{
   if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
   try{
     const items=Array.isArray(catalog)?catalog.map(p=>({
@@ -2006,4 +2006,18 @@ app.get('/api/admin/inventory',, authenticate, async (req,res)=>{
     })):[];
     res.json({items});
   }catch(e){res.status(500).json({error:'Unable to load inventory.'})}
+});
+
+app.get('/api/admin/restock-subscriptions', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  const subscriptions={};
+  for(const [productId,emails] of restockSubscriptions.entries()){
+    subscriptions[String(productId)]=Array.isArray(emails)?emails:[];
+  }
+  res.json({subscriptions});
+});
+
+app.get('/api/admin/support', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  res.json({tickets:[...supportTickets.values()].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))});
 });
