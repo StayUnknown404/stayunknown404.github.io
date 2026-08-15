@@ -2324,7 +2324,7 @@ onAuthStateChanged(auth, updateAccountUI);
     if(!code){if(msg)msg.textContent='Enter a promo code.';return}
     try{
       const r=await fetch(`${window.BACKEND_URL||'/api'}/promo/validate`,{
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,items:(window.cart||window.cartItems||[]).map(i=>({id:i.id,price:Number(i.price||0),quantity:Number(i.quantity||1),collection:i.collection,category:i.category}))})
       });
       const data=await r.json();
       if(!r.ok||!data.valid) throw new Error(data.error||'Invalid promo code.');
@@ -2367,6 +2367,64 @@ function renderStayUnknownRestockBox(product){
     <div class="su-promo-msg" data-restock-message="${id}"></div>
   </div>`;
 }
+</script>
+
+<script id="stayunknown-admin-promos">
+(function(){
+  window.stayunknownPromoAdminForm=function(){
+    const collections=[...new Set((window.products||[]).map(p=>p.category).filter(Boolean))];
+    const products=(window.products||[]).map(p=>`<option value="${String(p.id)}">${String(p.name)}</option>`).join('');
+    return `<section class="admin-promo-panel">
+      <h3>PROMO CODES</h3>
+      <input id="admin-promo-code" placeholder="PROMO CODE">
+      <select id="admin-promo-type"><option value="percent">Percentage</option><option value="fixed">Fixed amount</option></select>
+      <input id="admin-promo-value" type="number" min="1" placeholder="Discount">
+      <select id="admin-promo-scope" onchange="stayunknownPromoScopeChange()">
+        <option value="store">Entire Store</option>
+        <option value="collection">Collection</option>
+        <option value="products">Specific Products</option>
+      </select>
+      <select id="admin-promo-collection" style="display:none">${collections.map(c=>`<option>${c}</option>`).join('')}</select>
+      <select id="admin-promo-products" multiple style="display:none">${products}</select>
+      <input id="admin-promo-start" type="datetime-local">
+      <input id="admin-promo-end" type="datetime-local">
+      <input id="admin-promo-min" type="number" min="0" placeholder="Minimum eligible order">
+      <input id="admin-promo-max" type="number" min="1" placeholder="Maximum uses (optional)">
+      <label><input id="admin-promo-active" type="checkbox" checked> Active</label>
+      <button type="button" onclick="stayunknownCreatePromo()">CREATE PROMO</button>
+      <div id="admin-promo-message"></div>
+    </section>`;
+  };
+  window.stayunknownPromoScopeChange=function(){
+    const s=document.getElementById('admin-promo-scope')?.value;
+    if(!s)return;
+    document.getElementById('admin-promo-collection').style.display=s==='collection'?'block':'none';
+    document.getElementById('admin-promo-products').style.display=s==='products'?'block':'none';
+  };
+  window.stayunknownCreatePromo=async function(){
+    const scope=document.getElementById('admin-promo-scope').value;
+    const appliesTo={type:scope};
+    if(scope==='collection') appliesTo.collection=document.getElementById('admin-promo-collection').value;
+    if(scope==='products') appliesTo.productIds=[...document.getElementById('admin-promo-products').selectedOptions].map(o=>o.value);
+    const payload={
+      code:document.getElementById('admin-promo-code').value,
+      type:document.getElementById('admin-promo-type').value,
+      value:Number(document.getElementById('admin-promo-value').value),
+      appliesTo,
+      startsAt:document.getElementById('admin-promo-start').value||null,
+      endsAt:document.getElementById('admin-promo-end').value||null,
+      minOrder:Number(document.getElementById('admin-promo-min').value||0),
+      maxUses:document.getElementById('admin-promo-max').value||null,
+      active:document.getElementById('admin-promo-active').checked
+    };
+    const user=window.__stayUnknownCurrentUser;
+    if(!user)return;
+    const token=await user.getIdToken(true);
+    const r=await fetch(`${window.BACKEND_URL||'/api'}/admin/promos`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    document.getElementById('admin-promo-message').textContent=r.ok?'Promo created.':(d.error||'Unable to create promo.');
+  };
+})();
 </script>
 </body>
 </html>
