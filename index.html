@@ -485,6 +485,13 @@ body{background:#101010}
 .notification-row{cursor:pointer;touch-action:manipulation}
 .notification-row-action{position:relative;z-index:2}
 </style>
+
+<style id="account-dashboard-shortcuts-style">
+.account-dashboard-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
+.account-dashboard-card{width:100%;text-align:left;background:transparent;border:1px solid rgba(255,255,255,.18);padding:15px;border-radius:12px;color:inherit;cursor:pointer}
+.account-dashboard-card span{display:block;font-weight:700;letter-spacing:.04em}.account-dashboard-card small{display:block;opacity:.65;margin-top:5px}.account-dashboard-card b{font-size:.8em;margin-left:4px}
+@media(max-width:520px){.account-dashboard-shortcuts{grid-template-columns:1fr}}
+</style>
 </head>
 <body class="intro-active">
 
@@ -547,7 +554,25 @@ body{background:#101010}
     <div class="shop-category-menu" id="menu-shop-categories"></div>
 
     <div class="menu-nav-item" id="nav-account-toggle" role="button" tabindex="0">
-      <span>ACCOUNT</span><span>↗</span>
+      <span>ACCOUNT</span>
+<div class="account-dashboard-shortcuts" id="account-dashboard-shortcuts">
+  <button type="button" class="account-dashboard-card" data-account-action="orders">
+    <span>MY ORDERS</span><small>View your orders</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="wishlist">
+    <span>WISHLIST <b id="account-wishlist-count">0</b></span><small>Saved pieces</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="notifications">
+    <span>NOTIFICATIONS <b id="account-notification-count">0</b></span><small>Order updates</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="details">
+    <span>ACCOUNT DETAILS</span><small>Manage your account</small>
+  </button>
+  <button type="button" class="account-dashboard-card" data-account-action="saved-checkout">
+    <span>SAVED CHECKOUT</span><small>Phone &amp; address</small>
+  </button>
+</div>
+<span>↗</span>
     </div>
 
     <div class="menu-nav-item" id="nav-wishlist-toggle" role="button" tabindex="0"><span>WISHLIST</span><span id="menu-wishlist-count">0</span></div>
@@ -2015,6 +2040,30 @@ function updateAccountUI(user) {
 }
 
 onAuthStateChanged(auth, updateAccountUI);
+</script>
+
+<script id="account-dashboard-shortcuts-script">
+(function(){
+  function accountAction(action){
+    if(action==='wishlist'){
+      if(typeof openWishlist==='function') return openWishlist();
+      const el=document.querySelector('[data-section="wishlist"],#wishlist'); if(el) el.click();
+    } else if(action==='notifications'){
+      if(typeof openNotifications==='function') return openNotifications();
+      const el=document.querySelector('[data-section="notifications"],#notifications'); if(el) el.click();
+    } else if(action==='orders'){
+      if(typeof openAccountOrders==='function') return openAccountOrders();
+      const el=document.querySelector('[data-section="orders"],#orders'); if(el) el.click();
+    } else if(action==='details'){
+      const el=document.querySelector('[data-section="account-details"],#account-details'); if(el) el.click();
+    } else if(action==='saved-checkout'){
+      const el=document.querySelector('[data-section="saved-checkout"],#saved-checkout'); if(el) el.click();
+    }
+  }
+  document.addEventListener('click',function(e){
+    const b=e.target.closest('[data-account-action]'); if(b) accountAction(b.dataset.accountAction);
+  });
+})();
 </script>
 </body>
 </html>
