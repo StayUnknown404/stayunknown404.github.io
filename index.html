@@ -1044,6 +1044,7 @@ body{background:#101010}
     searchPanel.classList.remove('open');
     accountModal.style.display = 'block';
     accountPage.classList.add('open');
+    window.refreshStayUnknownAccountAdminShortcut?.();
     accountPage.setAttribute('aria-hidden','false');
     window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -1288,9 +1289,9 @@ body{background:#101010}
     productOptionsModal.setAttribute('aria-hidden','true');
   }
   document.getElementById('product-options-close').addEventListener('click',closeProductOptions);
-  productOptionsWishlist?.addEventListener('click',()=>{
+  productOptionsWishlist?.addEventListener('click',async()=>{
     if(!selectedProduct)return;
-    toggleWishlist(selectedProduct.id);
+    await toggleWishlist(selectedProduct.id);
     const saved=isWishlisted(selectedProduct.id);
     productOptionsWishlist.classList.toggle('saved',saved);
     productOptionsWishlist.textContent=saved?'♥ SAVED TO WISHLIST':'♡ SAVE TO WISHLIST';
@@ -1341,58 +1342,114 @@ body{background:#101010}
   /* ---------- WISHLIST ---------- */
   let wishlistIds=[];
   let wishlistSyncTimer=null;
-  try{const saved=JSON.parse(localStorage.getItem('stayunknown_wishlist')||'[]');wishlistIds=Array.isArray(saved)?saved:[]}catch(_){wishlistIds=[]}
+  let wishlistRevision=0;
+  try{const saved=JSON.parse(localStorage.getItem('stayunknown_wishlist')||'[]');wishlistIds=Array.isArray(saved)?saved.map(String):[]}catch(_){wishlistIds=[]}
   function isWishlisted(id){const key=String(id);return wishlistIds.some(x=>String(x)===key)}
-  function saveWishlist(){localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));updateWishlistCount();if(window.__stayUnknownCurrentUser)syncWishlistToAccount()}
+  function normalizeWishlistIds(ids){
+    return [...new Set((Array.isArray(ids)?ids:[]).map(x=>String(x||'').trim()).filter(Boolean))]
+      .filter(id=>products.some(p=>String(p.id)===id)).slice(0,100);
+  }
+  function persistWishlistLocal(){
+    try{localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds))}catch(_){}
+  }
+  function saveWishlist(){
+    persistWishlistLocal();
+    updateWishlistCount();
+    if(window.__stayUnknownCurrentUser)syncWishlistToAccount();
+  }
   function updateWishlistCount(){
     const count=wishlistIds.length;
     const top=document.getElementById('wishlist-count');
     const menu=document.getElementById('menu-wishlist-count');
-    if(top)top.textContent=count; if(menu)menu.textContent=count;
-    document.querySelectorAll('[data-wishlist-id]').forEach(btn=>{const saved=isWishlisted(btn.dataset.wishlistId);btn.classList.toggle('saved',saved);btn.textContent=saved?'♥':'♡';btn.setAttribute('aria-label',saved?'Remove from wishlist':'Save to wishlist')});
+    if(top)top.textContent=count;
+    if(menu)menu.textContent=count;
+    document.querySelectorAll('[data-wishlist-id]').forEach(btn=>{
+      const saved=isWishlisted(btn.dataset.wishlistId);
+      btn.classList.toggle('saved',saved);
+      btn.textContent=saved?'♥':'♡';
+      btn.setAttribute('aria-label',saved?'Remove from wishlist':'Save to wishlist');
+    });
   }
-  async function syncWishlistToAccount(){
-    const user=window.__stayUnknownCurrentUser; if(!user)return;
+  async function syncWishlistToAccount(ids=wishlistIds){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user)return false;
     try{
       const token=await user.getIdToken();
+      const payload=normalizeWishlistIds(ids);
       const response=await fetch(`${BACKEND_URL}/api/wishlist`,{
         method:'PUT',
         headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({wishlistIds:[...wishlistIds].map(String)})
+        body:JSON.stringify({wishlistIds:payload})
       });
       if(!response.ok)throw new Error('Wishlist sync failed');
-    }catch(_){/* local wishlist remains available if account sync is temporarily unavailable */}
+      const data=await response.json().catch(()=>({}));
+      if(Array.isArray(data.wishlistIds)){
+        const serverIds=normalizeWishlistIds(data.wishlistIds);
+        /* Only adopt the server response if the wishlist has not changed
+           while the request was in flight. */
+        if(payload.length===wishlistIds.length && payload.every((id,i)=>id===wishlistIds[i])){
+          wishlistIds=serverIds;
+          persistWishlistLocal();
+          updateWishlistCount();
+        }
+      }
+      return true;
+    }catch(_){
+      return false;
+    }
   }
   async function loadWishlistFromAccount(user){
     if(!user)return;
+    const requestRevision=wishlistRevision;
+    const localBefore=normalizeWishlistIds(wishlistIds);
     try{
       const token=await user.getIdToken();
       const response=await fetch(`${BACKEND_URL}/api/wishlist`,{headers:{Authorization:`Bearer ${token}`}});
       if(!response.ok)return;
       const data=await response.json();
-      wishlistIds=Array.isArray(data.wishlistIds)?data.wishlistIds.map(String).filter(id=>products.some(p=>String(p.id)===id)):[];
-      localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
+      const serverIds=normalizeWishlistIds(data.wishlistIds);
+
+      /* If the customer already has locally saved pieces, merge them with
+         the account copy instead of wiping the local wishlist. This also
+         lets a guest save a piece before/while Firebase finishes signing in. */
+      if(requestRevision!==wishlistRevision){
+        await syncWishlistToAccount(wishlistIds);
+        return;
+      }
+
+      const merged=normalizeWishlistIds([...serverIds,...localBefore]);
+      const changed=merged.length!==serverIds.length || merged.some(id=>!serverIds.includes(id));
+      wishlistIds=merged;
+      persistWishlistLocal();
       updateWishlistCount();
       if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
-    }catch(_){/* keep cached wishlist */}
+
+      /* Migrate local-only wishlist items into the authenticated account. */
+      if(changed)await syncWishlistToAccount(merged);
+    }catch(_){
+      /* Keep the cached wishlist if the account request is unavailable. */
+      updateWishlistCount();
+    }
   }
   window.syncStayUnknownWishlist=loadWishlistFromAccount;
   async function toggleWishlist(id){
     if(!id)return;
     const key=String(id);
+    wishlistRevision++;
     wishlistIds=isWishlisted(key)
       ? wishlistIds.filter(x=>String(x)!==key)
       : [...wishlistIds,key];
-    localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
+    wishlistIds=normalizeWishlistIds(wishlistIds);
+    persistWishlistLocal();
     updateWishlistCount();
     renderWishlist();
-    if(window.__stayUnknownCurrentUser) await syncWishlistToAccount();
+    if(window.__stayUnknownCurrentUser)await syncWishlistToAccount(wishlistIds);
   }
   window.toggleStayUnknownWishlist=toggleWishlist;
   window.getStayUnknownWishlistIds=()=>[...wishlistIds];
   function renderWishlist(){
     const box=document.getElementById('wishlist-items'); if(!box)return;
-    const items=wishlistIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
+    const items=wishlistIds.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
     if(!items.length){box.innerHTML='<div class="orders-empty">YOUR WISHLIST IS EMPTY.</div>';updateWishlistCount();return}
     box.innerHTML=items.map(p=>{
       const inCart=cart.some(i=>i.id===p.id);
@@ -1406,7 +1463,7 @@ body{background:#101010}
   function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
   window.openWishlist=openWishlist;
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
-  document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
+  document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();e.preventDefault();toggleWishlist(btn.dataset.wishlistId)}});
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
   document.getElementById('nav-wishlist-toggle')?.addEventListener('click',openWishlist);
   updateWishlistCount();
@@ -2107,7 +2164,13 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
-    if (window.checkStayUnknownAdminAccess) window.checkStayUnknownAdminAccess();
+    if (window.checkStayUnknownAdminAccess) {
+      Promise.resolve(window.checkStayUnknownAdminAccess()).finally(() => {
+        window.refreshStayUnknownAccountAdminShortcut?.();
+      });
+    } else {
+      window.refreshStayUnknownAccountAdminShortcut?.();
+    }
     if (window.refreshStayUnknownNotifications) window.refreshStayUnknownNotifications();
     if (window.syncStayUnknownWishlist) window.syncStayUnknownWishlist(user);
   } else {
@@ -2240,6 +2303,8 @@ onAuthStateChanged(auth, updateAccountUI);
       if(!shortcuts.querySelector('[data-account-action="help-desk"]'))addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
     }
   }
+
+  window.refreshStayUnknownAccountAdminShortcut=refreshAccountAdminShortcut;
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
   function products(){return Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:[]}
