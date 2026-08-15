@@ -409,7 +409,7 @@ body{background:#101010}
 
 
 /* ===== CUSTOMER NOTIFICATIONS ===== */
-#notification-fab{position:fixed;right:18px;bottom:22px;z-index:4300;display:none;touch-action:none;user-select:none}#notification-fab.visible{display:block}#notification-fab-button{width:58px;height:58px;border:1px solid #555;border-radius:50%;background:#151515;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.45);display:grid;place-items:center;position:relative;cursor:pointer;font-size:23px}.notification-bell{display:block;line-height:1}#notification-fab-count{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#f3f3f0;color:#111;border:2px solid #151515;font-size:9px;font-weight:900;line-height:16px;text-align:center}#notifications-modal{position:fixed;inset:0;z-index:4200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}#notifications-modal.open{display:flex}.notifications-card{width:min(520px,100%);max-height:82vh;overflow:auto;background:#111;border:1px solid #333;box-shadow:0 24px 80px rgba(0,0,0,.65)}.notifications-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px;background:#111;border-bottom:1px solid #292929}.notifications-head strong{font:24px/1 Anton,sans-serif;text-transform:uppercase}.notifications-list{padding:14px}.notification-row{border:1px solid #292929;padding:15px;margin-bottom:9px;background:#151515}.notification-row.unread{border-color:#555;background:#181818}.notification-row-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.notification-row-title{font-size:12px;font-weight:900;text-transform:uppercase}.notification-row-time{color:#777;font-size:9px;white-space:nowrap}.notification-row-message{color:#aaa;font-size:11px;line-height:1.65;margin-top:8px}.notification-row-action{margin-top:12px;background:transparent;color:#fff;border:1px solid #444;padding:8px 10px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}#menu-notification-count{min-width:20px;text-align:right}@media(max-width:520px){#notification-fab{right:14px;bottom:16px}#notification-fab-button{width:54px;height:54px}.notifications-card{max-height:88vh}.notifications-head{padding:18px}.notifications-head strong{font-size:22px}}
+#notification-fab{position:fixed;right:18px;bottom:22px;z-index:4300;display:none;touch-action:none;user-select:none}#notification-fab.visible{display:block}#notification-fab-button{width:58px;height:58px;border:1px solid #555;border-radius:50%;background:#151515;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.45);display:grid;place-items:center;position:relative;cursor:pointer;font-size:23px}.notification-bell{display:block;line-height:1}#notification-fab-count{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#f3f3f0;color:#111;border:2px solid #151515;font-size:9px;font-weight:900;line-height:16px;text-align:center}#notifications-modal{position:fixed;inset:0;z-index:4200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}#notifications-modal.open{display:flex}.notifications-card{width:min(520px,100%);max-height:82vh;overflow:auto;background:#111;border:1px solid #333;box-shadow:0 24px 80px rgba(0,0,0,.65)}.notifications-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px;background:#111;border-bottom:1px solid #292929}.notifications-head strong{font:24px/1 Anton,sans-serif;text-transform:uppercase}.notifications-list{padding:14px}.notification-row{border:1px solid #292929;padding:15px;margin-bottom:9px;background:#151515;cursor:pointer;transition:background .18s,border-color .18s,transform .12s}.notification-row:hover{background:#1a1a1a;border-color:#444}.notification-row:active{transform:translateY(1px)}.notification-row:focus{outline:1px solid #fff;outline-offset:2px}.notification-row.unread{border-color:#555;background:#181818}.notification-row-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.notification-row-title{font-size:12px;font-weight:900;text-transform:uppercase}.notification-row-time{color:#777;font-size:9px;white-space:nowrap}.notification-row-message{color:#aaa;font-size:11px;line-height:1.65;margin-top:8px}.notification-order-line{margin-top:7px}.notification-order-line strong{display:block;color:#f3f3f0;font-size:12px;text-transform:uppercase}.notification-order-meta{display:block;color:#888;font-size:10px;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}.notification-tap-hint{display:block;color:#666;font-size:8px;letter-spacing:1px;text-transform:uppercase;margin-top:12px}.notification-row-action{margin-top:12px;background:transparent;color:#fff;border:1px solid #444;padding:8px 10px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}#menu-notification-count{min-width:20px;text-align:right}@media(max-width:520px){#notification-fab{right:14px;bottom:16px}#notification-fab-button{width:54px;height:54px}.notifications-card{max-height:88vh}.notifications-head{padding:18px}.notifications-head strong{font-size:22px}}
 </style>
 </head>
 <body class="intro-active">
@@ -1592,12 +1592,63 @@ body{background:#101010}
   const notificationMenuCount=document.getElementById('menu-notification-count');
   const notificationClose=document.getElementById('notifications-close');
   let stayUnknownNotifications=[];
+  let notificationOrdersById=new Map();
   let notificationDrag=null;
   function notificationTime(value){if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
   function updateNotificationIndicators(){const unread=stayUnknownNotifications.filter(n=>!n.read).length;const compact=unread>9?'9+':String(unread);notificationFabCount.textContent=compact;notificationMenuCount.textContent=compact;notificationFab.classList.toggle('visible',unread>0);notificationFab.setAttribute('aria-hidden',unread>0?'false':'true')}
-  function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async()=>{const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));updateNotificationIndicators()}
-  async function fetchNotifications(){const user=window.__stayUnknownCurrentUser;if(!user){stayUnknownNotifications=[];renderNotifications();return}try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load notifications.');stayUnknownNotifications=Array.isArray(data.notifications)?data.notifications:[];renderNotifications()}catch(error){console.error('Notification load error:',error)}}
-  async function markNotificationRead(notification){if(!notification||notification.read)return;const user=window.__stayUnknownCurrentUser;if(!user)return;try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();renderNotifications()}catch(error){console.error('Notification read error:',error)}}
+  function notificationItemsHTML(notification){
+    const order=notificationOrdersById.get(String(notification?.orderId||''));
+    const items=Array.isArray(order?.items)?order.items:[];
+    if(!items.length) return `<div>${escapeHTML(notification?.message||'There is a new update on your STAYUNKNOWN order.')}</div>`;
+    return `<div>Your STAYUNKNOWN order of</div>${items.map(item=>`<div class="notification-order-line"><strong>${escapeHTML(item.name||item.productId||'Item')}</strong><span class="notification-order-meta">${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · QTY ${Number(item.quantity||1)}</span></div>`).join('')}<span class="notification-tap-hint">TAP TO VIEW ORDER DETAILS</span>`;
+  }
+  function renderNotifications(){
+    if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}
+    notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{
+      const unread=n.read?'':' unread';
+      return `<article class="notification-row${unread}" data-notification-index="${i}" role="button" tabindex="0" aria-label="Open ${escapeHTML(n.title||'order update')}"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div><div class="notification-row-message">${notificationItemsHTML(n)}</div></article>`;
+    }).join('');
+    notificationList.querySelectorAll('[data-notification-index]').forEach(row=>{
+      const open=async()=>{const n=stayUnknownNotifications[Number(row.dataset.notificationIndex)];if(n)await openNotificationOrder(n)};
+      row.addEventListener('click',open);
+      row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}});
+    });
+    updateNotificationIndicators();
+  }
+  async function fetchNotifications(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user){stayUnknownNotifications=[];notificationOrdersById=new Map();renderNotifications();return}
+    try{
+      const token=await user.getIdToken();
+      const response=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`}});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'Unable to load notifications.');
+      stayUnknownNotifications=Array.isArray(data.notifications)?data.notifications:[];
+      notificationOrdersById=new Map();
+      try{
+        const ordersResponse=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});
+        const ordersData=await ordersResponse.json();
+        if(ordersResponse.ok&&Array.isArray(ordersData.orders)){
+          ordersData.orders.forEach(order=>{if(order?.id)notificationOrdersById.set(String(order.id),order)});
+        }
+      }catch(orderError){console.error('Notification order lookup error:',orderError)}
+      renderNotifications();
+    }catch(error){console.error('Notification load error:',error)}
+  }
+  async function markNotificationRead(notification,rerender=true){if(!notification||notification.read)return;const user=window.__stayUnknownCurrentUser;if(!user)return;try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();if(rerender)renderNotifications()}catch(error){console.error('Notification read error:',error)}}
+  async function openNotificationOrder(notification){
+    await markNotificationRead(notification,true);
+    closeNotifications();
+    const orderId=String(notification?.orderId||'').trim();
+    let order=orderId?notificationOrdersById.get(orderId):null;
+    if(!order && orderId) order={id:orderId};
+    if(order){openOrderDetails(order);return}
+    if(notification?.orderNumber){
+      await fetchMyOrders();
+      const match=orderHistory.find(o=>String(o.orderNumber||o.paymentReference||o.id||'')===String(notification.orderNumber));
+      if(match)openOrderDetails(match);
+    }
+  }
   function openNotifications(){notificationModal.classList.add('open');notificationModal.setAttribute('aria-hidden','false');renderNotifications()}
   function closeNotifications(){notificationModal.classList.remove('open');notificationModal.setAttribute('aria-hidden','true')}
   notificationMenu?.addEventListener('click',()=>{closeDrawer();openNotifications()});notificationMenu?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();closeDrawer();openNotifications()}});notificationClose?.addEventListener('click',closeNotifications);notificationModal?.addEventListener('click',e=>{if(e.target===notificationModal)closeNotifications()});notificationFabButton?.addEventListener('click',openNotifications);
