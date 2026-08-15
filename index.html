@@ -507,6 +507,24 @@ body{background:#101010}
 .su-promo-row{display:flex;gap:8px}.su-promo-row input{flex:1;min-width:0}.su-promo-row button,.su-restock-box button{cursor:pointer}
 .su-promo-msg{margin-top:8px;font-size:12px}.su-discount-line{display:flex;justify-content:space-between}
 </style>
+<style id="stayunknown-admin-dashboard-style">
+.admin-dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.admin-dashboard-panel{margin-top:14px}
+.admin-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.admin-stat{border:1px solid #292929;padding:14px;background:#151515}
+.admin-stat small{display:block;color:#777;font-size:9px;letter-spacing:1.4px}
+.admin-stat strong{display:block;font-size:20px;margin-top:6px}
+.admin-list{display:grid;gap:8px;margin-top:14px}
+.admin-list-row{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid #292929;padding:12px;background:#151515}
+.admin-list-row strong{display:block;font-size:11px}
+.admin-list-row small{display:block;color:#777;font-size:9px;margin-top:4px}
+.admin-ticket{border:1px solid #292929;padding:13px;background:#151515}
+.admin-ticket strong,.admin-ticket small,.admin-ticket span{display:block}
+.admin-ticket small,.admin-ticket span{color:#777;font-size:9px;margin-top:5px}
+.admin-ticket p{font-size:11px;line-height:1.5;color:#ccc}
+.admin-promo-list{margin-top:18px}
+@media(max-width:520px){.admin-dashboard-grid{grid-template-columns:1fr}.admin-stat-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body class="intro-active">
 
@@ -625,7 +643,7 @@ body{background:#101010}
               <button id="btn-signout" class="auth-alt">SIGN OUT</button>
             </div>
           </div>
-          <div class="account-dashboard-section" id="admin-account-section" style="display:none">
+          <div class="account-dashboard-section" id="admin-account-section" style="display:none !important">
             <div class="account-dashboard-label">ADMIN</div>
             <div class="account-dashboard-actions">
               <button id="btn-admin-orders" class="orders-open-btn" type="button">DELIVERY ORDERS</button>
@@ -2189,6 +2207,7 @@ onAuthStateChanged(auth, updateAccountUI);
     accountPage.scrollTop=0;
   }
   accountBack.addEventListener('click',hideSubPage);
+  refreshAccountAdminShortcut();
 
   function addShortcut(action,label,description){
     if(shortcuts.querySelector(`[data-account-action="${action}"]`))return;
@@ -2199,8 +2218,28 @@ onAuthStateChanged(auth, updateAccountUI);
   }
   addShortcut('saved-checkout','SAVED CHECKOUT','Create or edit your saved checkout information');
   addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
-
   shortcuts.querySelector('[data-account-action="order-tracking"]')?.remove();
+  shortcuts.querySelector('[data-account-action="admin-dashboard"]')?.remove();
+
+  async function refreshAccountAdminShortcut(){
+    const help=shortcuts.querySelector('[data-account-action="help-desk"]');
+    const existing=shortcuts.querySelector('[data-account-action="admin-dashboard"]');
+    try{
+      const allowed=Boolean(await window.checkStayUnknownAdminAccess?.());
+      const adminSection=document.getElementById('admin-account-section');
+      if(adminSection)adminSection.style.display='none';
+      if(allowed){
+        help?.remove();
+        if(!existing)addShortcut('admin-dashboard','ADMIN DASHBOARD','Manage STAYUNKNOWN');
+      }else{
+        existing?.remove();
+        if(!shortcuts.querySelector('[data-account-action="help-desk"]'))addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
+      }
+    }catch(_){
+      existing?.remove();
+      if(!shortcuts.querySelector('[data-account-action="help-desk"]'))addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
+    }
+  }
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
   function products(){return Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:[]}
@@ -2282,6 +2321,139 @@ onAuthStateChanged(auth, updateAccountUI);
     });
   }
 
+
+  async function openHelpDeskPage(){
+    showSubPage('HELP DESK');
+    body.innerHTML=`
+      <div class="account-subpage-help">
+        <p class="account-subpage-note">NEED HELP WITH AN ORDER, PAYMENT, DELIVERY OR YOUR ACCOUNT?</p>
+        <div class="help-desk-grid">
+          <a class="account-subpage-action primary" href="https://wa.me/" target="_blank" rel="noopener">WHATSAPP</a>
+          <a class="account-subpage-action" href="https://instagram.com/" target="_blank" rel="noopener">INSTAGRAM</a>
+          <a class="account-subpage-action" href="mailto:hello@stayunknown.com">EMAIL</a>
+        </div>
+        <p class="account-subpage-note">You can also use the social links in the site menu.</p>
+      </div>`;
+  }
+
+  async function adminAuth(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user)throw new Error('Sign in first.');
+    return {user,token:await user.getIdToken(true)};
+  }
+
+  function adminButton(label,action){
+    return `<button type="button" class="account-subpage-action ${action==='overview'?'primary':''}" data-admin-action="${action}">${label}</button>`;
+  }
+
+  async function openAdminDashboardPage(){
+    const allowed=Boolean(await window.checkStayUnknownAdminAccess?.());
+    if(!allowed){alert('Admin access required.');return}
+    showSubPage('ADMIN DASHBOARD');
+    body.innerHTML=`
+      <p class="account-subpage-note">STAYUNKNOWN ADMIN CONTROL CENTER.</p>
+      <div class="admin-dashboard-grid">
+        ${adminButton('SALES / ORDER OVERVIEW','overview')}
+        ${adminButton('ORDERS & DELIVERY','orders')}
+        ${adminButton('PROMO CODES','promos')}
+        ${adminButton('INVENTORY / LOW STOCK','inventory')}
+        ${adminButton('RESTOCK SUBSCRIPTIONS','restock')}
+        ${adminButton('HELP & SUPPORT','support')}
+      </div>
+      <div id="admin-dashboard-panel" class="admin-dashboard-panel">
+        <div class="account-subpage-empty">SELECT A SECTION.</div>
+      </div>`;
+    body.querySelectorAll('[data-admin-action]').forEach(b=>b.addEventListener('click',()=>openAdminSection(b.dataset.adminAction)));
+  }
+
+  async function openAdminSection(section){
+    const panel=document.getElementById('admin-dashboard-panel');
+    if(!panel)return;
+    panel.innerHTML='<div class="account-subpage-empty">LOADING…</div>';
+
+    if(section==='orders'){
+      hideSubPage();
+      if(await window.checkStayUnknownAdminAccess?.())openAdminOrders();
+      return;
+    }
+
+    try{
+      const {token}=await adminAuth();
+
+      if(section==='overview'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`}});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load orders.');
+        const orders=Array.isArray(d.orders)?d.orders:[];
+        const paid=orders.filter(o=>['PAID','PROCESSING','SHIPPED','DELIVERED'].includes(String(o.deliveryStatus||o.paymentStatus||'').toUpperCase()));
+        const revenue=paid.reduce((s,o)=>s+Number(o.total||0),0);
+        const processing=paid.filter(o=>['PAID','PROCESSING'].includes(String(o.deliveryStatus||'').toUpperCase())).length;
+        const shipped=paid.filter(o=>String(o.deliveryStatus||'').toUpperCase()==='SHIPPED').length;
+        const delivered=paid.filter(o=>String(o.deliveryStatus||'').toUpperCase()==='DELIVERED').length;
+        panel.innerHTML=`<div class="admin-stat-grid">
+          <div class="admin-stat"><small>PAID ORDERS</small><strong>${paid.length}</strong></div>
+          <div class="admin-stat"><small>REVENUE</small><strong>₦${revenue.toLocaleString('en-NG')}</strong></div>
+          <div class="admin-stat"><small>PROCESSING</small><strong>${processing}</strong></div>
+          <div class="admin-stat"><small>SHIPPED</small><strong>${shipped}</strong></div>
+          <div class="admin-stat"><small>DELIVERED</small><strong>${delivered}</strong></div>
+        </div>`;
+        return;
+      }
+
+      if(section==='promos'){
+        panel.innerHTML=window.stayunknownPromoAdminForm?window.stayunknownPromoAdminForm():'<div class="account-subpage-empty">Promo controls unavailable.</div>';
+        const list=document.createElement('div');
+        list.className='admin-promo-list';
+        panel.appendChild(list);
+        const r=await fetch(`${BACKEND_URL}/api/admin/promos`,{headers:{Authorization:`Bearer ${token}`}});
+        const d=await r.json();
+        if(r.ok&&Array.isArray(d.promos)){
+          list.innerHTML='<div class="account-subpage-note">EXISTING PROMOS</div>'+
+            d.promos.map(p=>`<div class="admin-list-row"><div><strong>${esc(p.code)}</strong><small>${esc(p.type)} · ${esc(p.value)}${p.type==='percent'?'%':' NGN'} · ${p.isCurrentlyActive?'ACTIVE':'INACTIVE'}</small></div><button type="button" class="account-subpage-action" data-promo-toggle="${esc(p.code)}">${p.active?'DISABLE':'ENABLE'}</button></div>`).join('');
+          list.querySelectorAll('[data-promo-toggle]').forEach(btn=>btn.addEventListener('click',async()=>{
+            const code=btn.dataset.promoToggle,current=d.promos.find(x=>x.code===code);
+            await fetch(`${BACKEND_URL}/api/admin/promos/${encodeURIComponent(code)}`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({active:!current.active})});
+            openAdminSection('promos');
+          }));
+        }
+        return;
+      }
+
+      if(section==='inventory'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/inventory`,{headers:{Authorization:`Bearer ${token}`}});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load inventory.');
+        const items=Array.isArray(d.items)?d.items:[];
+        const low=items.filter(i=>Number(i.stock)<=Number(i.lowStockThreshold));
+        panel.innerHTML=`<div class="admin-stat-grid">
+          <div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.length}</strong></div>
+          <div class="admin-stat"><small>LOW STOCK</small><strong>${low.length}</strong></div>
+        </div><div class="admin-list">${items.map(i=>`<div class="admin-list-row"><div><strong>${esc(i.name)}</strong><small>${esc(i.category||'')} · STOCK ${Number(i.stock)}</small></div><span class="order-status ${Number(i.stock)<=Number(i.lowStockThreshold)?'processing':'delivered'}">${Number(i.stock)<=Number(i.lowStockThreshold)?'LOW':'OK'}</span></div>`).join('')}</div>`;
+        return;
+      }
+
+      if(section==='restock'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/restock-subscriptions`,{headers:{Authorization:`Bearer ${token}`}});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load restock subscriptions.');
+        const rows=Object.entries(d.subscriptions||{});
+        panel.innerHTML=rows.length?`<div class="admin-list">${rows.map(([id,emails])=>`<div class="admin-list-row"><div><strong>PRODUCT ${esc(id)}</strong><small>${emails.length} subscriber${emails.length===1?'':'s'}</small></div><span>${emails.map(esc).join(', ')}</span></div>`).join('')}</div>`:'<div class="account-subpage-empty">NO RESTOCK SUBSCRIPTIONS YET.</div>';
+        return;
+      }
+
+      if(section==='support'){
+        const r=await fetch(`${BACKEND_URL}/api/admin/support`,{headers:{Authorization:`Bearer ${token}`}});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
+        const tickets=Array.isArray(d.tickets)?d.tickets:[];
+        panel.innerHTML=tickets.length?`<div class="admin-list">${tickets.map(t=>`<article class="admin-ticket"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small><p>${esc(t.message||'')}</p><span>${esc(t.status||'OPEN')} · ${esc(t.createdAt||'')}</span></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+        return;
+      }
+    }catch(e){
+      panel.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load admin section.')}</div>`;
+    }
+  }
+
   document.addEventListener('click',e=>{
     const card=e.target.closest('[data-account-action]');
     if(!card)return;
@@ -2289,6 +2461,7 @@ onAuthStateChanged(auth, updateAccountUI);
     if(action==='wishlist'){e.preventDefault();openWishlistPage();}
     if(action==='saved-checkout'){e.preventDefault();openSavedCheckoutPage();}
     if(action==='help-desk'){e.preventDefault();openHelpDeskPage();}
+    if(action==='admin-dashboard'){e.preventDefault();openAdminDashboardPage();}
   });
 
   /* Robust swipe-back: only when Cart or Checkout is actually open. */
@@ -2372,8 +2545,8 @@ function renderStayUnknownRestockBox(product){
 <script id="stayunknown-admin-promos">
 (function(){
   window.stayunknownPromoAdminForm=function(){
-    const collections=[...new Set((window.products||[]).map(p=>p.category).filter(Boolean))];
-    const products=(window.products||[]).map(p=>`<option value="${String(p.id)}">${String(p.name)}</option>`).join('');
+    const collections=[...new Set((window.stayUnknownProducts||[]).map(p=>p.category).filter(Boolean))];
+    const products=(window.stayUnknownProducts||[]).map(p=>`<option value="${String(p.id)}">${String(p.name)}</option>`).join('');
     return `<section class="admin-promo-panel">
       <h3>PROMO CODES</h3>
       <input id="admin-promo-code" placeholder="PROMO CODE">
