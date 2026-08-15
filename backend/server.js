@@ -221,6 +221,14 @@ async function sendOrderConfirmationEmails(order) {
 
 
 app.use(cors());
+
+/* Parse JSON before authenticated account APIs. The Paystack webhook is
+   intentionally excluded because it must receive the original raw body. */
+app.use((req, res, next) => {
+  if (req.path === "/api/paystack/webhook") return next();
+  return express.json()(req, res, next);
+});
+
 function deliveryStatusLabel(status) {
   const value = String(status || "").toUpperCase();
   if (value === "PROCESSING") return "ORDER BEING PREPARED";
@@ -379,18 +387,6 @@ app.patch("/api/notifications/:notificationId/read", requireFirebaseUser, async 
   }
 });
 
-
-/*
-  Paystack webhook needs the original raw request body
-  so its HMAC signature can be verified.
-*/
-app.use((req, res, next) => {
-  if (req.path === "/api/paystack/webhook") {
-    return next();
-  }
-
-  return express.json()(req, res, next);
-});
 
 /*
   Trusted server-side product catalogue.
@@ -1447,39 +1443,6 @@ function getAdminEmails() {
     .filter(Boolean);
 }
 
-/*
-  Compatibility authentication middleware for the newer support/promo
-  routes. The existing backend uses req.firebaseUser; these routes expect
-  req.user and req.user.isAdmin. Keep both forms available without changing
-  the existing authentication flow.
-*/
-async function authenticate(req, res, next) {
-  try {
-    await requireFirebaseUser(req, res, () => {
-      const email = String(
-        req.firebaseUser?.email || ""
-      ).trim().toLowerCase();
-
-      req.user = {
-        ...req.firebaseUser,
-        isAdmin: Boolean(
-          email && getAdminEmails().includes(email)
-        )
-      };
-
-      next();
-    });
-  } catch (error) {
-    console.error("Authentication middleware error:", error);
-
-    if (!res.headersSent) {
-      return res.status(401).json({
-        error: "Authentication required."
-      });
-    }
-  }
-}
-
 async function requireAdmin(req, res, next) {
   try {
     await new Promise((resolve, reject) => {
@@ -1905,6 +1868,17 @@ const promoCodes = new Map([
   ['MOVEINSILENCE10',{code:'MOVEINSILENCE10',type:'percent',value:10,active:false,startsAt:null,endsAt:null,minOrder:0,maxUses:null,used:0,appliesTo:{type:'store',collection:null,productIds:[]}}],
   ['UNKNOWN10',{code:'UNKNOWN10',type:'percent',value:10,active:false,startsAt:null,endsAt:null,minOrder:0,maxUses:null,used:0,appliesTo:{type:'store',collection:null,productIds:[]}}]
 ]);
+
+function authenticate(req,res,next){
+  requireFirebaseUser(req,res,err=>{
+    if(err)return next(err);
+    const firebaseUser=req.firebaseUser||{};
+    const email=String(firebaseUser.email||'').trim().toLowerCase();
+    const isAdmin=getAdminEmails().includes(email);
+    req.user={...firebaseUser,isAdmin};
+    next();
+  });
+}
 
 function safeCustomerEmail(req){
   return req.user?.email || req.body?.email || '';
