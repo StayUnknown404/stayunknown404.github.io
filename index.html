@@ -1322,7 +1322,15 @@ body{background:#101010}
   }
   async function syncWishlistToAccount(){
     const user=window.__stayUnknownCurrentUser; if(!user)return;
-    try{const token=await user.getIdToken();await fetch(`${BACKEND_URL}/api/wishlist`,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({wishlistIds})})}catch(_){/* local wishlist remains available if account sync is temporarily unavailable */}
+    try{
+      const token=await user.getIdToken();
+      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{
+        method:'PUT',
+        headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+        body:JSON.stringify({wishlistIds:[...wishlistIds].map(String)})
+      });
+      if(!response.ok)throw new Error('Wishlist sync failed');
+    }catch(_){/* local wishlist remains available if account sync is temporarily unavailable */}
   }
   async function loadWishlistFromAccount(user){
     if(!user)return;
@@ -1331,7 +1339,7 @@ body{background:#101010}
       const response=await fetch(`${BACKEND_URL}/api/wishlist`,{headers:{Authorization:`Bearer ${token}`}});
       if(!response.ok)return;
       const data=await response.json();
-      wishlistIds=Array.isArray(data.wishlistIds)?data.wishlistIds.filter(id=>products.some(p=>p.id===id)):[];
+      wishlistIds=Array.isArray(data.wishlistIds)?data.wishlistIds.map(String).filter(id=>products.some(p=>String(p.id)===id)):[];
       localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
       updateWishlistCount();
       if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
