@@ -678,7 +678,7 @@ body{background:#101010}
           <label class="auth-label" for="checkout-note">ORDER NOTE (OPTIONAL)</label>
           <textarea id="checkout-note" class="checkout-textarea"></textarea>
         </div>
-        <button class="checkout-submit" type="submit">CONTINUE AS GUEST</button>
+        <label id="save-checkout-info-wrap" style="display:none"><input id="save-checkout-info" type="checkbox"> SAVE PHONE &amp; ADDRESS FOR FUTURE ORDERS</label><button class="checkout-submit" id="checkout-submit-button" type="submit">CONTINUE AS GUEST</button>
         <div class="checkout-status" id="checkout-status" aria-live="polite"></div>
       </form>
 
@@ -1292,14 +1292,18 @@ body{background:#101010}
     summary.innerHTML=cart.map(i=>`<div class="checkout-summary-row"><span>${escapeHTML(i.name)}<br><small style="color:#777">${escapeHTML(i.size||'ONE SIZE')} · ${escapeHTML(i.color||'BLACK')} × ${i.quantity}</small></span><span>${money(i.price*i.quantity)}</span></div>`).join('');
     total.textContent=money(cartSubtotal());
   }
-  function openCheckout(){
+  async function openCheckout(){
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
     closeCart();checkoutStatus.textContent='';checkoutOverlay.classList.add('open');checkoutOverlay.setAttribute('aria-hidden','false');renderCheckoutSummary();
     const currentUser=window.__stayUnknownCurrentUser;
+    const submitButton=document.getElementById('checkout-submit-button');
+    const saveWrap=document.getElementById('save-checkout-info-wrap');
     if(currentUser){
+      submitButton.textContent='CONTINUE'; saveWrap.style.display='block';
       if(!document.getElementById('checkout-email').value)document.getElementById('checkout-email').value=currentUser.email||'';
       if(!document.getElementById('checkout-name').value)document.getElementById('checkout-name').value=currentUser.displayName||'';
-    }
+      try{const token=await currentUser.getIdToken();const r=await fetch(`${BACKEND_URL}/api/profile`,{headers:{Authorization:`Bearer ${token}`}});if(r.ok){const d=await r.json();document.getElementById('checkout-phone').value=document.getElementById('checkout-phone').value||d.profile?.phone||'';document.getElementById('checkout-address').value=document.getElementById('checkout-address').value||d.profile?.address||'';}}catch(e){console.error(e)}
+    }else{submitButton.textContent='CONTINUE AS GUEST';saveWrap.style.display='none';document.getElementById('save-checkout-info').checked=false}
     document.getElementById('checkout-name').focus();
   }
   function closeCheckout(){checkoutOverlay.classList.remove('open');checkoutOverlay.setAttribute('aria-hidden','true')}
@@ -1380,6 +1384,8 @@ body{background:#101010}
     const customerName=document.getElementById('checkout-name').value.trim();
 
     checkoutStatus.innerHTML='<div class="checkout-success">SECURE PAYMENT INITIALIZING…</div>';
+    const currentUser=window.__stayUnknownCurrentUser;
+    if(currentUser && document.getElementById('save-checkout-info').checked){try{const token=await currentUser.getIdToken();await fetch(`${BACKEND_URL}/api/profile`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({phone:document.getElementById('checkout-phone').value.trim(),address:document.getElementById('checkout-address').value.trim()})})}catch(e){console.error(e)}}
 
     try{
       const response=await fetch(`${BACKEND_URL}/api/paystack/initialize`,{
