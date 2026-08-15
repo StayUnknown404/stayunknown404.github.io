@@ -1265,6 +1265,8 @@ body{background:#101010}
     const product=products.find(p=>p.id===id);
     if(product)openProductOptions(product);
   }
+  window.openStayUnknownProduct=openProductById;
+  window.stayUnknownProducts=products;
 
   /* ---------- CART ---------- */
   let cart=[];
@@ -1326,6 +1328,8 @@ body{background:#101010}
     wishlistIds=isWishlisted(id)?wishlistIds.filter(x=>x!==id):[...wishlistIds,id];
     saveWishlist(); renderWishlist();
   }
+  window.toggleStayUnknownWishlist=toggleWishlist;
+  window.getStayUnknownWishlistIds=()=>[...wishlistIds];
   function renderWishlist(){
     const box=document.getElementById('wishlist-items'); if(!box)return;
     const items=wishlistIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
@@ -1340,6 +1344,7 @@ body{background:#101010}
     updateWishlistCount();
   }
   function openWishlist(){closeDrawer();closeCart();renderWishlist();const panel=document.getElementById('wishlist-panel');panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
+  window.openWishlist=openWishlist;
   function closeWishlist(){const panel=document.getElementById('wishlist-panel');panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-wishlist-id]');if(btn){e.stopPropagation();toggleWishlist(btn.dataset.wishlistId)}});
   document.getElementById('wishlist-close').addEventListener('click',closeWishlist);
@@ -2053,6 +2058,170 @@ onAuthStateChanged(auth, updateAccountUI);
   }
 
   document.addEventListener('click',handleAccountShortcut);
+})();
+</script>
+
+
+<style id="stayunknown-account-experience-update">
+#account-subpage{display:none;min-height:calc(100vh - 132px);background:#111}
+#account-subpage.open{display:block}
+.account-subpage-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:22px;border-bottom:1px solid #292929;position:sticky;top:0;background:#111;z-index:3}
+.account-subpage-head h2{font:30px/1 Anton,sans-serif;margin:0;text-transform:uppercase}
+.account-subpage-back{background:none;border:1px solid #444;color:#fff;padding:9px 12px;cursor:pointer;font-size:10px;font-weight:800;text-transform:uppercase}
+.account-subpage-body{padding:22px}
+.account-subpage-note{color:#888;font-size:10px;line-height:1.6;margin:0 0 16px}
+.account-subpage-empty{text-align:center;color:#777;padding:50px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.account-subpage-list{display:grid;gap:9px}
+.account-subpage-row{border:1px solid #292929;background:#151515;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.account-subpage-row-main{min-width:0}.account-subpage-row-name{font-size:12px;font-weight:900;text-transform:uppercase}.account-subpage-row-meta{font-size:10px;color:#777;margin-top:5px;text-transform:uppercase}
+.account-subpage-row-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.account-subpage-action{background:transparent;color:#fff;border:1px solid #444;padding:8px 9px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}.account-subpage-action.primary{background:#f3f3f0;color:#111;border-color:#f3f3f0}
+.saved-checkout-form{display:grid;gap:12px}.saved-checkout-field label{display:block;font-size:9px;color:#777;letter-spacing:1.5px;font-weight:900;text-transform:uppercase;margin-bottom:6px}.saved-checkout-field input,.saved-checkout-field textarea{width:100%;padding:13px;background:#171717;color:#fff;border:1px solid #333;outline:0}.saved-checkout-field textarea{min-height:110px;resize:vertical}.saved-checkout-field input:focus,.saved-checkout-field textarea:focus{border-color:#777}.saved-checkout-actions{display:grid;gap:8px;margin-top:5px}.saved-checkout-message{min-height:18px;font-size:10px;color:#aaa;line-height:1.5}
+.account-dashboard-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:520px){.account-subpage-body{padding:18px}.account-subpage-head{padding:18px}.account-subpage-head h2{font-size:27px}.account-subpage-row{align-items:flex-start;flex-direction:column}.account-subpage-row-actions{width:100%;justify-content:flex-start}.account-subpage-row-actions .account-subpage-action{flex:1}}
+#cart-panel,#checkout-overlay{touch-action:pan-y}
+</style>
+
+<script id="stayunknown-account-experience-update">
+(function(){
+  'use strict';
+  const accountPage=document.getElementById('account-page');
+  const accountContent=document.getElementById('account-page-content');
+  const shortcuts=document.getElementById('account-dashboard-shortcuts');
+  if(!accountPage||!accountContent||!shortcuts)return;
+
+  const sub=document.createElement('section');
+  sub.id='account-subpage';
+  sub.innerHTML=`
+    <div class="account-subpage-head">
+      <h2 id="account-subpage-title">ACCOUNT</h2>
+      <button type="button" class="account-subpage-back" id="account-subpage-back">← ACCOUNT</button>
+    </div>
+    <div class="account-subpage-body" id="account-subpage-body"></div>`;
+  accountPage.querySelector('.account-page-card').appendChild(sub);
+
+  const title=document.getElementById('account-subpage-title');
+  const body=document.getElementById('account-subpage-body');
+  const accountBack=document.getElementById('account-subpage-back');
+
+  function showSubPage(name){
+    title.textContent=name;
+    accountContent.style.display='none';
+    sub.classList.add('open');
+    accountPage.scrollTop=0;
+  }
+  function hideSubPage(){
+    sub.classList.remove('open');
+    accountContent.style.display='';
+    accountPage.scrollTop=0;
+  }
+  accountBack.addEventListener('click',hideSubPage);
+
+  function addShortcut(action,label,description){
+    if(shortcuts.querySelector(`[data-account-action="${action}"]`))return;
+    const b=document.createElement('button');
+    b.type='button';b.className='account-dashboard-card';b.dataset.accountAction=action;
+    b.innerHTML=`<span>${label}</span><small>${description}</small>`;
+    shortcuts.appendChild(b);
+  }
+  addShortcut('saved-checkout','SAVED CHECKOUT','Create or edit your saved checkout information');
+  addShortcut('order-tracking','ORDER TRACKING','Track your orders and delivery status');
+
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+  function products(){return Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:[]}
+
+  async function openWishlistPage(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user){alert('Please sign in to use your wishlist.');return}
+    document.getElementById('wishlist-panel')?.classList.remove('open');
+    showSubPage('WISHLIST');
+    body.innerHTML='<div class="account-subpage-empty">LOADING YOUR WISHLIST…</div>';
+    try{ if(window.syncStayUnknownWishlist) await window.syncStayUnknownWishlist(user); }catch(_){ }
+    const ids=window.getStayUnknownWishlistIds?window.getStayUnknownWishlistIds():[];
+    const items=ids.map(id=>products().find(p=>String(p.id)===String(id))).filter(Boolean);
+    if(!items.length){body.innerHTML='<div class="account-subpage-empty">YOUR WISHLIST IS EMPTY.</div>';return}
+    body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>`<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div></div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-view="${esc(p.id)}">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}">REMOVE</button></div></article>`).join('')}</div>`;
+    body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',()=>{hideSubPage();window.openStayUnknownProduct?.(b.dataset.wishView)}));
+    body.querySelectorAll('[data-wish-remove]').forEach(b=>b.addEventListener('click',()=>{window.toggleStayUnknownWishlist?.(b.dataset.wishRemove);openWishlistPage()}));
+  }
+
+  async function openSavedCheckoutPage(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user){alert('Please sign in to use Saved Checkout.');return}
+    showSubPage('SAVED CHECKOUT');
+    body.innerHTML='<div class="account-subpage-empty">LOADING SAVED CHECKOUT…</div>';
+    let profile={};
+    try{
+      const token=await user.getIdToken();
+      const r=await fetch('https://stayunknown404-backend.onrender.com/api/profile',{headers:{Authorization:`Bearer ${token}`}});
+      if(r.ok){const d=await r.json();profile=d.profile||{}}
+    }catch(_){ }
+    const name=user.displayName||'';
+    const email=user.email||'';
+    const phone=profile.phone||'';
+    const address=profile.address||'';
+    body.innerHTML=`
+      <p class="account-subpage-note">SAVE YOUR PHONE AND DELIVERY ADDRESS SO YOUR NEXT CHECKOUT IS READY TO GO. YOU CAN EDIT THESE DETAILS ANY TIME.</p>
+      <div class="saved-checkout-form">
+        <div class="saved-checkout-field"><label>FULL NAME</label><input id="saved-name" value="${esc(name)}" autocomplete="name" readonly></div>
+        <div class="saved-checkout-field"><label>EMAIL</label><input id="saved-email" value="${esc(email)}" autocomplete="email" readonly></div>
+        <div class="saved-checkout-field"><label>PHONE</label><input id="saved-phone" value="${esc(phone)}" autocomplete="tel"></div>
+        <div class="saved-checkout-field"><label>DELIVERY ADDRESS</label><textarea id="saved-address" autocomplete="street-address">${esc(address)}</textarea></div>
+        <div class="saved-checkout-message" id="saved-checkout-message"></div>
+        <div class="saved-checkout-actions"><button type="button" class="account-subpage-action primary" id="saved-checkout-save">${phone||address?'SAVE CHANGES':'CREATE SAVED CHECKOUT'}</button><button type="button" class="account-subpage-action" id="saved-checkout-use">USE FOR CHECKOUT</button></div>
+      </div>`;
+    document.getElementById('saved-checkout-save').addEventListener('click',async()=>{
+      const button=document.getElementById('saved-checkout-save'),msg=document.getElementById('saved-checkout-message');button.disabled=true;msg.textContent='SAVING…';
+      try{
+        const token=await user.getIdToken();
+        const r=await fetch('https://stayunknown404-backend.onrender.com/api/profile',{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({phone:document.getElementById('saved-phone').value.trim(),address:document.getElementById('saved-address').value.trim()})});
+        const d=await r.json().catch(()=>({}));
+        if(!r.ok)throw new Error(d.error||'Unable to save checkout information.');
+        msg.textContent='SAVED CHECKOUT UPDATED.';
+      }catch(e){msg.textContent=e.message||'Unable to save checkout information.'}
+      finally{button.disabled=false}
+    });
+    document.getElementById('saved-checkout-use').addEventListener('click',()=>{
+      document.getElementById('checkout-name').value=name;
+      document.getElementById('checkout-email').value=email;
+      document.getElementById('checkout-phone').value=document.getElementById('saved-phone').value.trim();
+      document.getElementById('checkout-address').value=document.getElementById('saved-address').value.trim();
+      hideSubPage();
+      document.getElementById('checkout-btn')?.click();
+    });
+  }
+
+  function openTrackingPage(){
+    hideSubPage();
+    if(typeof window.openOrdersPage==='function')window.openOrdersPage();
+  }
+
+  document.addEventListener('click',e=>{
+    const card=e.target.closest('[data-account-action]');
+    if(!card)return;
+    const action=card.dataset.accountAction;
+    if(action==='wishlist'){e.preventDefault();openWishlistPage();}
+    if(action==='saved-checkout'){e.preventDefault();openSavedCheckoutPage();}
+    if(action==='order-tracking'){e.preventDefault();openTrackingPage();}
+  });
+
+  /* Robust swipe-back: only when Cart or Checkout is actually open. */
+  let sx=0,sy=0,swipe=false,swipeMode='';
+  document.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    const cartOpen=document.getElementById('cart-panel')?.classList.contains('open');
+    const checkoutOpen=document.getElementById('checkout-overlay')?.classList.contains('open');
+    if(!cartOpen&&!checkoutOpen)return;
+    if(e.target.closest('input,textarea,select,button,a,[contenteditable="true"]'))return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;swipe=true;swipeMode=cartOpen?'cart':'checkout';
+  },{passive:true,capture:true});
+  document.addEventListener('touchend',e=>{
+    if(!swipe)return;swipe=false;
+    const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<70||Math.abs(dx)<=Math.abs(dy)*1.2)return;
+    if(swipeMode==='cart')document.getElementById('cart-close')?.click();
+    else document.getElementById('checkout-close')?.click();
+  },{passive:true,capture:true});
+
 })();
 </script>
 
