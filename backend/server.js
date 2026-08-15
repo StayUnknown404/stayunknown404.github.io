@@ -1863,3 +1863,147 @@ app.listen(
     );
   }
 );
+
+
+// ---------- STAYUNKNOWN CUSTOMER SUPPORT / RESTOCK / PROMO ADDITIONS ----------
+const supportTickets = new Map();
+const restockSubscriptions = new Map();
+const promoCodes = new Map([
+  ['MOVEINSILENCE10',{code:'MOVEINSILENCE10',type:'percent',value:10,active:false,startsAt:null,endsAt:null,minOrder:0,maxUses:null,used:0,appliesTo:{type:'store',collection:null,productIds:[]}}],
+  ['UNKNOWN10',{code:'UNKNOWN10',type:'percent',value:10,active:false,startsAt:null,endsAt:null,minOrder:0,maxUses:null,used:0,appliesTo:{type:'store',collection:null,productIds:[]}}]
+]);
+
+function safeCustomerEmail(req){
+  return req.user?.email || req.body?.email || '';
+}
+
+app.post('/api/support', authenticate, async (req,res)=>{
+  try{
+    const {subject='',message='',orderNumber=''}=req.body||{};
+    if(!String(message).trim()) return res.status(400).json({error:'Message is required.'});
+    const id=`SUP-${Date.now()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+    const ticket={id,userId:req.user.uid,email:safeCustomerEmail(req),subject:String(subject).trim().slice(0,120),message:String(message).trim().slice(0,5000),orderNumber:String(orderNumber).trim().slice(0,80),status:'OPEN',createdAt:new Date().toISOString()};
+    supportTickets.set(id,ticket);
+    return res.json({ok:true,ticket});
+  }catch(e){return res.status(500).json({error:'Unable to create support request.'})}
+});
+
+app.get('/api/support', authenticate, async (req,res)=>{
+  const mine=[...supportTickets.values()].filter(t=>t.userId===req.user.uid);
+  res.json({tickets:mine});
+});
+
+app.post('/api/restock-subscriptions', async (req,res)=>{
+  try{
+    const {productId,email}=req.body||{};
+    if(!String(productId).trim() || !String(email).trim()) return res.status(400).json({error:'Product and email are required.'});
+    const key=String(productId);
+    const list=restockSubscriptions.get(key)||[];
+    if(!list.includes(String(email).trim().toLowerCase())) list.push(String(email).trim().toLowerCase());
+    restockSubscriptions.set(key,list);
+    res.json({ok:true,subscribed:true});
+  }catch(e){res.status(500).json({error:'Unable to save restock notification.'})}
+});
+
+function promoIsCurrentlyActive(p){
+  const now=Date.now();
+  if(!p || !p.active) return false;
+  if(p.startsAt && now < Date.parse(p.startsAt)) return false;
+  if(p.endsAt && now > Date.parse(p.endsAt)) return false;
+  if(p.maxUses!=null && Number(p.used||0)>=Number(p.maxUses)) return false;
+  return true;
+}
+
+function promoEligibleItems(promo, items){
+  const scope=promo?.appliesTo||{type:'store'};
+  if(scope.type==='store') return items;
+  if(scope.type==='collection'){
+    return items.filter(i=>String(i.collection||i.category||'').toLowerCase()===String(scope.collection||'').toLowerCase());
+  }
+  if(scope.type==='products'){
+    const ids=new Set((scope.productIds||[]).map(String));
+    return items.filter(i=>ids.has(String(i.id)));
+  }
+  return [];
+}
+
+function promoDiscount(promo, items){
+  const eligible=promoEligibleItems(promo,items);
+  const eligibleSubtotal=eligible.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0);
+  if(eligibleSubtotal < Number(promo.minOrder||0)) return {discount:0,eligibleSubtotal};
+  const discount=promo.type==='fixed'
+    ? Math.min(Number(promo.value||0),eligibleSubtotal)
+    : eligibleSubtotal*(Number(promo.value||0)/100);
+  return {discount,eligibleSubtotal};
+}
+
+app.post('/api/promo/validate', async (req,res)=>{
+  const code=String(req.body?.code||'').trim().toUpperCase();
+  const items=Array.isArray(req.body?.items)?req.body.items:[];
+  const promo=promoCodes.get(code);
+  if(!promo || !promoIsCurrentlyActive(promo)) return res.status(404).json({valid:false,error:'Invalid or expired promo code.'});
+  const {discount,eligibleSubtotal}=promoDiscount(promo,items);
+  if(Number(promo.minOrder||0)>eligibleSubtotal) return res.status(400).json({valid:false,error:`Minimum eligible order is ₦${Number(promo.minOrder).toLocaleString()}.`});
+  res.json({valid:true,...promo,discount,eligibleSubtotal});
+});
+
+app.post('/api/admin/promos', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  const body=req.body||{};
+  const code=String(body.code||'').trim().toUpperCase();
+  const type=body.type==='fixed'?'fixed':'percent';
+  const value=Number(body.value);
+  const scope=body.appliesTo||{type:'store'};
+  if(!code || !Number.isFinite(value) || value<=0 || (type==='percent' && value>100)) return res.status(400).json({error:'Invalid promo.'});
+  if(!['store','collection','products'].includes(scope.type)) return res.status(400).json({error:'Invalid promo scope.'});
+  if(scope.type==='collection' && !String(scope.collection||'').trim()) return res.status(400).json({error:'Collection is required.'});
+  if(scope.type==='products' && !Array.isArray(scope.productIds)) return res.status(400).json({error:'Product IDs are required.'});
+  const promo={
+    code,type,value,active:body.active!==false,
+    startsAt:body.startsAt||null,endsAt:body.endsAt||null,
+    minOrder:Math.max(0,Number(body.minOrder||0)),
+    maxUses:body.maxUses==null||body.maxUses===''?null:Math.max(1,Number(body.maxUses)),
+    used:0,
+    appliesTo:{
+      type:scope.type,
+      collection:scope.type==='collection'?String(scope.collection):null,
+      productIds:scope.type==='products'?[...new Set(scope.productIds.map(String))]:[]
+    }
+  };
+  promoCodes.set(code,promo);
+  res.json({ok:true,promo});
+});
+
+app.patch('/api/admin/promos/:code', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  const code=String(req.params.code||'').toUpperCase();
+  const existing=promoCodes.get(code);
+  if(!existing) return res.status(404).json({error:'Promo not found.'});
+  const next={...existing,...(req.body||{}),code};
+  if(req.body?.appliesTo) next.appliesTo={...existing.appliesTo,...req.body.appliesTo};
+  promoCodes.set(code,next);
+  res.json({ok:true,promo:next});
+});
+
+app.delete('/api/admin/promos/:code', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  const code=String(req.params.code||'').toUpperCase();
+  promoCodes.delete(code);
+  res.json({ok:true});
+});
+
+app.get('/api/admin/promos', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  res.json({promos:[...promoCodes.values()].map(p=>({...p,isCurrentlyActive:promoIsCurrentlyActive(p)}))});
+});
+
+app.get('/api/admin/inventory',, authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  try{
+    const items=Array.isArray(catalog)?catalog.map(p=>({
+      id:p.id,name:p.name,category:p.category,stock:Number(p.stock??0),
+      lowStockThreshold:Number(p.lowStockThreshold??3),comingSoon:!!p.comingSoon
+    })):[];
+    res.json({items});
+  }catch(e){res.status(500).json({error:'Unable to load inventory.'})}
+});
