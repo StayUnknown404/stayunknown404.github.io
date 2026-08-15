@@ -873,7 +873,7 @@ body{background:#101010}
 </div>
 
 <!-- CUSTOMER NOTIFICATIONS -->
-<div id="notification-fab" aria-hidden="true"><button id="notification-fab-button" type="button" aria-label="Open notifications"><span class="notification-bell" aria-hidden="true">🔔</span><span id="notification-fab-count">0</span></button></div>
+<div id="notification-fab" aria-hidden="true"><button id="notification-fab-button" type="button" aria-label="Open notifications"><span class="notification-bell" aria-hidden="true">♢</span><span id="notification-fab-count">0</span></button></div>
 <div id="notifications-modal" aria-hidden="true"><div class="notifications-card" role="dialog" aria-modal="true" aria-labelledby="notifications-title"><div class="notifications-head"><strong id="notifications-title">NOTIFICATIONS</strong><button id="notifications-close" type="button" class="order-close">CLOSE</button></div><div id="notifications-list" class="notifications-list"><div class="orders-empty">NO NOTIFICATIONS.</div></div></div></div>
 
 <div id="order-confirmation" aria-hidden="true">
@@ -1349,7 +1349,6 @@ body{background:#101010}
     const top=document.getElementById('wishlist-count');
     const menu=document.getElementById('menu-wishlist-count');
     if(top)top.textContent=count; if(menu)menu.textContent=count;
-    const accountCount=document.getElementById('account-wishlist-count'); if(accountCount)accountCount.textContent=count;
     document.querySelectorAll('[data-wishlist-id]').forEach(btn=>{const saved=isWishlisted(btn.dataset.wishlistId);btn.classList.toggle('saved',saved);btn.textContent=saved?'♥':'♡';btn.setAttribute('aria-label',saved?'Remove from wishlist':'Save to wishlist')});
   }
   async function syncWishlistToAccount(){
@@ -1366,39 +1365,16 @@ body{background:#101010}
   }
   async function loadWishlistFromAccount(user){
     if(!user)return;
-    const localBefore=[...wishlistIds].map(String).filter(id=>products.some(p=>String(p.id)===id));
     try{
-      const token=await user.getIdToken(true);
-      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{
-        headers:{Authorization:`Bearer ${token}`},
-        cache:'no-store'
-      });
-      if(!response.ok){
-        wishlistIds=localBefore;
-        localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
-        updateWishlistCount();
-        if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
-        return;
-      }
+      const token=await user.getIdToken();
+      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{headers:{Authorization:`Bearer ${token}`}});
+      if(!response.ok)return;
       const data=await response.json();
-      const remote=Array.isArray(data.wishlistIds)
-        ? data.wishlistIds.map(String).filter(id=>products.some(p=>String(p.id)===id))
-        : [];
-
-      wishlistIds=[...new Set([...remote,...localBefore])];
+      wishlistIds=Array.isArray(data.wishlistIds)?data.wishlistIds.map(String).filter(id=>products.some(p=>String(p.id)===id)):[];
       localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
       updateWishlistCount();
       if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
-
-      if(localBefore.some(id=>!remote.includes(id))){
-        await syncWishlistToAccount();
-      }
-    }catch(_){
-      wishlistIds=localBefore;
-      localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
-      updateWishlistCount();
-      if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
-    }
+    }catch(_){/* keep cached wishlist */}
   }
   window.syncStayUnknownWishlist=loadWishlistFromAccount;
   async function toggleWishlist(id){
@@ -1416,7 +1392,7 @@ body{background:#101010}
   window.getStayUnknownWishlistIds=()=>[...wishlistIds];
   function renderWishlist(){
     const box=document.getElementById('wishlist-items'); if(!box)return;
-    const items=wishlistIds.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
+    const items=wishlistIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
     if(!items.length){box.innerHTML='<div class="orders-empty">YOUR WISHLIST IS EMPTY.</div>';updateWishlistCount();return}
     box.innerHTML=items.map(p=>{
       const inCart=cart.some(i=>i.id===p.id);
@@ -1483,7 +1459,7 @@ body{background:#101010}
   document.getElementById('checkout-close').addEventListener('click',closeCheckout);
   checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
   /* ---------- SECURE PAYSTACK CHECKOUT ---------- */
-  const BACKEND_URL='https://stayunknown404-backend.onrender.com';
+  const BACKEND_URL='https://stayunknown404-backend.onrender.com'; window.BACKEND_URL=BACKEND_URL;
 
   async function saveCheckoutProfileForCurrentUser(phone,address){
     const user=window.__stayUnknownCurrentUser;
@@ -1796,27 +1772,17 @@ body{background:#101010}
   }
 
   async function checkAdminAccess(){
-    const adminOrdersButton=document.getElementById('btn-admin-orders');
-    if(!window.__stayUnknownCurrentUser){
-      if(adminOrdersButton)adminOrdersButton.style.display='none';
-      return false;
-    }
+    if(!window.__stayUnknownCurrentUser){adminButton.style.display='none';return false}
     try{
-      const token=await window.__stayUnknownCurrentUser.getIdToken(true);
-      const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{
-        headers:{Authorization:`Bearer ${token}`},
-        cache:'no-store'
-      });
-      const d=await r.json().catch(()=>({}));
+      const token=await adminToken();
+      const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`}});
+      const d=await r.json();
       const allowed=Boolean(r.ok&&d.isAdmin);
-      if(adminOrdersButton)adminOrdersButton.style.display=allowed?'block':'none';
+      adminButton.style.display=allowed?'block':'none';
       const adminSection=document.getElementById('admin-account-section');
-      if(adminSection)adminSection.style.setProperty('display',allowed?'block':'none','important');
+      if(adminSection)adminSection.style.display=allowed?'block':'none';
       return allowed;
-    }catch(_){
-      if(adminOrdersButton)adminOrdersButton.style.display='none';
-      return false;
-    }
+    }catch(_){adminButton.style.display='none';return false}
   }
   window.checkStayUnknownAdminAccess=checkAdminAccess;
 
@@ -1913,7 +1879,7 @@ body{background:#101010}
   let stayUnknownNotifications=[];
   let notificationDrag=null;
   function notificationTime(value){if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
-  function updateNotificationIndicators(){const unread=stayUnknownNotifications.filter(n=>!n.read).length;const compact=unread>9?'9+':String(unread);notificationFabCount.textContent=compact;if(notificationMenuCount)notificationMenuCount.textContent=compact;const accountCount=document.getElementById('account-notification-count');if(accountCount)accountCount.textContent=compact;notificationFab.classList.toggle('visible',unread>0);notificationFab.setAttribute('aria-hidden',unread>0?'false':'true')}
+  function updateNotificationIndicators(){const unread=stayUnknownNotifications.filter(n=>!n.read).length;const compact=unread>9?'9+':String(unread);notificationFabCount.textContent=compact;notificationMenuCount.textContent=compact;notificationFab.classList.toggle('visible',unread>0);notificationFab.setAttribute('aria-hidden',unread>0?'false':'true')}
   function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}" data-notification-index="${i}" role="button" tabindex="0" aria-label="Open order notification"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));notificationList.querySelectorAll('.notification-row').forEach(row=>{const open=async()=>{const n=stayUnknownNotifications[Number(row.dataset.notificationIndex)];if(!n)return;if(!n.read)await markNotificationRead(n);if(n.orderId){const existing=orderHistory.find(o=>String(o.id||'')===String(n.orderId));if(existing){closeNotifications();await openOrderDetails(existing);return}const user=window.__stayUnknownCurrentUser;if(user){try{const token=await user.getIdToken();const r=await fetch(`${BACKEND_URL}/api/orders/${encodeURIComponent(n.orderId)}`,{headers:{Authorization:`Bearer ${token}`}});const d=await r.json();if(r.ok&&d.order){closeNotifications();await openOrderDetails(d.order);return}}catch(_){} }} };row.addEventListener('click',e=>{if(e.target.closest('button'))return;open()});row.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();open()}})});updateNotificationIndicators()}
   async function fetchNotifications(){const user=window.__stayUnknownCurrentUser;if(!user){stayUnknownNotifications=[];renderNotifications();return}try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load notifications.');stayUnknownNotifications=Array.isArray(data.notifications)?data.notifications:[];renderNotifications()}catch(error){console.error('Notification load error:',error)}}
   async function markNotificationRead(notification){if(!notification||notification.read)return;const user=window.__stayUnknownCurrentUser;if(!user)return;try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();renderNotifications()}catch(error){console.error('Notification read error:',error)}}
@@ -2142,7 +2108,6 @@ function updateAccountUI(user) {
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
     if (window.checkStayUnknownAdminAccess) window.checkStayUnknownAdminAccess();
-    if (window.refreshStayUnknownAdminShortcut) window.refreshStayUnknownAdminShortcut();
     if (window.refreshStayUnknownNotifications) window.refreshStayUnknownNotifications();
     if (window.syncStayUnknownWishlist) window.syncStayUnknownWishlist(user);
   } else {
@@ -2180,11 +2145,6 @@ onAuthStateChanged(auth, updateAccountUI);
 
     if(action==='notifications' && typeof window.openStayUnknownNotifications==='function'){
       window.openStayUnknownNotifications();
-      return;
-    }
-
-    if(action==='admin-dashboard' && typeof window.openStayUnknownAdminDashboard==='function'){
-      window.openStayUnknownAdminDashboard();
       return;
     }
   }
@@ -2267,7 +2227,7 @@ onAuthStateChanged(auth, updateAccountUI);
     try{
       const allowed=Boolean(await window.checkStayUnknownAdminAccess?.());
       const adminSection=document.getElementById('admin-account-section');
-      if(adminSection)adminSection.style.setProperty('display','none','important');
+      if(adminSection)adminSection.style.display='none';
       if(allowed){
         help?.remove();
         if(!existing)addShortcut('admin-dashboard','ADMIN DASHBOARD','Manage STAYUNKNOWN');
@@ -2280,8 +2240,6 @@ onAuthStateChanged(auth, updateAccountUI);
       if(!shortcuts.querySelector('[data-account-action="help-desk"]'))addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
     }
   }
-
-  window.refreshStayUnknownAdminShortcut=refreshAccountAdminShortcut;
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
   function products(){return Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:[]}
@@ -2296,8 +2254,7 @@ onAuthStateChanged(auth, updateAccountUI);
     const ids=window.getStayUnknownWishlistIds?window.getStayUnknownWishlistIds():[];
     const items=ids.map(id=>products().find(p=>String(p.id)===String(id))).filter(Boolean);
     if(!items.length){body.innerHTML='<div class="account-subpage-empty">YOUR WISHLIST IS EMPTY.</div>';return}
-    body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>{const inCart=cart.some(i=>String(i.id)===String(p.id));return `<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div>${inCart?'<div class="account-subpage-row-meta">ALREADY IN BAG</div>':''}</div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-add="${esc(p.id)}" type="button">${inCart?'VIEW BAG':'ADD TO BAG'}</button><button class="account-subpage-action" data-wish-view="${esc(p.id)}" type="button">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}" type="button">REMOVE</button></div></article>`}).join('')}</div>`;
-    body.querySelectorAll('[data-wish-add]').forEach(b=>b.addEventListener('click',()=>{const p=products().find(x=>String(x.id)===String(b.dataset.wishAdd));if(!p)return;if(cart.some(i=>String(i.id)===String(p.id))){hideSubPage();openCart();return}hideSubPage();openProductOptions(p)}));
+    body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>`<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div></div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-view="${esc(p.id)}">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}">REMOVE</button></div></article>`).join('')}</div>`;
     body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',()=>{hideSubPage();window.openStayUnknownProduct?.(b.dataset.wishView)}));
     body.querySelectorAll('[data-wish-remove]').forEach(b=>b.addEventListener('click',()=>{window.toggleStayUnknownWishlist?.(b.dataset.wishRemove);openWishlistPage()}));
   }
@@ -2366,17 +2323,100 @@ onAuthStateChanged(auth, updateAccountUI);
 
 
   async function openHelpDeskPage(){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user){alert('Please sign in to contact STAYUNKNOWN support.');return}
+
     showSubPage('HELP DESK');
     body.innerHTML=`
       <div class="account-subpage-help">
         <p class="account-subpage-note">NEED HELP WITH AN ORDER, PAYMENT, DELIVERY OR YOUR ACCOUNT?</p>
+
         <div class="help-desk-grid">
           <a class="account-subpage-action primary" href="https://wa.me/" target="_blank" rel="noopener">WHATSAPP</a>
-          <a class="account-subpage-action" href="https://instagram.com/" target="_blank" rel="noopener">INSTAGRAM</a>
           <a class="account-subpage-action" href="mailto:hello@stayunknown.com">EMAIL</a>
         </div>
-        <p class="account-subpage-note">You can also use the social links in the site menu.</p>
+
+        <div style="margin-top:26px;padding-top:22px;border-top:1px solid #242424">
+          <h3 style="margin:0 0 8px">CREATE A SUPPORT TICKET</h3>
+          <p class="account-subpage-note">Use a ticket if you want STAYUNKNOWN to handle your request inside your account.</p>
+
+          <form id="support-ticket-form" style="display:grid;gap:12px">
+            <input id="support-subject" class="checkout-input" placeholder="SUBJECT" maxlength="120">
+            <input id="support-order-number" class="checkout-input" placeholder="ORDER NUMBER (OPTIONAL)" maxlength="80">
+            <textarea id="support-message" class="checkout-textarea" placeholder="TELL US HOW WE CAN HELP" maxlength="5000" required style="min-height:140px"></textarea>
+            <button class="account-subpage-action primary" type="submit">SEND SUPPORT REQUEST</button>
+            <div id="support-ticket-message" class="account-subpage-note" aria-live="polite"></div>
+          </form>
+        </div>
+
+        <div style="margin-top:26px;padding-top:22px;border-top:1px solid #242424">
+          <h3 style="margin:0 0 12px">MY SUPPORT REQUESTS</h3>
+          <div id="customer-support-tickets"><div class="account-subpage-empty">LOADING…</div></div>
+        </div>
       </div>`;
+
+    const form=document.getElementById('support-ticket-form');
+    const message=document.getElementById('support-ticket-message');
+    const list=document.getElementById('customer-support-tickets');
+
+    async function loadTickets(){
+      try{
+        const token=await user.getIdToken(true);
+        const r=await fetch(`${BACKEND_URL}/api/support`,{
+          headers:{Authorization:`Bearer ${token}`},
+          cache:'no-store'
+        });
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
+        const tickets=Array.isArray(d.tickets)?d.tickets:[];
+        if(!tickets.length){
+          list.innerHTML='<div class="account-subpage-empty">NO SUPPORT REQUESTS YET.</div>';
+          return;
+        }
+        list.innerHTML=tickets.map(t=>{
+          const replies=Array.isArray(t.replies)?t.replies:[];
+          return `<article class="admin-ticket" style="margin-bottom:12px">
+            <strong>${esc(t.subject||'SUPPORT REQUEST')}</strong>
+            <small>${esc(t.id||'')} · ${esc(t.orderNumber||'NO ORDER')}</small>
+            <p>${esc(t.message||'')}</p>
+            ${replies.map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}
+            <span>STATUS: ${esc(t.status||'OPEN')}</span>
+          </article>`;
+        }).join('');
+      }catch(e){
+        list.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load support requests.')}</div>`;
+      }
+    }
+
+    form?.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const submit=form.querySelector('button[type="submit"]');
+      submit.disabled=true;
+      message.textContent='SENDING…';
+      try{
+        const token=await user.getIdToken(true);
+        const r=await fetch(`${BACKEND_URL}/api/support`,{
+          method:'POST',
+          headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            subject:document.getElementById('support-subject').value.trim(),
+            orderNumber:document.getElementById('support-order-number').value.trim(),
+            message:document.getElementById('support-message').value.trim()
+          })
+        });
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||'Unable to create support request.');
+        message.textContent=`SUPPORT REQUEST CREATED — ${d.ticket?.id||''}`;
+        form.reset();
+        await loadTickets();
+      }catch(e){
+        message.textContent=e.message||'Unable to create support request.';
+      }finally{
+        submit.disabled=false;
+      }
+    });
+
+    await loadTickets();
   }
 
   async function adminAuth(){
@@ -2408,8 +2448,6 @@ onAuthStateChanged(auth, updateAccountUI);
       </div>`;
     body.querySelectorAll('[data-admin-action]').forEach(b=>b.addEventListener('click',()=>openAdminSection(b.dataset.adminAction)));
   }
-
-  window.openStayUnknownAdminDashboard=openAdminDashboardPage;
 
   async function openAdminSection(section){
     const panel=document.getElementById('admin-dashboard-panel');
@@ -2487,11 +2525,62 @@ onAuthStateChanged(auth, updateAccountUI);
       }
 
       if(section==='support'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/support`,{headers:{Authorization:`Bearer ${token}`}});
+        const r=await fetch(`${BACKEND_URL}/api/admin/support`,{
+          headers:{Authorization:`Bearer ${token}`},
+          cache:'no-store'
+        });
         const d=await r.json();
         if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
         const tickets=Array.isArray(d.tickets)?d.tickets:[];
-        panel.innerHTML=tickets.length?`<div class="admin-list">${tickets.map(t=>`<article class="admin-ticket"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small><p>${esc(t.message||'')}</p><span>${esc(t.status||'OPEN')} · ${esc(t.createdAt||'')}</span></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+
+        panel.innerHTML=tickets.length?`<div class="admin-list">${
+          tickets.map(t=>`<article class="admin-ticket" data-support-ticket="${esc(t.id)}">
+            <strong>${esc(t.subject||'SUPPORT REQUEST')}</strong>
+            <small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')} · ${esc(t.id||'')}</small>
+            <p>${esc(t.message||'')}</p>
+            ${(Array.isArray(t.replies)?t.replies:[]).map(r=>`<div style="margin:10px 0;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}
+            <span>STATUS: ${esc(t.status||'OPEN')} · ${esc(t.createdAt||'')}</span>
+
+            <div style="display:grid;gap:10px;margin-top:14px">
+              <select data-support-status="${esc(t.id)}" class="checkout-input">
+                ${['OPEN','IN PROGRESS','RESOLVED','CLOSED'].map(s=>`<option value="${s}" ${String(t.status||'OPEN')===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+              <textarea data-support-reply="${esc(t.id)}" class="checkout-textarea" placeholder="REPLY TO CUSTOMER" style="min-height:90px"></textarea>
+              <button type="button" class="account-subpage-action primary" data-support-save="${esc(t.id)}">UPDATE TICKET</button>
+              <div data-support-message="${esc(t.id)}" class="account-subpage-note"></div>
+            </div>
+          </article>`).join('')
+        }</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+
+        panel.querySelectorAll('[data-support-save]').forEach(button=>{
+          button.addEventListener('click',async()=>{
+            const id=button.dataset.supportSave;
+            const statusEl=panel.querySelector(`[data-support-status="${CSS.escape(id)}"]`);
+            const replyEl=panel.querySelector(`[data-support-reply="${CSS.escape(id)}"]`);
+            const msgEl=panel.querySelector(`[data-support-message="${CSS.escape(id)}"]`);
+            button.disabled=true;
+            msgEl.textContent='UPDATING…';
+            try{
+              const rr=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(id)}`,{
+                method:'PATCH',
+                headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+                body:JSON.stringify({
+                  status:statusEl?.value||'OPEN',
+                  reply:replyEl?.value.trim()||''
+                })
+              });
+              const dd=await rr.json();
+              if(!rr.ok)throw new Error(dd.error||'Unable to update support ticket.');
+              msgEl.textContent='TICKET UPDATED.';
+              if(replyEl)replyEl.value='';
+              await loadAdminSection('support');
+            }catch(e){
+              msgEl.textContent=e.message||'Unable to update support ticket.';
+            }finally{
+              button.disabled=false;
+            }
+          });
+        });
         return;
       }
     }catch(e){
