@@ -494,6 +494,19 @@ body{background:#101010}
 .account-dashboard-card b{font-size:.8em;margin-left:4px}
 @media(max-width:520px){.account-dashboard-shortcuts{grid-template-columns:1fr}}
 </style>
+
+<style id="stayunknown-help-desk-style">
+.help-desk-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
+.help-desk-grid a{display:flex;align-items:center;justify-content:center;text-decoration:none}
+.account-subpage-help{padding:4px 0 18px}
+</style>
+
+
+<style id="stayunknown-promo-restock-style">
+.su-promo-box,.su-restock-box{margin:14px 0;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.03)}
+.su-promo-row{display:flex;gap:8px}.su-promo-row input{flex:1;min-width:0}.su-promo-row button,.su-restock-box button{cursor:pointer}
+.su-promo-msg{margin-top:8px;font-size:12px}.su-discount-line{display:flex;justify-content:space-between}
+</style>
 </head>
 <body class="intro-active">
 
@@ -1311,7 +1324,7 @@ body{background:#101010}
   let wishlistIds=[];
   let wishlistSyncTimer=null;
   try{const saved=JSON.parse(localStorage.getItem('stayunknown_wishlist')||'[]');wishlistIds=Array.isArray(saved)?saved:[]}catch(_){wishlistIds=[]}
-  function isWishlisted(id){return wishlistIds.includes(id)}
+  function isWishlisted(id){const key=String(id);return wishlistIds.some(x=>String(x)===key)}
   function saveWishlist(){localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));updateWishlistCount();if(window.__stayUnknownCurrentUser)syncWishlistToAccount()}
   function updateWishlistCount(){
     const count=wishlistIds.length;
@@ -1346,10 +1359,16 @@ body{background:#101010}
     }catch(_){/* keep cached wishlist */}
   }
   window.syncStayUnknownWishlist=loadWishlistFromAccount;
-  function toggleWishlist(id){
+  async function toggleWishlist(id){
     if(!id)return;
-    wishlistIds=isWishlisted(id)?wishlistIds.filter(x=>x!==id):[...wishlistIds,id];
-    saveWishlist(); renderWishlist();
+    const key=String(id);
+    wishlistIds=isWishlisted(key)
+      ? wishlistIds.filter(x=>String(x)!==key)
+      : [...wishlistIds,key];
+    localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
+    updateWishlistCount();
+    renderWishlist();
+    if(window.__stayUnknownCurrentUser) await syncWishlistToAccount();
   }
   window.toggleStayUnknownWishlist=toggleWishlist;
   window.getStayUnknownWishlistIds=()=>[...wishlistIds];
@@ -2179,6 +2198,8 @@ onAuthStateChanged(auth, updateAccountUI);
     shortcuts.appendChild(b);
   }
   addShortcut('saved-checkout','SAVED CHECKOUT','Create or edit your saved checkout information');
+  addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
+
   shortcuts.querySelector('[data-account-action="order-tracking"]')?.remove();
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
@@ -2267,6 +2288,7 @@ onAuthStateChanged(auth, updateAccountUI);
     const action=card.dataset.accountAction;
     if(action==='wishlist'){e.preventDefault();openWishlistPage();}
     if(action==='saved-checkout'){e.preventDefault();openSavedCheckoutPage();}
+    if(action==='help-desk'){e.preventDefault();openHelpDeskPage();}
   });
 
   /* Robust swipe-back: only when Cart or Checkout is actually open. */
@@ -2290,5 +2312,61 @@ onAuthStateChanged(auth, updateAccountUI);
 })();
 </script>
 
+
+<script id="stayunknown-promo-restock-js">
+(function(){
+  let appliedPromo=null;
+  window.stayunknownApplyPromo=async function(){
+    const input=document.querySelector('[data-promo-code],#promo-code,input[name="promoCode"]');
+    const msg=document.querySelector('[data-promo-message],#promo-message');
+    if(!input){return}
+    const code=String(input.value||'').trim().toUpperCase();
+    if(!code){if(msg)msg.textContent='Enter a promo code.';return}
+    try{
+      const r=await fetch(`${window.BACKEND_URL||'/api'}/promo/validate`,{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})
+      });
+      const data=await r.json();
+      if(!r.ok||!data.valid) throw new Error(data.error||'Invalid promo code.');
+      appliedPromo=data;
+      if(msg)msg.textContent=`${data.code} applied — ${data.value}% off.`;
+      document.dispatchEvent(new CustomEvent('stayunknown:promo',{detail:data}));
+    }catch(e){appliedPromo=null;if(msg)msg.textContent=e.message}
+  };
+  window.stayunknownGetPromo=function(){return appliedPromo};
+
+  window.stayunknownRestockSubscribe=async function(productId){
+    const emailEl=document.querySelector(`[data-restock-email="${productId}"]`);
+    const msg=document.querySelector(`[data-restock-message="${productId}"]`);
+    const email=String(emailEl?.value||'').trim();
+    if(!email){if(msg)msg.textContent='Enter your email.';return}
+    try{
+      const r=await fetch(`${window.BACKEND_URL||'/api'}/restock-subscriptions`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({productId,email})
+      });
+      const data=await r.json();
+      if(!r.ok)throw new Error(data.error||'Unable to subscribe.');
+      if(msg)msg.textContent='You’re on the restock list.';
+    }catch(e){if(msg)msg.textContent=e.message}
+  };
+})();
+</script>
+
+<script id="stayunknown-restock-ui">
+function renderStayUnknownRestockBox(product){
+  if(!product || !product.comingSoon) return '';
+  const id=String(product.id);
+  return `<div class="su-restock-box">
+    <strong>NOTIFY ME WHEN AVAILABLE</strong>
+    <p class="account-subpage-note">Leave your email and we’ll keep you on the restock list.</p>
+    <div class="su-promo-row">
+      <input type="email" data-restock-email="${id}" placeholder="you@email.com" autocomplete="email">
+      <button type="button" onclick="stayunknownRestockSubscribe('${id}')">NOTIFY ME</button>
+    </div>
+    <div class="su-promo-msg" data-restock-message="${id}"></div>
+  </div>`;
+}
+</script>
 </body>
 </html>
