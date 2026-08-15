@@ -340,6 +340,8 @@ app.put("/api/wishlist", requireFirebaseUser, async (req, res) => {
   }
 });
 
+app.get("/api/profile", requireFirebaseUser, async (req,res)=>{try{const firestore=initFirebase();if(!firestore)return res.status(503).json({error:"Firebase is not configured."});const uid=String(req.firebaseUser.uid||"").trim();const snap=await firestore.collection("users").doc(uid).get();const d=snap.exists?(snap.data()||{}):{};return res.json({ok:true,profile:{phone:String(d.phone||"").trim(),address:String(d.address||"").trim()}})}catch(e){console.error("Profile load error:",e);return res.status(500).json({error:"Unable to load saved checkout information."})}});
+app.put("/api/profile", requireFirebaseUser, async (req,res)=>{try{const firestore=initFirebase();if(!firestore)return res.status(503).json({error:"Firebase is not configured."});const uid=String(req.firebaseUser.uid||"").trim();const phone=String(req.body?.phone||"").trim().slice(0,60);const address=String(req.body?.address||"").trim().slice(0,500);await firestore.collection("users").doc(uid).set({phone,address,updatedAt:new Date().toISOString()},{merge:true});return res.json({ok:true,profile:{phone,address}})}catch(e){console.error("Profile save error:",e);return res.status(500).json({error:"Unable to save checkout information."})}});
 app.get("/api/notifications", requireFirebaseUser, async (req, res) => {
   try {
     const firestore = initFirebase();
