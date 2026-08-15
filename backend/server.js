@@ -96,107 +96,6 @@ function buildOrderEmailItems(items) {
     .join("");
 }
 
-async function sendGuestDeliveryStatusEmail(order, delivery) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn(
-      "RESEND_API_KEY is not configured; guest delivery status email skipped."
-    );
-    return;
-  }
-
-  const customer = order?.customer || {};
-  const customerEmail =
-    String(customer.email || "").trim().toLowerCase();
-
-  // Only guests receive these status emails.
-  // Registered customers already receive the website notifications.
-  if (!customerEmail || String(customer.uid || "").trim()) {
-    return;
-  }
-
-  const status =
-    String(delivery?.status || "").trim().toUpperCase();
-
-  const statusLabels = {
-    PROCESSING: "BEING PREPARED",
-    SHIPPED: "SHIPPED",
-    DELIVERED: "DELIVERED"
-  };
-
-  const statusLabel =
-    statusLabels[status] || status;
-
-  if (!["PROCESSING", "SHIPPED", "DELIVERED"].includes(status)) {
-    return;
-  }
-
-  const customerName =
-    String(customer.name || "Customer").trim() || "Customer";
-
-  const orderNumber =
-    String(order.orderNumber || order.paymentReference || "");
-
-  const estimatedDelivery =
-    String(delivery?.estimatedDelivery || "To be updated").trim() ||
-    "To be updated";
-
-  const courier =
-    String(delivery?.courier || "STAYUNKNOWN DELIVERY").trim() ||
-    "STAYUNKNOWN DELIVERY";
-
-  const trackingNumber =
-    String(delivery?.trackingNumber || "").trim();
-
-  const deliveryNote =
-    String(delivery?.note || "").trim();
-
-  const itemsHtml =
-    buildOrderEmailItems(order.items);
-
-  const safeName = escapeEmailHtml(customerName);
-  const safeOrderNumber = escapeEmailHtml(orderNumber);
-  const safeStatus = escapeEmailHtml(statusLabel);
-  const safeEstimatedDelivery = escapeEmailHtml(estimatedDelivery);
-  const safeCourier = escapeEmailHtml(courier);
-  const safeTrackingNumber = escapeEmailHtml(trackingNumber);
-  const safeDeliveryNote = escapeEmailHtml(deliveryNote);
-
-  const customerHtml = `
-    <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#111;line-height:1.6">
-      <h1 style="font-size:24px;letter-spacing:1px">STAYUNKNOWN</h1>
-      <h2>ORDER UPDATE</h2>
-      <p>Hi <strong>${safeName}</strong>,</p>
-      <p>Your STAYUNKNOWN order <strong>${safeOrderNumber}</strong> has been updated.</p>
-
-      <div style="background:#f7f7f7;padding:16px;margin:20px 0">
-        <strong>Status:</strong> ${safeStatus}<br>
-        <strong>Estimated delivery:</strong> ${safeEstimatedDelivery}<br>
-        <strong>Courier:</strong> ${safeCourier}${
-          trackingNumber
-            ? `<br><strong>Tracking number:</strong> ${safeTrackingNumber}`
-            : ""
-        }${
-          deliveryNote
-            ? `<br><strong>Delivery note:</strong> ${safeDeliveryNote}`
-            : ""
-        }
-      </div>
-
-      <h3>YOUR ORDER</h3>
-      <table style="width:100%;border-collapse:collapse">
-        <tbody>${itemsHtml}</tbody>
-      </table>
-
-      <p>Thank you for shopping with STAYUNKNOWN.</p>
-    </div>`;
-
-  await sendResendEmail({
-    to: customerEmail,
-    subject: `STAYUNKNOWN — Order ${orderNumber} ${statusLabel}`,
-    html: customerHtml
-  });
-}
-
 async function sendOrderConfirmationEmails(order) {
   if (!process.env.RESEND_API_KEY) {
     console.warn(
@@ -320,7 +219,134 @@ async function sendOrderConfirmationEmails(order) {
   await Promise.all(sends);
 }
 
+
 app.use(cors());
+function deliveryStatusLabel(status) {
+  const value = String(status || "").toUpperCase();
+  if (value === "PROCESSING") return "ORDER BEING PREPARED";
+  if (value === "SHIPPED") return "ORDER SHIPPED";
+  if (value === "DELIVERED") return "ORDER DELIVERED";
+  return `ORDER ${value || "UPDATED"}`;
+}
+
+async function sendOrderStatusEmail(order, deliveryStatus, delivery = {}) {
+  const customer = order?.customer || {};
+  const customerEmail = String(customer.email || "").trim().toLowerCase();
+  if (!customerEmail) return;
+  const status = String(deliveryStatus || "").toUpperCase();
+  if (!["PROCESSING", "SHIPPED", "DELIVERED"].includes(status)) return;
+
+  const customerName = escapeEmailHtml(String(customer.name || "Customer").trim() || "Customer");
+  const orderNumber = escapeEmailHtml(String(order.orderNumber || order.paymentReference || order.id || ""));
+  const statusTitle = deliveryStatusLabel(status);
+  const estimatedDelivery = escapeEmailHtml(String(delivery.estimatedDelivery || order.estimatedDelivery || "To be updated"));
+  const courier = escapeEmailHtml(String(delivery.courier || order.courier || "STAYUNKNOWN DELIVERY"));
+  const trackingNumber = escapeEmailHtml(String(delivery.trackingNumber || order.trackingNumber || ""));
+  const deliveryNote = escapeEmailHtml(String(delivery.note || order.deliveryNote || ""));
+  const itemsHtml = buildOrderEmailItems(order.items);
+  const statusMessage = status === "PROCESSING"
+    ? "Your STAYUNKNOWN order is now being prepared."
+    : status === "SHIPPED"
+      ? "Your STAYUNKNOWN order has been shipped and is on the way."
+      : "Your STAYUNKNOWN order has been marked as delivered.";
+  const extraDetails = status === "DELIVERED" ? "" : `
+    <div style="background:#f7f7f7;padding:16px;margin:20px 0">
+      <strong>Estimated delivery:</strong> ${estimatedDelivery}<br>
+      <strong>Courier:</strong> ${courier}
+      ${trackingNumber ? `<br><strong>Tracking number:</strong> ${trackingNumber}` : ""}
+      ${deliveryNote ? `<br><strong>Delivery note:</strong> ${deliveryNote}` : ""}
+    </div>`;
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#111;line-height:1.6">
+      <h1 style="font-size:24px;letter-spacing:1px">STAYUNKNOWN</h1>
+      <h2>${escapeEmailHtml(statusTitle)}</h2>
+      <p>Hello <strong>${customerName}</strong>,</p>
+      <p>${statusMessage}</p>
+      <div style="background:#f7f7f7;padding:16px;margin:20px 0">
+        <strong>Order number:</strong> ${orderNumber}<br>
+        <strong>Status:</strong> ${escapeEmailHtml(status)}
+      </div>
+      <h3>YOUR ORDER</h3>
+      <table style="width:100%;border-collapse:collapse">${itemsHtml}</table>
+      ${extraDetails}
+      <p>Thank you for shopping with <strong>STAYUNKNOWN</strong>.</p>
+    </div>`;
+
+  await sendResendEmail({
+    to: customerEmail,
+    subject: `STAYUNKNOWN — ${statusTitle}${orderNumber ? ` — ${orderNumber}` : ""}`,
+    html
+  });
+}
+
+async function createOrderStatusNotification(order, deliveryStatus, delivery = {}) {
+  const firestore = initFirebase();
+  const uid = String(order?.customer?.uid || "").trim();
+  if (!firestore || !uid) return null;
+  const status = String(deliveryStatus || "").toUpperCase();
+  if (!["PROCESSING", "SHIPPED", "DELIVERED"].includes(status)) return null;
+
+  const notification = {
+    uid,
+    orderId: String(order.id || ""),
+    orderNumber: String(order.orderNumber || order.paymentReference || order.id || ""),
+    title: deliveryStatusLabel(status),
+    message: status === "PROCESSING"
+      ? "Your STAYUNKNOWN order is now being prepared."
+      : status === "SHIPPED"
+        ? "Your STAYUNKNOWN order has been shipped and is on the way."
+        : "Your STAYUNKNOWN order has been marked as delivered.",
+    deliveryStatus: status,
+    estimatedDelivery: String(delivery.estimatedDelivery || "").trim(),
+    courier: String(delivery.courier || "").trim(),
+    trackingNumber: String(delivery.trackingNumber || "").trim(),
+    deliveryNote: String(delivery.note || "").trim(),
+    read: false,
+    readAt: null,
+    createdAt: new Date().toISOString()
+  };
+  const doc = await firestore.collection("notifications").add(notification);
+  return { id: doc.id, ...notification };
+}
+
+app.get("/api/notifications", requireFirebaseUser, async (req, res) => {
+  try {
+    const firestore = initFirebase();
+    if (!firestore) return res.status(503).json({ error: "Firebase is not configured." });
+    const uid = String(req.firebaseUser.uid || "").trim();
+    const snapshot = await firestore.collection("notifications").where("uid", "==", uid).get();
+    const notifications = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+      .slice(0, 100);
+    return res.json({ ok: true, notifications });
+  } catch (error) {
+    console.error("Notification load error:", error);
+    return res.status(500).json({ error: "Unable to load notifications." });
+  }
+});
+
+app.patch("/api/notifications/:notificationId/read", requireFirebaseUser, async (req, res) => {
+  try {
+    const firestore = initFirebase();
+    if (!firestore) return res.status(503).json({ error: "Firebase is not configured." });
+    const ref = firestore.collection("notifications").doc(req.params.notificationId);
+    const snap = await ref.get();
+    if (!snap.exists) return res.status(404).json({ error: "Notification not found." });
+    const notification = snap.data() || {};
+    if (String(notification.uid || "") !== String(req.firebaseUser.uid || "")) {
+      return res.status(403).json({ error: "You are not allowed to update this notification." });
+    }
+    const readAt = new Date().toISOString();
+    await ref.update({ read: true, readAt });
+    return res.json({ ok: true, notification: { id: snap.id, ...notification, read: true, readAt } });
+  } catch (error) {
+    console.error("Notification read error:", error);
+    return res.status(500).json({ error: "Unable to mark notification as read." });
+  }
+});
+
 
 /*
   Paystack webhook needs the original raw request body
@@ -1585,6 +1611,13 @@ app.patch(
       const existing =
         orderSnap.data() || {};
 
+      const previousStatus = String(
+        existing.deliveryStatus ||
+        existing.delivery?.status ||
+        existing.paymentStatus ||
+        "PAID"
+      ).trim().toUpperCase();
+
       const now =
         new Date().toISOString();
 
@@ -1631,45 +1664,43 @@ app.patch(
 
       await orderRef.update({
         deliveryStatus,
-
         delivery,
-
-        updatedAt:
-          now
+        estimatedDelivery: delivery.estimatedDelivery,
+        courier: delivery.courier,
+        trackingNumber: delivery.trackingNumber,
+        deliveryNote: delivery.note,
+        updatedAt: now
       });
 
       const updatedOrder = {
-        id:
-          orderSnap.id,
-
+        id: orderSnap.id,
         ...existing,
-
         deliveryStatus,
-
         delivery,
-
-        updatedAt:
-          now
+        estimatedDelivery: delivery.estimatedDelivery,
+        courier: delivery.courier,
+        trackingNumber: delivery.trackingNumber,
+        deliveryNote: delivery.note,
+        updatedAt: now
       };
 
-      try {
-        await sendGuestDeliveryStatusEmail(
-          updatedOrder,
-          delivery
-        );
-      } catch (emailError) {
-        console.error(
-          "Guest delivery status email error:",
-          emailError
-        );
+      if (deliveryStatus !== previousStatus &&
+          ["PROCESSING", "SHIPPED", "DELIVERED"].includes(deliveryStatus)) {
+        try {
+          await createOrderStatusNotification(updatedOrder, deliveryStatus, delivery);
+        } catch (notificationError) {
+          console.error("Order notification creation error:", notificationError);
+        }
+        try {
+          await sendOrderStatusEmail(updatedOrder, deliveryStatus, delivery);
+        } catch (emailError) {
+          console.error("Order status email error:", emailError);
+        }
       }
 
       return res.json({
         ok: true,
-
-        order: {
-          ...updatedOrder
-        }
+        order: updatedOrder
       });
     } catch (error) {
       console.error(
