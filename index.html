@@ -396,6 +396,7 @@ body{background:#101010}
 .wishlist-row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #222}
 .wishlist-row-main{min-width:0}.wishlist-row-name{font-size:12px;font-weight:900;text-transform:uppercase}.wishlist-row-meta{font-size:10px;color:#777;margin-top:5px;text-transform:uppercase}
 .wishlist-row-actions{display:flex;gap:6px;align-items:center}.wishlist-action{background:transparent;color:#fff;border:1px solid #333;padding:8px 9px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}
+.wishlist-row-status{font-size:8px;color:#777;margin-top:6px;letter-spacing:1px;text-transform:uppercase}.wishlist-action.in-cart{border-color:#777;color:#aaa}
 .wishlist-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border:1px solid #333;background:rgba(10,10,10,.82);color:#fff;font-size:16px;line-height:1;cursor:pointer;z-index:3}
 .wishlist-btn.saved{background:#f3f3f0;color:#111}
 .order-timeline{display:flex;gap:0;margin:18px 0;border:1px solid #222;background:#101010}
@@ -1208,9 +1209,10 @@ body{background:#101010}
   }
   /* ---------- WISHLIST ---------- */
   let wishlistIds=[];
+  let wishlistSyncTimer=null;
   try{const saved=JSON.parse(localStorage.getItem('stayunknown_wishlist')||'[]');wishlistIds=Array.isArray(saved)?saved:[]}catch(_){wishlistIds=[]}
   function isWishlisted(id){return wishlistIds.includes(id)}
-  function saveWishlist(){localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));updateWishlistCount()}
+  function saveWishlist(){localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));updateWishlistCount();if(window.__stayUnknownCurrentUser)syncWishlistToAccount()}
   function updateWishlistCount(){
     const count=wishlistIds.length;
     const top=document.getElementById('wishlist-count');
@@ -1218,6 +1220,24 @@ body{background:#101010}
     if(top)top.textContent=count; if(menu)menu.textContent=count;
     document.querySelectorAll('[data-wishlist-id]').forEach(btn=>{const saved=isWishlisted(btn.dataset.wishlistId);btn.classList.toggle('saved',saved);btn.textContent=saved?'♥':'♡';btn.setAttribute('aria-label',saved?'Remove from wishlist':'Save to wishlist')});
   }
+  async function syncWishlistToAccount(){
+    const user=window.__stayUnknownCurrentUser; if(!user)return;
+    try{const token=await user.getIdToken();await fetch(`${BACKEND_URL}/api/wishlist`,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({wishlistIds})})}catch(_){/* local wishlist remains available if account sync is temporarily unavailable */}
+  }
+  async function loadWishlistFromAccount(user){
+    if(!user)return;
+    try{
+      const token=await user.getIdToken();
+      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{headers:{Authorization:`Bearer ${token}`}});
+      if(!response.ok)return;
+      const data=await response.json();
+      wishlistIds=Array.isArray(data.wishlistIds)?data.wishlistIds.filter(id=>products.some(p=>p.id===id)):[];
+      localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
+      updateWishlistCount();
+      if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
+    }catch(_){/* keep cached wishlist */}
+  }
+  window.syncStayUnknownWishlist=loadWishlistFromAccount;
   function toggleWishlist(id){
     if(!id)return;
     wishlistIds=isWishlisted(id)?wishlistIds.filter(x=>x!==id):[...wishlistIds,id];
@@ -1227,7 +1247,11 @@ body{background:#101010}
     const box=document.getElementById('wishlist-items'); if(!box)return;
     const items=wishlistIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
     if(!items.length){box.innerHTML='<div class="orders-empty">YOUR WISHLIST IS EMPTY.</div>';updateWishlistCount();return}
-    box.innerHTML=items.map(p=>`<div class="wishlist-row"><div class="wishlist-row-main"><div class="wishlist-row-name">${escapeHTML(p.name)}</div><div class="wishlist-row-meta">${escapeHTML(p.category)} · ${money(p.price)}</div></div><div class="wishlist-row-actions"><button class="wishlist-action" data-wish-view="${escapeHTML(p.id)}" type="button">VIEW</button><button class="wishlist-action" data-wish-remove="${escapeHTML(p.id)}" type="button">REMOVE</button></div></div>`).join('');
+    box.innerHTML=items.map(p=>{
+      const inCart=cart.some(i=>i.id===p.id);
+      return `<div class="wishlist-row"><div class="wishlist-row-main"><div class="wishlist-row-name">${escapeHTML(p.name)}</div><div class="wishlist-row-meta">${escapeHTML(p.category)} · ${money(p.price)}</div>${inCart?'<div class="wishlist-row-status">ALREADY IN BAG</div>':''}</div><div class="wishlist-row-actions"><button class="wishlist-action" data-wish-add="${escapeHTML(p.id)}" type="button">${inCart?'VIEW BAG':'ADD TO BAG'}</button><button class="wishlist-action" data-wish-view="${escapeHTML(p.id)}" type="button">VIEW</button><button class="wishlist-action" data-wish-remove="${escapeHTML(p.id)}" type="button">REMOVE</button></div></div>`
+    }).join('');
+    box.querySelectorAll('[data-wish-add]').forEach(btn=>btn.addEventListener('click',()=>{const p=products.find(x=>x.id===btn.dataset.wishAdd);if(!p)return;if(cart.some(i=>i.id===p.id)){closeWishlist();openCart()}else{closeWishlist();openProductOptions(p)}}));
     box.querySelectorAll('[data-wish-view]').forEach(btn=>btn.addEventListener('click',()=>{closeWishlist();openProductById(btn.dataset.wishView)}));
     box.querySelectorAll('[data-wish-remove]').forEach(btn=>btn.addEventListener('click',()=>toggleWishlist(btn.dataset.wishRemove)));
     updateWishlistCount();
@@ -1899,6 +1923,7 @@ function updateAccountUI(user) {
     headerGreeting.classList.add('visible');
     if (window.checkStayUnknownAdminAccess) window.checkStayUnknownAdminAccess();
     if (window.refreshStayUnknownNotifications) window.refreshStayUnknownNotifications();
+    if (window.syncStayUnknownWishlist) window.syncStayUnknownWishlist(user);
   } else {
     greeting.textContent = 'Welcome to Stay Unknown';
     subtext.textContent = 'Sign in to save your details or continue browsing as a guest.';
