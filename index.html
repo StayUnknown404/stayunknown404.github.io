@@ -1366,16 +1366,39 @@ body{background:#101010}
   }
   async function loadWishlistFromAccount(user){
     if(!user)return;
+    const localBefore=[...wishlistIds].map(String).filter(id=>products.some(p=>String(p.id)===id));
     try{
-      const token=await user.getIdToken();
-      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{headers:{Authorization:`Bearer ${token}`}});
-      if(!response.ok)return;
+      const token=await user.getIdToken(true);
+      const response=await fetch(`${BACKEND_URL}/api/wishlist`,{
+        headers:{Authorization:`Bearer ${token}`},
+        cache:'no-store'
+      });
+      if(!response.ok){
+        wishlistIds=localBefore;
+        localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
+        updateWishlistCount();
+        if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
+        return;
+      }
       const data=await response.json();
-      wishlistIds=Array.isArray(data.wishlistIds)?data.wishlistIds.map(String).filter(id=>products.some(p=>String(p.id)===id)):[];
+      const remote=Array.isArray(data.wishlistIds)
+        ? data.wishlistIds.map(String).filter(id=>products.some(p=>String(p.id)===id))
+        : [];
+
+      wishlistIds=[...new Set([...remote,...localBefore])];
       localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
       updateWishlistCount();
       if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
-    }catch(_){/* keep cached wishlist */}
+
+      if(localBefore.some(id=>!remote.includes(id))){
+        await syncWishlistToAccount();
+      }
+    }catch(_){
+      wishlistIds=localBefore;
+      localStorage.setItem('stayunknown_wishlist',JSON.stringify(wishlistIds));
+      updateWishlistCount();
+      if(document.getElementById('wishlist-panel')?.classList.contains('open'))renderWishlist();
+    }
   }
   window.syncStayUnknownWishlist=loadWishlistFromAccount;
   async function toggleWishlist(id){
@@ -1393,7 +1416,7 @@ body{background:#101010}
   window.getStayUnknownWishlistIds=()=>[...wishlistIds];
   function renderWishlist(){
     const box=document.getElementById('wishlist-items'); if(!box)return;
-    const items=wishlistIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
+    const items=wishlistIds.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
     if(!items.length){box.innerHTML='<div class="orders-empty">YOUR WISHLIST IS EMPTY.</div>';updateWishlistCount();return}
     box.innerHTML=items.map(p=>{
       const inCart=cart.some(i=>i.id===p.id);
@@ -1773,17 +1796,27 @@ body{background:#101010}
   }
 
   async function checkAdminAccess(){
-    if(!window.__stayUnknownCurrentUser){adminButton.style.display='none';return false}
+    const adminOrdersButton=document.getElementById('btn-admin-orders');
+    if(!window.__stayUnknownCurrentUser){
+      if(adminOrdersButton)adminOrdersButton.style.display='none';
+      return false;
+    }
     try{
-      const token=await adminToken();
-      const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`}});
-      const d=await r.json();
+      const token=await window.__stayUnknownCurrentUser.getIdToken(true);
+      const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{
+        headers:{Authorization:`Bearer ${token}`},
+        cache:'no-store'
+      });
+      const d=await r.json().catch(()=>({}));
       const allowed=Boolean(r.ok&&d.isAdmin);
-      adminButton.style.display=allowed?'block':'none';
+      if(adminOrdersButton)adminOrdersButton.style.display=allowed?'block':'none';
       const adminSection=document.getElementById('admin-account-section');
-      if(adminSection)adminSection.style.display=allowed?'block':'none';
+      if(adminSection)adminSection.style.setProperty('display',allowed?'block':'none','important');
       return allowed;
-    }catch(_){adminButton.style.display='none';return false}
+    }catch(_){
+      if(adminOrdersButton)adminOrdersButton.style.display='none';
+      return false;
+    }
   }
   window.checkStayUnknownAdminAccess=checkAdminAccess;
 
@@ -2109,6 +2142,7 @@ function updateAccountUI(user) {
     headerGreeting.textContent = `WELCOME, ${username}`;
     headerGreeting.classList.add('visible');
     if (window.checkStayUnknownAdminAccess) window.checkStayUnknownAdminAccess();
+    if (window.refreshStayUnknownAdminShortcut) window.refreshStayUnknownAdminShortcut();
     if (window.refreshStayUnknownNotifications) window.refreshStayUnknownNotifications();
     if (window.syncStayUnknownWishlist) window.syncStayUnknownWishlist(user);
   } else {
@@ -2146,6 +2180,11 @@ onAuthStateChanged(auth, updateAccountUI);
 
     if(action==='notifications' && typeof window.openStayUnknownNotifications==='function'){
       window.openStayUnknownNotifications();
+      return;
+    }
+
+    if(action==='admin-dashboard' && typeof window.openStayUnknownAdminDashboard==='function'){
+      window.openStayUnknownAdminDashboard();
       return;
     }
   }
@@ -2228,7 +2267,7 @@ onAuthStateChanged(auth, updateAccountUI);
     try{
       const allowed=Boolean(await window.checkStayUnknownAdminAccess?.());
       const adminSection=document.getElementById('admin-account-section');
-      if(adminSection)adminSection.style.display='none';
+      if(adminSection)adminSection.style.setProperty('display','none','important');
       if(allowed){
         help?.remove();
         if(!existing)addShortcut('admin-dashboard','ADMIN DASHBOARD','Manage STAYUNKNOWN');
@@ -2241,6 +2280,8 @@ onAuthStateChanged(auth, updateAccountUI);
       if(!shortcuts.querySelector('[data-account-action="help-desk"]'))addShortcut('help-desk','HELP DESK','Contact STAYUNKNOWN for support');
     }
   }
+
+  window.refreshStayUnknownAdminShortcut=refreshAccountAdminShortcut;
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
   function products(){return Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:[]}
@@ -2367,6 +2408,8 @@ onAuthStateChanged(auth, updateAccountUI);
       </div>`;
     body.querySelectorAll('[data-admin-action]').forEach(b=>b.addEventListener('click',()=>openAdminSection(b.dataset.adminAction)));
   }
+
+  window.openStayUnknownAdminDashboard=openAdminDashboardPage;
 
   async function openAdminSection(section){
     const panel=document.getElementById('admin-dashboard-panel');
