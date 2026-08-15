@@ -461,6 +461,29 @@ body{background:#101010}
   .account-dashboard-wrap{padding:0 18px 18px}
 }
 
+
+/* PHASE 3 — product detail enhancements + notification tap targets */
+.product-gallery{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
+.product-gallery-view{min-height:150px;border:1px solid #292929;background:radial-gradient(circle at 65% 25%,#292929,#141414 55%,#0e0e0e);display:grid;place-items:center;font:28px Anton,sans-serif;color:#666;letter-spacing:2px;text-transform:uppercase}
+.product-gallery-view.active{border-color:#777}
+.product-gallery-label{font:9px/1 Arial,sans-serif;letter-spacing:2px;color:#aaa}
+.product-stock{display:inline-block;margin:0 0 14px;padding:7px 9px;border:1px solid #333;font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase}
+.product-stock.low{border-color:#777;color:#f3f3f0}
+.product-stock.sold{color:#777}
+.size-guide-toggle{background:transparent;color:#fff;border:0;padding:0;text-decoration:underline;font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:7px}
+.size-guide{display:none;margin-top:10px;border:1px solid #292929;padding:12px;background:#151515;font-size:10px;line-height:1.7;color:#aaa}
+.size-guide.open{display:block}
+.size-guide strong{display:block;color:#f3f3f0;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.related-products{border-top:1px solid #222;margin-top:18px;padding-top:15px}
+.related-products h4,.recently-viewed h4{font-size:9px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;color:#888}
+.related-product-list,.recently-viewed-list{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
+.related-product-list::-webkit-scrollbar,.recently-viewed-list::-webkit-scrollbar{display:none}
+.related-product-btn,.recent-product-btn{flex:0 0 145px;text-align:left;background:#151515;border:1px solid #292929;color:#fff;padding:10px;cursor:pointer}
+.related-product-btn strong,.recent-product-btn strong{display:block;font-size:10px;text-transform:uppercase}
+.related-product-btn span,.recent-product-btn span{display:block;color:#777;font-size:9px;margin-top:5px}
+.recently-viewed{border-top:1px solid #222;margin-top:18px;padding-top:15px}
+.notification-row{cursor:pointer;touch-action:manipulation}
+.notification-row-action{position:relative;z-index:2}
 </style>
 </head>
 <body class="intro-active">
@@ -635,16 +658,22 @@ body{background:#101010}
       <button class="product-options-close" id="product-options-close" type="button" aria-label="Close product options">✕</button>
     </div>
     <div class="product-options-meta" id="product-options-meta"></div>
+    <div id="product-stock" class="product-stock">IN STOCK</div>
+    <div id="product-gallery" class="product-gallery" aria-label="Product views"></div>
     <div class="product-options-price" id="product-options-price"></div>
     <div class="option-group">
       <label for="product-size">SIZE</label>
       <select class="option-select" id="product-size"></select>
+      <button type="button" class="size-guide-toggle" id="size-guide-toggle">SIZE GUIDE</button>
+      <div class="size-guide" id="size-guide"><strong>STAYUNKNOWN SIZE GUIDE</strong><span id="size-guide-copy">Choose your usual size for the intended fit. If you prefer a looser fit, consider sizing up.</span></div>
     </div>
     <div class="option-group">
       <label for="product-color">COLOUR</label>
       <select class="option-select" id="product-color"></select>
     </div>
     <button class="product-options-add" id="product-options-add" type="button">ADD TO BAG</button>
+    <div class="related-products"><h4>RELATED PRODUCTS</h4><div class="related-product-list" id="related-product-list"></div></div>
+    <div class="recently-viewed"><h4>RECENTLY VIEWED</h4><div class="recently-viewed-list" id="recently-viewed-list"></div></div>
   </div>
 </div>
 
@@ -1147,7 +1176,37 @@ body{background:#101010}
   const productSize=document.getElementById('product-size');
   const productColor=document.getElementById('product-color');
   const productOptionsAdd=document.getElementById('product-options-add');
+  const productStock=document.getElementById('product-stock');
+  const productGallery=document.getElementById('product-gallery');
+  const sizeGuideToggle=document.getElementById('size-guide-toggle');
+  const sizeGuide=document.getElementById('size-guide');
+  const sizeGuideCopy=document.getElementById('size-guide-copy');
+  const relatedProductList=document.getElementById('related-product-list');
+  const recentlyViewedList=document.getElementById('recently-viewed-list');
   let selectedProduct=null;
+
+  function renderProductGallery(product){
+    const code=String(product.id||'').split('-')[0].toUpperCase();
+    productGallery.innerHTML=[['FRONT',0],['DETAIL',1]].map(([label,i])=>`<div class="product-gallery-view ${i===0?'active':''}"><span>${escapeHTML(code)}<br><span class="product-gallery-label">${label}</span></span></div>`).join('');
+  }
+  function renderRelatedProducts(product){
+    const related=products.filter(p=>p.id!==product.id&&p.category===product.category).slice(0,4);
+    relatedProductList.innerHTML=related.length?related.map(p=>`<button type="button" class="related-product-btn" data-related-id="${escapeHTML(p.id)}"><strong>${escapeHTML(p.name)}</strong><span>${money(p.price)}</span></button>`).join(''):'<span style="color:#777;font-size:10px">NO RELATED PRODUCTS.</span>';
+    relatedProductList.querySelectorAll('[data-related-id]').forEach(b=>b.addEventListener('click',()=>openProductById(b.dataset.relatedId)));
+  }
+  function renderRecentlyViewed(currentId){
+    let ids=[];try{ids=JSON.parse(localStorage.getItem('stayunknown_recently_viewed')||'[]')}catch(_){}
+    ids=ids.filter(id=>id!==currentId&&products.some(p=>p.id===id)).slice(0,6);
+    recentlyViewedList.innerHTML=ids.length?ids.map(id=>{const p=products.find(x=>x.id===id);return `<button type="button" class="recent-product-btn" data-recent-id="${escapeHTML(id)}"><strong>${escapeHTML(p.name)}</strong><span>${money(p.price)}</span></button>`}).join(''):'<span style="color:#777;font-size:10px">NOTHING VIEWED YET.</span>';
+    recentlyViewedList.querySelectorAll('[data-recent-id]').forEach(b=>b.addEventListener('click',()=>openProductById(b.dataset.recentId)));
+    ids=[currentId,...ids.filter(id=>id!==currentId)].slice(0,8);
+    try{localStorage.setItem('stayunknown_recently_viewed',JSON.stringify(ids))}catch(_){}
+  }
+  function renderSizeGuide(product){
+    const cat=String(product.category||'').toLowerCase();
+    if(cat==='accessories'||cat==='bags'){sizeGuideCopy.textContent='ONE SIZE: designed as a flexible fit. Check the product description for any item-specific dimensions.';return}
+    sizeGuideCopy.textContent='S: chest 36–38 in · M: 38–40 in · L: 40–42 in · XL: 42–44 in · XXL: 44–46 in. For an oversized fit, choose your usual size; size up for a roomier fit.';
+  }
 
   function openProductOptions(product){
     if(!product)return;
@@ -1155,6 +1214,13 @@ body{background:#101010}
     productOptionsTitle.textContent=product.name;
     productOptionsMeta.textContent=`${product.category} · SELECT YOUR SIZE + COLOUR`;
     productOptionsPrice.textContent=money(product.price);
+    productStock.textContent=product.comingSoon?'COMING SOON':'IN STOCK';
+    productStock.className=`product-stock ${product.comingSoon?'sold':''}`;
+    renderProductGallery(product);
+    renderRelatedProducts(product);
+    renderRecentlyViewed(product.id);
+    renderSizeGuide(product);
+    sizeGuide.classList.remove('open');
     productSize.innerHTML=product.sizes.map(v=>`<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
     productColor.innerHTML=product.colors.map(v=>`<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
     productOptionsAdd.disabled=!!product.comingSoon;
@@ -1168,6 +1234,7 @@ body{background:#101010}
     productOptionsModal.setAttribute('aria-hidden','true');
   }
   document.getElementById('product-options-close').addEventListener('click',closeProductOptions);
+  sizeGuideToggle.addEventListener('click',()=>sizeGuide.classList.toggle('open'));
   productOptionsModal.addEventListener('click',e=>{if(e.target===productOptionsModal)closeProductOptions()});
   productOptionsAdd.addEventListener('click',()=>{
     if(!selectedProduct || selectedProduct.comingSoon)return;
@@ -1700,7 +1767,7 @@ body{background:#101010}
   let notificationDrag=null;
   function notificationTime(value){if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
   function updateNotificationIndicators(){const unread=stayUnknownNotifications.filter(n=>!n.read).length;const compact=unread>9?'9+':String(unread);notificationFabCount.textContent=compact;notificationMenuCount.textContent=compact;notificationFab.classList.toggle('visible',unread>0);notificationFab.setAttribute('aria-hidden',unread>0?'false':'true')}
-  function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async()=>{const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));updateNotificationIndicators()}
+  function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}" data-notification-index="${i}" role="button" tabindex="0" aria-label="Open order notification"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));notificationList.querySelectorAll('.notification-row').forEach(row=>{const open=async()=>{const n=stayUnknownNotifications[Number(row.dataset.notificationIndex)];if(!n)return;if(!n.read)await markNotificationRead(n);if(n.orderId){const existing=orderHistory.find(o=>String(o.id||'')===String(n.orderId));if(existing){closeNotifications();await openOrderDetails(existing);return}const user=window.__stayUnknownCurrentUser;if(user){try{const token=await user.getIdToken();const r=await fetch(`${BACKEND_URL}/api/orders/${encodeURIComponent(n.orderId)}`,{headers:{Authorization:`Bearer ${token}`}});const d=await r.json();if(r.ok&&d.order){closeNotifications();await openOrderDetails(d.order);return}}catch(_){} }} };row.addEventListener('click',e=>{if(e.target.closest('button'))return;open()});row.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();open()}})});updateNotificationIndicators()}
   async function fetchNotifications(){const user=window.__stayUnknownCurrentUser;if(!user){stayUnknownNotifications=[];renderNotifications();return}try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load notifications.');stayUnknownNotifications=Array.isArray(data.notifications)?data.notifications:[];renderNotifications()}catch(error){console.error('Notification load error:',error)}}
   async function markNotificationRead(notification){if(!notification||notification.read)return;const user=window.__stayUnknownCurrentUser;if(!user)return;try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();renderNotifications()}catch(error){console.error('Notification read error:',error)}}
   function openNotifications(){notificationModal.classList.add('open');notificationModal.setAttribute('aria-hidden','false');renderNotifications()}
