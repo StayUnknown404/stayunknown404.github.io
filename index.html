@@ -1356,10 +1356,11 @@ body{background:#101010}
     const note=customer.note||order?.note||'—';
     const subtotal=items.reduce((sum,item)=>sum+Number(item.lineTotal||((item.price||0)*(item.quantity||1))),0);
     const deliveryFee=Number(order.deliveryFee||order.shippingFee||0);
-    const courier=order.courier||order.deliveryPartner||order.carrier||'';
-    const trackingNumber=order.trackingNumber||order.tracking||'';
-    const estimated=order.estimatedDelivery||order.deliveryEstimate||'';
-    const deliveryNote=order.deliveryNote||order.deliveryNotes||'';
+    const delivery=order.delivery||{};
+    const courier=order.courier||order.deliveryPartner||order.carrier||delivery.courier||'';
+    const trackingNumber=order.trackingNumber||order.tracking||delivery.trackingNumber||'';
+    const estimated=order.estimatedDelivery||order.deliveryEstimate||delivery.estimatedDelivery||'';
+    const deliveryNote=order.deliveryNote||order.deliveryNotes||delivery.note||'';
     const shippedAt=order.shippedAt||'';
     const deliveredAt=order.deliveredAt||'';
     const steps=['PENDING','PAID','PROCESSING','SHIPPED','DELIVERED'];
