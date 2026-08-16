@@ -2188,24 +2188,38 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   const adminDeliveryMsg=document.getElementById('admin-delivery-status-msg');
   const ADMIN_BACKEND=BACKEND_URL;
 
+  let cachedAdminToken='',cachedAdminTokenAt=0;
+  let cachedAdminAccess=null,cachedAdminAccessAt=0,adminAccessPromise=null;
   async function adminToken(){
     const user=window.__stayUnknownCurrentUser;
     if(!user) throw new Error('Sign in first.');
-    return user.getIdToken();
+    const now=Date.now();
+    if(cachedAdminToken && now-cachedAdminTokenAt<30000)return cachedAdminToken;
+    cachedAdminToken=await user.getIdToken();
+    cachedAdminTokenAt=Date.now();
+    return cachedAdminToken;
   }
 
   async function checkAdminAccess(){
-    if(!window.__stayUnknownCurrentUser){if(legacyAdminButton)legacyAdminButton.style.display='none';return false}
-    try{
-      const token=await adminToken();
-      const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`}});
-      const d=await r.json();
-      const allowed=Boolean(r.ok&&d.isAdmin);
-      if(legacyAdminButton)legacyAdminButton.style.display=allowed?'block':'none';
-      const adminSection=document.getElementById('admin-account-section');
-      if(adminSection)adminSection.style.display=allowed?'block':'none';
-      return allowed;
-    }catch(_){if(legacyAdminButton)legacyAdminButton.style.display='none';return false}
+    if(!window.__stayUnknownCurrentUser){if(legacyAdminButton)legacyAdminButton.style.display='none';cachedAdminAccess=null;return false}
+    const now=Date.now();
+    if(cachedAdminAccess!==null && now-cachedAdminAccessAt<30000)return cachedAdminAccess;
+    if(adminAccessPromise)return adminAccessPromise;
+    adminAccessPromise=(async()=>{
+      try{
+        const token=await adminToken();
+        const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json();
+        const allowed=Boolean(r.ok&&d.isAdmin);
+        cachedAdminAccess=allowed;cachedAdminAccessAt=Date.now();
+        if(legacyAdminButton)legacyAdminButton.style.display=allowed?'block':'none';
+        const adminSection=document.getElementById('admin-account-section');
+        if(adminSection)adminSection.style.display=allowed?'block':'none';
+        return allowed;
+      }catch(_){cachedAdminAccess=false;cachedAdminAccessAt=Date.now();if(legacyAdminButton)legacyAdminButton.style.display='none';return false}
+      finally{adminAccessPromise=null}
+    })();
+    return adminAccessPromise;
   }
   window.checkStayUnknownAdminAccess=checkAdminAccess;
 
@@ -2959,7 +2973,7 @@ onAuthStateChanged(auth, updateAccountUI);
   async function adminAuth(){
     const user=window.__stayUnknownCurrentUser;
     if(!user)throw new Error('Sign in first.');
-    return {user,token:await user.getIdToken(true)};
+    return {user,token:await adminToken()};
   }
 
   function adminButton(label,action){
@@ -3456,22 +3470,22 @@ onAuthStateChanged(auth, updateAccountUI);
     renderCollectionMenu();updateCollections(0,false);startCollectionTimer();
   }
   async function loadStayUnknownCollections(){
+    // Always derive from the CURRENT product list first. The live catalogue can
+    // arrive after this function is first called; returning an existing promise
+    // before re-deriving used to leave the homepage permanently blank.
+    const currentDerived=deriveCollectionsFromProducts();
+    if(currentDerived.length){stayUnknownCollections=currentDerived;renderCollectionsUI();}
     if(collectionsLoadPromise)return collectionsLoadPromise;
-    // Build immediately from the live product catalogue so the homepage and menu
-    // never depend on a slow Firestore collections request. The server response
-    // only supplies richer collection metadata (artwork, description, order).
-    const derived=deriveCollectionsFromProducts();
-    if(derived.length){stayUnknownCollections=derived;renderCollectionsUI();}
     collectionsLoadPromise=(async()=>{
       try{
         const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),2500);let response;
         try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
         const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
         const remote=data.collections.filter(c=>c&&!c.hidden&&String(c.name||'').trim());
-        // Merge server-managed records with product-derived collections instead of
-        // replacing the derived list. This keeps every real product collection
-        // visible even when Firestore contains only part of the collection set.
-        const merged=new Map(derived.map(c=>[String(c.name).trim().toLowerCase(),c]));
+        // Re-derive again after the network request so products loaded while the
+        // request was in flight are included too.
+        const latestDerived=deriveCollectionsFromProducts();
+        const merged=new Map(latestDerived.map(c=>[String(c.name).trim().toLowerCase(),c]));
         remote.forEach(c=>{const key=String(c.name).trim().toLowerCase();const base=merged.get(key)||{};merged.set(key,{...base,...c,productCount:Number(c.productCount??base.productCount??0)});});
         const next=[...merged.values()].filter(c=>c&&!c.hidden&&String(c.name||'').trim());
         if(next.length){stayUnknownCollections=next;renderCollectionsUI();}
