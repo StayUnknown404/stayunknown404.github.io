@@ -3446,14 +3446,16 @@ onAuthStateChanged(auth, updateAccountUI);
     shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');
     collectionTitle.textContent=c.name;
     const ids=new Set(Array.isArray(c.productIds)?c.productIds.map(String):[]);
-    const list=products.filter(p=>(ids.size?ids.has(String(p.id)):String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase())&&!isHiddenProduct(p));
+    const productList=Array.isArray(products)?products:[];
+    const list=productList.filter(p=>(ids.size?ids.has(String(p.id)):String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase())&&!isHiddenProduct(p));
     collectionContent.innerHTML=`<div class="collection-page-hero"><div class="collection-page-art">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy" onerror="this.style.display='none'">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-page-copy"><div class="eyebrow">Collection</div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${list.length} PRODUCT${list.length===1?'':'S'}</div><div class="collection-product-grid">${list.length?list.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;
     bindAddButtons(collectionContent);window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collection-'+encodeURIComponent(c.id));
   }
   window.openStayUnknownCollection=openCollectionPage;
   function deriveCollectionsFromProducts(){
     const seen=new Map();
-    products.filter(p=>!isHiddenProduct(p)).forEach(p=>{
+    const productList=Array.isArray(products)?products:[];
+    productList.filter(p=>!isHiddenProduct(p)).forEach(p=>{
       const name=String(p.collection||'').trim(); if(!name)return;
       const key=name.toLowerCase();
       if(!seen.has(key))seen.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,productCount:0});
@@ -3465,7 +3467,8 @@ onAuthStateChanged(auth, updateAccountUI);
     window.stayUnknownCollections=stayUnknownCollections;
     const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));
     const limitedProductIds=new Set(stayUnknownCollections.filter(c=>c.limited).flatMap(c=>Array.isArray(c.productIds)?c.productIds.map(String):[]));
-    products.forEach(p=>{p.__limitedCollection=limitedProductIds.has(String(p.id))||limitedNames.has(String(p.collection||'').toLowerCase())});
+    const productList=Array.isArray(products)?products:[];
+    productList.forEach(p=>{p.__limitedCollection=limitedProductIds.has(String(p.id))||limitedNames.has(String(p.collection||'').toLowerCase())});
     if(!collectionsTrack)return;
     collectionsTrack.innerHTML=stayUnknownCollections.length?stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join(''):'<div class="no-products" style="width:100%;min-height:390px;display:grid;place-items:center">NO COLLECTIONS YET.</div>';
     collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');
@@ -3477,10 +3480,11 @@ onAuthStateChanged(auth, updateAccountUI);
   }
   async function loadStayUnknownCollections(){
     if(collectionsLoadPromise)return collectionsLoadPromise;
-    // Render immediately from the already-loaded product catalogue. This makes
-    // Collections independent of Firestore latency and gives the menu real items
-    // on the first interaction. The API call below only enriches metadata.
-    const derived=deriveCollectionsFromProducts();
+    // Collections must never depend on the shape or timing of the product array.
+    // Render any local product-derived collections when possible, but ALWAYS fetch
+    // the explicit collection records from the backend as the source of truth.
+    let derived=[];
+    try{derived=deriveCollectionsFromProducts()}catch(error){console.warn('Local collection derivation skipped:',error)}
     if(derived.length){stayUnknownCollections=derived;renderCollectionsUI();}
     collectionsLoadPromise=(async()=>{
       try{
@@ -3502,12 +3506,12 @@ onAuthStateChanged(auth, updateAccountUI);
     collectionContent.querySelectorAll('[data-all-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.allCollectionId)));window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collections');
   }
   if(menuCollectionsToggle&&!menuCollectionsToggle.dataset.bound){
-    menuCollectionsToggle.dataset.bound='1';menuCollectionsToggle.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();const isOpen=menuCollectionCategories.classList.toggle('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';if(!isOpen)return;renderCollectionMenu();if(!stayUnknownCollections.length){menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';await loadStayUnknownCollections();renderCollectionMenu();}});
+    menuCollectionsToggle.dataset.bound='1';menuCollectionsToggle.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();const isOpen=menuCollectionCategories.classList.toggle('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';if(!isOpen)return;renderCollectionMenu();if(!stayUnknownCollections.length){menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';try{await loadStayUnknownCollections()}catch(_){}renderCollectionMenu();}});
   }
   document.getElementById('collection-back-btn')?.addEventListener('click',()=>{if(location.hash==='#collections'){showHome();return}collectionView.classList.add('is-hidden');collectionView.setAttribute('aria-hidden','true');collectionView.style.display='';shopView.style.display='';showHome()});
   collectionsViewport?.addEventListener('pointerdown',e=>{collectionDragging=true;collectionStartX=e.clientX;collectionsViewport.setPointerCapture?.(e.pointerId);clearInterval(collectionTimer)});
   collectionsViewport?.addEventListener('pointerup',e=>{if(!collectionDragging)return;collectionDragging=false;const dx=e.clientX-collectionStartX;if(Math.abs(dx)>45)updateCollections(collectionIndex+(dx<0?1:-1));startCollectionTimer()});
-  collectionsViewport?.addEventListener('pointercancel',()=>{collectionDragging=false;startCollectionTimer()});collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);window.addEventListener('resize',()=>updateCollections(collectionIndex,false));void loadStayUnknownCollections();
+  collectionsViewport?.addEventListener('pointercancel',()=>{collectionDragging=false;startCollectionTimer()});collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);window.addEventListener('resize',()=>updateCollections(collectionIndex,false));void loadStayUnknownCollections().catch(error=>console.warn('Initial collections load failed:',error));
 
 })();
 </script>
