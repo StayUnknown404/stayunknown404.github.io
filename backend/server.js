@@ -226,7 +226,7 @@ app.use(cors());
    intentionally excluded because it must receive the original raw body. */
 app.use((req, res, next) => {
   if (req.path === "/api/paystack/webhook") return next();
-  return express.json()(req, res, next);
+  return express.json({limit:"2mb"})(req, res, next);
 });
 
 function deliveryStatusLabel(status) {
@@ -1913,91 +1913,82 @@ function safeCustomerEmail(req){
   return req.user?.email || req.body?.email || '';
 }
 
-function supportTicketStore(){
-  try{return initFirebase()}catch(_){return null}
-}
+function supportTicketDocId(id){ return String(id||'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,120); }
+function supportTicketData(t){ return {...t, replies:Array.isArray(t.replies)?t.replies:[]}; }
+function supportTicketUid(t){ return String(t?.uid||t?.userId||'').trim(); }
 
-async function loadSupportTicket(id){
-  const key=String(id||'').trim();
-  if(!key)return null;
-  const firestore=supportTicketStore();
-  if(firestore){
-    try{const snap=await firestore.collection('supportTickets').doc(key).get();if(snap.exists)return {id:snap.id,...(snap.data()||{})};}catch(error){console.error('Support ticket load error:',error)}
+function normalizeSupportAttachments(raw){
+  if(!Array.isArray(raw)) return [];
+  return raw.slice(0,2).filter(a=>a&&typeof a.dataUrl==='string'&&/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(a.dataUrl)&&a.dataUrl.length<=230000).map(a=>({name:String(a.name||'image').slice(0,120),type:String(a.type||'image/jpeg').slice(0,40),dataUrl:a.dataUrl}));
+}
+async function persistSupportAttachments(ticketId, ownerUid, attachments){
+  const firestore=initFirebase();
+  if(!firestore||!attachments.length) return [];
+  const ids=[];
+  for(const attachment of attachments){
+    const ref=firestore.collection('supportAttachments').doc();
+    await ref.set({ticketId:String(ticketId),uid:String(ownerUid||''),name:attachment.name,type:attachment.type,dataUrl:attachment.dataUrl,createdAt:new Date().toISOString()});
+    ids.push(ref.id);
   }
-  return supportTickets.get(key)||null;
+  return ids;
+}
+async function hydrateSupportAttachments(ticket){
+  if(!ticket)return ticket;
+  const firestore=initFirebase();
+  if(!firestore)return ticket;
+  const ids=[];
+  if(Array.isArray(ticket.attachmentIds))ids.push(...ticket.attachmentIds);
+  for(const reply of (Array.isArray(ticket.replies)?ticket.replies:[])){if(Array.isArray(reply.attachmentIds))ids.push(...reply.attachmentIds)}
+  if(!ids.length)return ticket;
+  const unique=[...new Set(ids)];
+  const docs=await Promise.all(unique.map(id=>firestore.collection('supportAttachments').doc(id).get()));
+  const map=new Map(docs.filter(d=>d.exists).map(d=>[d.id,{id:d.id,...d.data()}]));
+  const attach=ids=>Array.isArray(ids)?ids.map(id=>map.get(id)).filter(Boolean):[];
+  return {...ticket,attachments:attach(ticket.attachmentIds),replies:(Array.isArray(ticket.replies)?ticket.replies:[]).map(r=>({...r,attachments:attach(r.attachmentIds)}))};
 }
 
-async function saveSupportTicket(ticket){
-  supportTickets.set(String(ticket.id),ticket);
-  const firestore=supportTicketStore();
-  if(firestore){try{await firestore.collection('supportTickets').doc(String(ticket.id)).set(ticket,{merge:true})}catch(error){console.error('Support ticket save error:',error)}}
+async function persistSupportTicket(ticket){
+  const firestore=initFirebase();
+  if(!firestore){ supportTickets.set(ticket.id,ticket); return ticket; }
+  await firestore.collection('supportTickets').doc(supportTicketDocId(ticket.id)).set(supportTicketData(ticket),{merge:true});
   return ticket;
 }
-
-async function listSupportTickets(){
-  const combined=new Map();
-  for(const ticket of supportTickets.values())combined.set(String(ticket.id),ticket);
-  const firestore=supportTicketStore();
-  if(firestore){
-    try{const snap=await firestore.collection('supportTickets').get();snap.docs.forEach(doc=>combined.set(doc.id,{id:doc.id,...(doc.data()||{})}))}catch(error){console.error('Support ticket list error:',error)}
-  }
-  return [...combined.values()].sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+async function getSupportTickets(){
+  const firestore=initFirebase();
+  if(!firestore) return [...supportTickets.values()];
+  const snap=await firestore.collection('supportTickets').orderBy('createdAt','desc').get();
+  return Promise.all(snap.docs.map(async d=>hydrateSupportAttachments(supportTicketData(d.data()))));
 }
-
-async function createSupportNotification({uid=null,ticketId,title,message,audience='customer',orderNumber=''}){
-  const firestore=supportTicketStore();
-  if(!firestore)return null;
-  const notification={uid:uid?String(uid):null,audience,ticketId:String(ticketId||''),orderNumber:String(orderNumber||''),title:String(title||'SUPPORT UPDATE'),message:String(message||''),read:false,createdAt:new Date().toISOString()};
-  try{const doc=await firestore.collection('notifications').add(notification);return {id:doc.id,...notification}}catch(error){console.error('Support notification error:',error);return null}
+async function getSupportTicket(id){
+  const firestore=initFirebase();
+  if(!firestore) return supportTickets.get(String(id))||null;
+  const doc=await firestore.collection('supportTickets').doc(supportTicketDocId(id)).get();
+  return doc.exists?await hydrateSupportAttachments(supportTicketData(doc.data())):null;
 }
-
-async function sendSupportEmail(to,subject,message,ticket){
-  const recipient=String(to||'').trim();
-  if(!recipient)return null;
-  const order=String(ticket?.orderNumber||'').trim();
-  const html=`<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:620px"><h2>STAYUNKNOWN SUPPORT</h2><p>${escapeEmailHtml(String(message||''))}</p>${order?`<p><strong>Order:</strong> ${escapeEmailHtml(order)}</p>`:''}<p><strong>Ticket:</strong> ${escapeEmailHtml(String(ticket?.id||''))}</p><p>Open STAYUNKNOWN to view the full conversation and reply.</p></div>`;
-  return sendResendEmail({to:recipient,subject:`STAYUNKNOWN SUPPORT — ${subject||'Ticket update'}`,html});
+async function createSupportNotification({uid,ticketId,ticketSubject,message,title='NEW SUPPORT REQUEST'}){
+  const firestore=initFirebase();
+  if(!firestore) return null;
+  const notification={uid:String(uid||''),ticketId:String(ticketId||''),title,message,read:false,readAt:null,createdAt:new Date().toISOString(),type:'SUPPORT'};
+  if(!notification.uid) return null;
+  const doc=await firestore.collection('notifications').add(notification);
+  return {id:doc.id,...notification};
 }
-
-app.post('/api/support', authenticate, async (req,res)=>{
+async function createAdminSupportNotification({ticketId,title,message}){
+  const firestore=initFirebase();
+  if(!firestore) return;
+  const notification={audience:'admin',ticketId:String(ticketId||''),title,message,read:false,readAt:null,createdAt:new Date().toISOString(),type:'SUPPORT'};
+  await firestore.collection('adminNotifications').add(notification);
+}
+async function sendSupportEmail({to,subject,heading,message,ticket}){
+  if(!process.env.RESEND_API_KEY || !to) return;
+  const safeSubject=escapeEmailHtml(subject);
+  const safeHeading=escapeEmailHtml(heading);
+  const safeMessage=escapeEmailHtml(message).replace(/\n/g,'<br>');
+  const safeTicket=escapeEmailHtml(ticket?.id||'');
   try{
-    const {subject='',message='',orderNumber='',attachments=[]}=req.body||{};
-    if(!String(message).trim())return res.status(400).json({error:'Message is required.'});
-    const id=`SUP-${Date.now()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
-    const cleanAttachments=Array.isArray(attachments)?attachments.slice(0,2).filter(a=>a&&String(a.dataUrl||'').startsWith('data:image/')).map(a=>({name:String(a.name||'').slice(0,120),type:String(a.type||'').slice(0,80),dataUrl:String(a.dataUrl).slice(0,230000)})):[];
-    const ticket={id,userId:String(req.user.uid||''),uid:String(req.user.uid||''),email:safeCustomerEmail(req),subject:String(subject).trim().slice(0,120)||'SUPPORT REQUEST',message:String(message).trim().slice(0,5000),orderNumber:String(orderNumber).trim().slice(0,80),attachments:cleanAttachments,replies:[],status:'OPEN',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-    await saveSupportTicket(ticket);
-    const adminEmails=getAdminEmails();
-    for(const email of adminEmails)await sendSupportEmail(email,ticket.subject,`A customer created a new support ticket: ${ticket.subject}`,ticket).catch(e=>console.error('Support admin email error:',e));
-    await createSupportNotification({ticketId:id,title:'NEW SUPPORT REQUEST',message:`New support request: ${ticket.subject}`,audience:'admin',orderNumber:ticket.orderNumber}).catch(()=>{});
-    return res.json({ok:true,ticket});
-  }catch(e){console.error('Support create error:',e);return res.status(500).json({error:'Unable to create support request.'})}
-});
-
-app.get('/api/support', authenticate, async (req,res)=>{
-  try{
-    const uid=String(req.user.uid||'');
-    const mine=(await listSupportTickets()).filter(t=>String(t.uid||t.userId||'')===uid);
-    return res.json({tickets:mine});
-  }catch(e){console.error('Support list error:',e);return res.status(500).json({error:'Unable to load support requests.'})}
-});
-
-app.post('/api/support/:ticketId/reply', authenticate, async (req,res)=>{
-  try{
-    const ticket=await loadSupportTicket(req.params.ticketId);
-    if(!ticket)return res.status(404).json({error:'Support ticket not found.'});
-    if(String(ticket.uid||ticket.userId||'')!==String(req.user.uid||''))return res.status(403).json({error:'You are not allowed to reply to this ticket.'});
-    if(String(ticket.status||'').toUpperCase()==='CLOSED')return res.status(400).json({error:'This ticket is closed. Create a new ticket if you still need help.'});
-    const message=String(req.body?.message||'').trim();if(!message)return res.status(400).json({error:'Message is required.'});
-    const attachments=Array.isArray(req.body?.attachments)?req.body.attachments.slice(0,2).filter(a=>a&&String(a.dataUrl||'').startsWith('data:image/')).map(a=>({name:String(a.name||'').slice(0,120),type:String(a.type||'').slice(0,80),dataUrl:String(a.dataUrl).slice(0,230000)})):[];
-    const reply={from:'CUSTOMER',message:message.slice(0,5000),attachments,createdAt:new Date().toISOString()};
-    ticket.replies=Array.isArray(ticket.replies)?ticket.replies:[];ticket.replies.push(reply);ticket.status='OPEN';ticket.updatedAt=reply.createdAt;
-    await saveSupportTicket(ticket);
-    for(const email of getAdminEmails())await sendSupportEmail(email,ticket.subject,'The customer replied to your support ticket.',ticket).catch(()=>{});
-    await createSupportNotification({ticketId:ticket.id,title:'SUPPORT TICKET REPLY',message:`Customer replied to: ${ticket.subject}`,audience:'admin',orderNumber:ticket.orderNumber}).catch(()=>{});
-    return res.json({ok:true,ticket});
-  }catch(e){console.error('Support customer reply error:',e);return res.status(500).json({error:'Unable to send reply.'})}
-});
+    await sendResendEmail({to,subject:safeSubject,html:`<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;line-height:1.6"><h1>STAYUNKNOWN</h1><h2>${safeHeading}</h2><p><strong>Ticket:</strong> ${safeTicket}</p><p>${safeMessage}</p><p>Open STAYUNKNOWN Help Desk to continue the conversation.</p></div>`});
+  }catch(e){ console.error('Support email error:',e); }
+}
 
 app.post('/api/restock-subscriptions', async (req,res)=>{
   try{
@@ -2157,41 +2148,152 @@ app.get('/api/admin/restock-subscriptions', authenticate, async (req,res)=>{
   res.json({subscriptions});
 });
 
-app.get('/api/admin/support', authenticate, async (req,res)=>{
-  if(!req.user?.isAdmin)return res.status(403).json({error:'Admin only.'});
-  try{return res.json({tickets:await listSupportTickets()})}catch(e){return res.status(500).json({error:'Unable to load support requests.'})}
+
+// ---------- PERSISTENT CUSTOMER / ADMIN SUPPORT TICKETS ----------
+app.get('/api/support', authenticate, async (req,res)=>{
+  try{
+    const uid=String(req.user?.uid||'').trim();
+    if(!uid) return res.status(401).json({error:'Authentication required.'});
+    const tickets=(await getSupportTickets()).filter(t=>supportTicketUid(t)===uid);
+    return res.json({ok:true,tickets});
+  }catch(error){
+    console.error('Customer support load error:',error);
+    return res.status(500).json({error:'Unable to load support requests.'});
+  }
 });
 
-app.post('/api/admin/support/:ticketId/reply', authenticate, async (req,res)=>{
+app.post('/api/support', authenticate, async (req,res)=>{
   try{
-    if(!req.user?.isAdmin)return res.status(403).json({error:'Admin only.'});
-    const ticket=await loadSupportTicket(req.params.ticketId);if(!ticket)return res.status(404).json({error:'Support ticket not found.'});
-    if(String(ticket.status||'').toUpperCase()==='CLOSED')return res.status(400).json({error:'This ticket is closed. Reopen it before replying.'});
-    const message=String(req.body?.message||'').trim();if(!message)return res.status(400).json({error:'Message is required.'});
-    const attachments=Array.isArray(req.body?.attachments)?req.body.attachments.slice(0,2).filter(a=>a&&String(a.dataUrl||'').startsWith('data:image/')).map(a=>({name:String(a.name||'').slice(0,120),type:String(a.type||'').slice(0,80),dataUrl:String(a.dataUrl).slice(0,230000)})):[];
-    const reply={from:'ADMIN',message:message.slice(0,5000),attachments,createdAt:new Date().toISOString()};ticket.replies=Array.isArray(ticket.replies)?ticket.replies:[];ticket.replies.push(reply);ticket.status='REPLIED';ticket.updatedAt=reply.createdAt;await saveSupportTicket(ticket);
-    if(ticket.uid)await createSupportNotification({uid:ticket.uid,ticketId:ticket.id,title:'SUPPORT REPLY',message:`STAYUNKNOWN replied to: ${ticket.subject}`,audience:'customer',orderNumber:ticket.orderNumber}).catch(()=>{});
-    await sendSupportEmail(ticket.email,ticket.subject,'STAYUNKNOWN replied to your support ticket.',ticket).catch(()=>{});
-    return res.json({ok:true,ticket});
-  }catch(e){console.error('Admin support reply error:',e);return res.status(500).json({error:'Unable to send reply.'})}
+    const uid=String(req.user?.uid||'').trim();
+    const email=String(req.user?.email||'').trim().toLowerCase();
+    if(!uid) return res.status(401).json({error:'Authentication required.'});
+    const subject=String(req.body?.subject||'').trim().slice(0,120);
+    const orderNumber=String(req.body?.orderNumber||'').trim().slice(0,80);
+    const message=String(req.body?.message||'').trim().slice(0,5000);
+    if(!subject) return res.status(400).json({error:'Please enter a subject.'});
+    if(!message) return res.status(400).json({error:'Please enter a message.'});
+    const now=new Date().toISOString();
+    const attachments=normalizeSupportAttachments(req.body?.attachments);
+    const ticket={
+      id:`ST-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+      uid,email,subject,orderNumber,message,status:'OPEN',
+      createdAt:now,updatedAt:now,replies:[],attachmentIds:[]
+    };
+    ticket.attachmentIds=await persistSupportAttachments(ticket.id,uid,attachments);
+    await persistSupportTicket(ticket);
+    await createAdminSupportNotification({ticketId:ticket.id,title:'NEW SUPPORT REQUEST',message:`${subject} · ${email}`});
+    for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`New support ticket: ${subject}`,heading:'NEW SUPPORT REQUEST',message:`${email} opened a support ticket.\n\n${message}`,ticket});
+    return res.status(201).json({ok:true,ticket});
+  }catch(error){
+    console.error('Support ticket create error:',error);
+    return res.status(500).json({error:'Unable to create support request.'});
+  }
 });
 
-app.patch('/api/admin/support/:ticketId/status', authenticate, async (req,res)=>{
+app.post('/api/support/:id/reply', authenticate, async (req,res)=>{
   try{
-    if(!req.user?.isAdmin)return res.status(403).json({error:'Admin only.'});
-    const ticket=await loadSupportTicket(req.params.ticketId);if(!ticket)return res.status(404).json({error:'Support ticket not found.'});
-    const status=String(req.body?.status||'').toUpperCase()==='CLOSED'?'CLOSED':'OPEN';ticket.status=status;ticket.updatedAt=new Date().toISOString();await saveSupportTicket(ticket);
-    if(ticket.uid)await createSupportNotification({uid:ticket.uid,ticketId:ticket.id,title:`SUPPORT TICKET ${status}`,message:`Your support ticket “${ticket.subject}” is now ${status.toLowerCase()}.`,audience:'customer',orderNumber:ticket.orderNumber}).catch(()=>{});
+    const uid=String(req.user?.uid||'').trim();
+    const ticket=await getSupportTicket(req.params.id);
+    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
+    if(supportTicketUid(ticket)!==uid) return res.status(403).json({error:'You are not allowed to reply to this ticket.'});
+    if(String(ticket.status||'').toUpperCase()==='CLOSED') return res.status(400).json({error:'This ticket is closed. Reopen it before replying.'});
+    const message=String(req.body?.message||'').trim().slice(0,5000);
+    if(!message) return res.status(400).json({error:'Please enter a reply.'});
+    const now=new Date().toISOString();
+    const attachments=normalizeSupportAttachments(req.body?.attachments);
+    const attachmentIds=await persistSupportAttachments(ticket.id,uid,attachments);
+    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'CUSTOMER',message,createdAt:now,uid,attachmentIds}];
+    ticket.status='OPEN'; ticket.updatedAt=now;
+    await persistSupportTicket(ticket);
+    await createAdminSupportNotification({ticketId:ticket.id,title:'CUSTOMER REPLIED TO SUPPORT',message:`${ticket.subject} · ${ticket.email}`});
+    for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`Customer replied: ${ticket.subject}`,heading:'CUSTOMER REPLIED TO SUPPORT',message,ticket});
     return res.json({ok:true,ticket});
-  }catch(e){console.error('Admin support status error:',e);return res.status(500).json({error:'Unable to update ticket.'})}
+  }catch(error){
+    console.error('Customer support reply error:',error);
+    return res.status(500).json({error:'Unable to send reply.'});
+  }
+});
+
+app.post('/api/admin/support/:id/reply', authenticate, async (req,res)=>{
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const ticket=await getSupportTicket(req.params.id);
+    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
+    const message=String(req.body?.message||'').trim().slice(0,5000);
+    if(!message) return res.status(400).json({error:'Please enter a reply.'});
+    const now=new Date().toISOString();
+    const attachments=normalizeSupportAttachments(req.body?.attachments);
+    const attachmentIds=await persistSupportAttachments(ticket.id,String(req.user?.uid||''),attachments);
+    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'ADMIN',message,createdAt:now,uid:String(req.user?.uid||''),attachmentIds}];
+    ticket.status='REPLIED'; ticket.updatedAt=now;
+    await persistSupportTicket(ticket);
+    const customerUid=supportTicketUid(ticket); if(customerUid) await createSupportNotification({uid:customerUid,ticketId:ticket.id,title:'SUPPORT TICKET REPLY',message:`STAYUNKNOWN replied to “${ticket.subject}”.`});
+    await sendSupportEmail({to:ticket.email,subject:`Reply to support ticket: ${ticket.subject}`,heading:'SUPPORT TICKET REPLY',message,ticket});
+    return res.json({ok:true,ticket});
+  }catch(error){
+    console.error('Admin support reply error:',error);
+    return res.status(500).json({error:'Unable to send reply.'});
+  }
+});
+
+app.patch('/api/admin/support/:id/status', authenticate, async (req,res)=>{
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const ticket=await getSupportTicket(req.params.id);
+    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
+    const status=String(req.body?.status||'').toUpperCase();
+    if(!['OPEN','REPLIED','CLOSED'].includes(status)) return res.status(400).json({error:'Invalid ticket status.'});
+    ticket.status=status; ticket.updatedAt=new Date().toISOString();
+    await persistSupportTicket(ticket);
+    if(status==='CLOSED'){
+      const customerUid=supportTicketUid(ticket); if(customerUid) await createSupportNotification({uid:customerUid,ticketId:ticket.id,title:'SUPPORT TICKET CLOSED',message:`Your support ticket “${ticket.subject}” has been closed.`});
+      await sendSupportEmail({to:ticket.email,subject:`Support ticket closed: ${ticket.subject}`,heading:'SUPPORT TICKET CLOSED',message:`Your support ticket has been closed.`,ticket});
+    }
+    return res.json({ok:true,ticket});
+  }catch(error){
+    console.error('Support status error:',error);
+    return res.status(500).json({error:'Unable to update ticket.'});
+  }
 });
 
 app.get('/api/admin/notifications', authenticate, async (req,res)=>{
-  if(!req.user?.isAdmin)return res.status(403).json({error:'Admin only.'});
-  try{const firestore=supportTicketStore();if(!firestore)return res.json({notifications:[]});const snap=await firestore.collection('notifications').where('audience','==','admin').get();const notifications=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,100);return res.json({notifications})}catch(e){console.error('Admin notification load error:',e);return res.status(500).json({error:'Unable to load notifications.'})}
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const firestore=initFirebase();
+    if(!firestore) return res.status(503).json({error:'Firebase is not configured.'});
+    const snapshot=await firestore.collection('adminNotifications').get();
+    const notifications=snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,100);
+    return res.json({ok:true,notifications});
+  }catch(error){
+    console.error('Admin notification load error:',error);
+    return res.status(500).json({error:'Unable to load admin notifications.'});
+  }
 });
 
 app.patch('/api/admin/notifications/:notificationId/read', authenticate, async (req,res)=>{
-  if(!req.user?.isAdmin)return res.status(403).json({error:'Admin only.'});
-  try{const firestore=supportTicketStore();if(!firestore)return res.status(503).json({error:'Firebase is not configured.'});const ref=firestore.collection('notifications').doc(req.params.notificationId);const snap=await ref.get();if(!snap.exists)return res.status(404).json({error:'Notification not found.'});const n=snap.data()||{};if(n.audience!=='admin')return res.status(403).json({error:'Not an admin notification.'});const readAt=new Date().toISOString();await ref.update({read:true,readAt});return res.json({ok:true,notification:{id:snap.id,...n,read:true,readAt}})}catch(e){console.error('Admin notification read error:',e);return res.status(500).json({error:'Unable to mark notification as read.'})}
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const firestore=initFirebase();
+    if(!firestore) return res.status(503).json({error:'Firebase is not configured.'});
+    const ref=firestore.collection('adminNotifications').doc(req.params.notificationId);
+    const snap=await ref.get();
+    if(!snap.exists) return res.status(404).json({error:'Notification not found.'});
+    const readAt=new Date().toISOString();
+    await ref.update({read:true,readAt});
+    return res.json({ok:true,notification:{id:snap.id,...snap.data(),read:true,readAt}});
+  }catch(error){
+    console.error('Admin notification read error:',error);
+    return res.status(500).json({error:'Unable to mark notification as read.'});
+  }
+});
+
+app.get('/api/admin/support', authenticate, async (req,res)=>{
+  if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+  try{
+    const tickets=await getSupportTickets();
+    return res.json({ok:true,tickets});
+  }catch(error){
+    console.error('Admin support load error:',error);
+    return res.status(500).json({error:'Unable to load support requests.'});
+  }
 });
