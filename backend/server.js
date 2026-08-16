@@ -2117,7 +2117,146 @@ app.get('/api/admin/restock-subscriptions', authenticate, async (req,res)=>{
   res.json({subscriptions});
 });
 
+
+// ---------- PERSISTENT CUSTOMER / ADMIN SUPPORT TICKETS ----------
+app.get('/api/support', authenticate, async (req,res)=>{
+  try{
+    const uid=String(req.user?.uid||'').trim();
+    if(!uid) return res.status(401).json({error:'Authentication required.'});
+    const tickets=(await getSupportTickets()).filter(t=>String(t.uid||'')===uid);
+    return res.json({ok:true,tickets});
+  }catch(error){
+    console.error('Customer support load error:',error);
+    return res.status(500).json({error:'Unable to load support requests.'});
+  }
+});
+
+app.post('/api/support', authenticate, async (req,res)=>{
+  try{
+    const uid=String(req.user?.uid||'').trim();
+    const email=String(req.user?.email||'').trim().toLowerCase();
+    if(!uid) return res.status(401).json({error:'Authentication required.'});
+    const subject=String(req.body?.subject||'').trim().slice(0,120);
+    const orderNumber=String(req.body?.orderNumber||'').trim().slice(0,80);
+    const message=String(req.body?.message||'').trim().slice(0,5000);
+    if(!subject) return res.status(400).json({error:'Please enter a subject.'});
+    if(!message) return res.status(400).json({error:'Please enter a message.'});
+    const now=new Date().toISOString();
+    const ticket={
+      id:`ST-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+      uid,email,subject,orderNumber,message,status:'OPEN',
+      createdAt:now,updatedAt:now,replies:[]
+    };
+    await persistSupportTicket(ticket);
+    await createAdminSupportNotification({ticketId:ticket.id,title:'NEW SUPPORT REQUEST',message:`${subject} · ${email}`});
+    for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`New support ticket: ${subject}`,heading:'NEW SUPPORT REQUEST',message:`${email} opened a support ticket.\n\n${message}`,ticket});
+    return res.status(201).json({ok:true,ticket});
+  }catch(error){
+    console.error('Support ticket create error:',error);
+    return res.status(500).json({error:'Unable to create support request.'});
+  }
+});
+
+app.post('/api/support/:id/reply', authenticate, async (req,res)=>{
+  try{
+    const uid=String(req.user?.uid||'').trim();
+    const ticket=await getSupportTicket(req.params.id);
+    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
+    if(String(ticket.uid||'')!==uid) return res.status(403).json({error:'You are not allowed to reply to this ticket.'});
+    if(String(ticket.status||'').toUpperCase()==='CLOSED') return res.status(400).json({error:'This ticket is closed. Reopen it before replying.'});
+    const message=String(req.body?.message||'').trim().slice(0,5000);
+    if(!message) return res.status(400).json({error:'Please enter a reply.'});
+    const now=new Date().toISOString();
+    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'CUSTOMER',message,createdAt:now,uid}];
+    ticket.status='OPEN'; ticket.updatedAt=now;
+    await persistSupportTicket(ticket);
+    await createAdminSupportNotification({ticketId:ticket.id,title:'CUSTOMER REPLIED TO SUPPORT',message:`${ticket.subject} · ${ticket.email}`});
+    for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`Customer replied: ${ticket.subject}`,heading:'CUSTOMER REPLIED TO SUPPORT',message,ticket});
+    return res.json({ok:true,ticket});
+  }catch(error){
+    console.error('Customer support reply error:',error);
+    return res.status(500).json({error:'Unable to send reply.'});
+  }
+});
+
+app.post('/api/admin/support/:id/reply', authenticate, async (req,res)=>{
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const ticket=await getSupportTicket(req.params.id);
+    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
+    const message=String(req.body?.message||'').trim().slice(0,5000);
+    if(!message) return res.status(400).json({error:'Please enter a reply.'});
+    const now=new Date().toISOString();
+    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'ADMIN',message,createdAt:now,uid:String(req.user?.uid||'')}];
+    ticket.status='REPLIED'; ticket.updatedAt=now;
+    await persistSupportTicket(ticket);
+    await createSupportNotification({uid:ticket.uid,ticketId:ticket.id,title:'SUPPORT TICKET REPLY',message:`STAYUNKNOWN replied to “${ticket.subject}”.`});
+    await sendSupportEmail({to:ticket.email,subject:`Reply to support ticket: ${ticket.subject}`,heading:'SUPPORT TICKET REPLY',message,ticket});
+    return res.json({ok:true,ticket});
+  }catch(error){
+    console.error('Admin support reply error:',error);
+    return res.status(500).json({error:'Unable to send reply.'});
+  }
+});
+
+app.patch('/api/admin/support/:id/status', authenticate, async (req,res)=>{
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const ticket=await getSupportTicket(req.params.id);
+    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
+    const status=String(req.body?.status||'').toUpperCase();
+    if(!['OPEN','REPLIED','CLOSED'].includes(status)) return res.status(400).json({error:'Invalid ticket status.'});
+    ticket.status=status; ticket.updatedAt=new Date().toISOString();
+    await persistSupportTicket(ticket);
+    if(status==='CLOSED'){
+      await createSupportNotification({uid:ticket.uid,ticketId:ticket.id,title:'SUPPORT TICKET CLOSED',message:`Your support ticket “${ticket.subject}” has been closed.`});
+      await sendSupportEmail({to:ticket.email,subject:`Support ticket closed: ${ticket.subject}`,heading:'SUPPORT TICKET CLOSED',message:`Your support ticket has been closed.`,ticket});
+    }
+    return res.json({ok:true,ticket});
+  }catch(error){
+    console.error('Support status error:',error);
+    return res.status(500).json({error:'Unable to update ticket.'});
+  }
+});
+
+app.get('/api/admin/notifications', authenticate, async (req,res)=>{
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const firestore=initFirebase();
+    if(!firestore) return res.status(503).json({error:'Firebase is not configured.'});
+    const snapshot=await firestore.collection('adminNotifications').get();
+    const notifications=snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,100);
+    return res.json({ok:true,notifications});
+  }catch(error){
+    console.error('Admin notification load error:',error);
+    return res.status(500).json({error:'Unable to load admin notifications.'});
+  }
+});
+
+app.patch('/api/admin/notifications/:notificationId/read', authenticate, async (req,res)=>{
+  try{
+    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
+    const firestore=initFirebase();
+    if(!firestore) return res.status(503).json({error:'Firebase is not configured.'});
+    const ref=firestore.collection('adminNotifications').doc(req.params.notificationId);
+    const snap=await ref.get();
+    if(!snap.exists) return res.status(404).json({error:'Notification not found.'});
+    const readAt=new Date().toISOString();
+    await ref.update({read:true,readAt});
+    return res.json({ok:true,notification:{id:snap.id,...snap.data(),read:true,readAt}});
+  }catch(error){
+    console.error('Admin notification read error:',error);
+    return res.status(500).json({error:'Unable to mark notification as read.'});
+  }
+});
+
 app.get('/api/admin/support', authenticate, async (req,res)=>{
   if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-  res.json({tickets:[...supportTickets.values()].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))});
+  try{
+    const tickets=await getSupportTickets();
+    return res.json({ok:true,tickets});
+  }catch(error){
+    console.error('Admin support load error:',error);
+    return res.status(500).json({error:'Unable to load support requests.'});
+  }
 });
