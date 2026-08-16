@@ -3445,7 +3445,8 @@ onAuthStateChanged(auth, updateAccountUI);
     document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');
     shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');
     collectionTitle.textContent=c.name;
-    const list=products.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()&&!isHiddenProduct(p));
+    const ids=new Set(Array.isArray(c.productIds)?c.productIds.map(String):[]);
+    const list=products.filter(p=>(ids.size?ids.has(String(p.id)):String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase())&&!isHiddenProduct(p));
     collectionContent.innerHTML=`<div class="collection-page-hero"><div class="collection-page-art">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy" onerror="this.style.display='none'">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-page-copy"><div class="eyebrow">Collection</div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${list.length} PRODUCT${list.length===1?'':'S'}</div><div class="collection-product-grid">${list.length?list.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;
     bindAddButtons(collectionContent);window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collection-'+encodeURIComponent(c.id));
   }
@@ -3463,7 +3464,8 @@ onAuthStateChanged(auth, updateAccountUI);
   function renderCollectionsUI(){
     window.stayUnknownCollections=stayUnknownCollections;
     const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));
-    products.forEach(p=>{p.__limitedCollection=limitedNames.has(String(p.collection||'').toLowerCase())});
+    const limitedProductIds=new Set(stayUnknownCollections.filter(c=>c.limited).flatMap(c=>Array.isArray(c.productIds)?c.productIds.map(String):[]));
+    products.forEach(p=>{p.__limitedCollection=limitedProductIds.has(String(p.id))||limitedNames.has(String(p.collection||'').toLowerCase())});
     if(!collectionsTrack)return;
     collectionsTrack.innerHTML=stayUnknownCollections.length?stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join(''):'<div class="no-products" style="width:100%;min-height:390px;display:grid;place-items:center">NO COLLECTIONS YET.</div>';
     collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');
@@ -3485,7 +3487,7 @@ onAuthStateChanged(auth, updateAccountUI);
         const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);let response;
         try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'default',signal:controller.signal})}finally{clearTimeout(timer)}
         const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
-        const remote=data.collections.filter(c=>c&&!c.hidden);
+        const remote=data.collections.filter(c=>c&&!(c.hidden===true||c.hidden===1||String(c.hidden||'').trim().toLowerCase()==='true')&&String(c.name||'').trim()).map(c=>({...c,productIds:Array.isArray(c.productIds)?c.productIds.map(String):[]}));
         if(remote.length || !derived.length){stayUnknownCollections=remote;renderCollectionsUI();}
       }catch(error){console.warn('Collections metadata unavailable; keeping local product-derived collections:',error)}
       return stayUnknownCollections;
