@@ -2134,9 +2134,13 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
         if(!n.read)await markNotificationRead(n);
         if(n.ticketId){
           closeNotifications();
+          if(n.audience==='admin'){
+            openAdminDashboardPage?.();
+            setTimeout(()=>document.querySelector(`[data-admin-action="support"]`)?.click(),300);
+            return;
+          }
           const action=document.querySelector(`[data-account-action="help-desk"]`);
           if(action){openHelpDeskPage();setTimeout(()=>document.querySelector(`[data-ticket-id="${CSS.escape(String(n.ticketId))}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),250);}
-          else if(n.audience==='admin'){closeNotifications();openAdminDashboardPage?.();setTimeout(()=>document.querySelector(`[data-admin-action="support"]`)?.click(),300);}
           return;
         }
         if(n.orderId){
