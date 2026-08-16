@@ -618,12 +618,12 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 .collections-viewport{overflow:hidden;touch-action:pan-y;cursor:grab;min-height:360px}
 .collections-track{display:flex;gap:12px;will-change:transform;transition:transform .45s ease}
 .collection-slide{flex:0 0 calc((100% - 12px)/2);min-width:0;height:360px}
-.collection-card{position:relative;height:100%;min-height:360px;background:#111;border:1px solid #292929;overflow:hidden;cursor:pointer}
+.collection-card{position:relative;height:100%;min-height:360px;background:#111;border:1px solid #292929;overflow:hidden;cursor:pointer;pointer-events:auto;z-index:2}
 .collection-card-media{position:absolute;inset:0;background:#151515}
 .collection-card-media img{width:100%;height:100%;object-fit:cover;display:block}
 .collection-card-fallback{width:100%;height:100%;display:grid;place-items:center;font:clamp(34px,7vw,72px)/.9 Anton,sans-serif;text-transform:uppercase;letter-spacing:-2px;text-align:center;padding:30px;color:#f3f3f0}
-.collection-card-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 35%,rgba(0,0,0,.78) 100%);display:flex;align-items:flex-end;padding:22px}
-.collection-card-name{font:clamp(25px,4vw,44px)/.95 Anton,sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.collection-card-overlay{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.05) 35%,rgba(0,0,0,.78) 100%);display:flex;align-items:flex-end;padding:22px}
+.collection-card-name{color:#f3f3f0;font:clamp(25px,4vw,44px)/.95 Anton,sans-serif;text-transform:uppercase;letter-spacing:.5px}
 .collection-card-meta{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#ccc;margin-top:7px}
 .collection-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
 .collection-dot{width:7px;height:7px;border-radius:50%;border:1px solid #777;background:transparent;padding:0;cursor:pointer}.collection-dot.active{background:#f3f3f0}
@@ -2994,6 +2994,7 @@ onAuthStateChanged(auth, updateAccountUI);
           ${adminButton('ORDERS & DELIVERY','orders')}
           ${adminButton('PROMO CODES','promos')}
           ${adminButton('INVENTORY / LOW STOCK','inventory')}
+          ${adminButton('COLLECTIONS','collections')}
           ${adminButton('RESTOCK SUBSCRIPTIONS','restock')}
           ${adminButton('HELP & SUPPORT','support')}
         </div>
@@ -3187,18 +3188,25 @@ onAuthStateChanged(auth, updateAccountUI);
         return;
       }
 
+      if(section==='collections'){
+        await openAdminSection('inventory');
+        setTimeout(()=>document.getElementById('inventory-collections-tab')?.click(),0);
+        return;
+      }
+
       if(section==='inventory'){
         let editingId=null;
         let editingCollectionId=null;
         let inventoryMode='products';
         const renderManager=async()=>{
-          const r=await fetch(`${BACKEND_URL}/api/admin/products?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-          const d=await r.json();
-          if(!r.ok)throw new Error(d.error||'Unable to load products.');
+          const [productResponse,collectionResponse]=await Promise.all([
+            fetch(`${BACKEND_URL}/api/admin/products?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'}),
+            fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})
+          ]);
+          const [d,cd]=await Promise.all([productResponse.json(),collectionResponse.json()]);
+          if(!productResponse.ok)throw new Error(d.error||'Unable to load products.');
+          if(!collectionResponse.ok)throw new Error(cd.error||'Unable to load collections.');
           const items=Array.isArray(d.products)?d.products:[];
-          const cr=await fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-          const cd=await cr.json();
-          if(!cr.ok)throw new Error(cd.error||'Unable to load collections.');
           const collections=Array.isArray(cd.collections)?cd.collections:[];
           const categories=[...new Set(items.map(p=>p.category).filter(Boolean))];
           const form=(p={})=>`<div class="admin-product-editor" style="display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid #252525;background:#111">
@@ -3367,20 +3375,22 @@ onAuthStateChanged(auth, updateAccountUI);
 
   function renderCollectionMenu(){
     if(!menuCollectionCategories)return;
-    menuCollectionCategories.innerHTML=stayUnknownCollections.map(c=>`<button type="button" data-collection-menu="${escapeHTML(c.id)}">${escapeHTML(c.name)}</button>`).join('');
-    menuCollectionCategories.querySelectorAll('[data-collection-menu]').forEach(b=>b.addEventListener('click',()=>{closeDrawer();openCollectionPage(b.dataset.collectionMenu)}));
-    if(menuCollectionsToggle&&!menuCollectionsToggle.dataset.bound){
-      menuCollectionsToggle.dataset.bound='1';
-      menuCollectionsToggle.addEventListener('click',()=>{
-        if(!stayUnknownCollections.length){openCollectionsPage();return;}
-        menuCollectionCategories.classList.toggle('open');
-        if(menuCollectionsPlus)menuCollectionsPlus.textContent=menuCollectionCategories.classList.contains('open')?'−':'+';
-      });
-    }
+    menuCollectionCategories.innerHTML=stayUnknownCollections.map(c=>`<button type="button" class="collection-menu-item" data-collection-menu="${escapeHTML(c.id)}">${escapeHTML(c.name)}</button>`).join('');
+    menuCollectionCategories.querySelectorAll('[data-collection-menu]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeDrawer();openCollectionPage(b.dataset.collectionMenu)}));
     if(!stayUnknownCollections.length){menuCollectionCategories.classList.remove('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent='+';}
+  }
+  if(menuCollectionsToggle&&!menuCollectionsToggle.dataset.bound){
+    menuCollectionsToggle.dataset.bound='1';
+    menuCollectionsToggle.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      if(!stayUnknownCollections.length){openCollectionsPage();return;}
+      const isOpen=menuCollectionCategories.classList.toggle('open');
+      if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';
+    });
   }
   document.getElementById('collection-back-btn')?.addEventListener('click',()=>{if(location.hash==='#collections'){showHome();return}collectionView.classList.add('is-hidden');collectionView.setAttribute('aria-hidden','true');collectionView.style.display='';shopView.style.display='';showHome()});
   window.loadStayUnknownCollections?.();
+  collectionsViewport?.addEventListener('click',e=>{const card=e.target.closest('[data-collection-id]');if(card){e.preventDefault();openCollectionPage(card.dataset.collectionId);}});
   collectionsViewport?.addEventListener('pointerdown',e=>{collectionDragging=true;collectionStartX=e.clientX;collectionsViewport.setPointerCapture?.(e.pointerId);clearInterval(collectionTimer)});
   collectionsViewport?.addEventListener('pointerup',e=>{if(!collectionDragging)return;collectionDragging=false;const dx=e.clientX-collectionStartX;if(Math.abs(dx)>45)updateCollections(collectionIndex+(dx<0?1:-1));startCollectionTimer()});
   collectionsViewport?.addEventListener('pointercancel',()=>{collectionDragging=false;startCollectionTimer()});
