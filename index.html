@@ -1005,7 +1005,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   }
 
   /* ---------- PRODUCT CATALOG ---------- */
-  const products = [
+  let products = [
     // T-Shirts
     {id:'tee-01',category:'T-Shirts',name:'Unknown Oversized Tee',price:35000,drop:true,tags:'tee t-shirt shirt top oversized unknown'},
     {id:'tee-02',category:'T-Shirts',name:'404 Graphic Tee',price:29000,drop:true,tags:'tee t-shirt graphic 404'},
@@ -1084,14 +1084,14 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   ['acc-04','bag-02','bag-05'].forEach(id=>{const p=products.find(x=>x.id===id);if(p)p.comingSoon=true;});
 
   const categories = ['All','Newly Dropped','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
-  const newDrop = products.filter(p => p.drop);
+  let newDrop = products.filter(p => p.drop);
   const bestSellerIds = ['hood-03','tee-03','pants-01','jacket-01','track-01','jersey-01','tee-01','hood-01'];
-  const bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
+  let bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
 
   const money = value => `₦${Number(value).toLocaleString('en-NG')}`;
   window.money = money;
   const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-  const productVisual = p => `<div class="product-visual" aria-hidden="true">${escapeHTML(p.id.split('-')[0].toUpperCase())} / ${escapeHTML(p.id.split('-')[1])}</div>`;
+  const productVisual = p => { const img=String(p.image||'').trim(); return img ? `<div class="product-visual" aria-hidden="true"><img src="${escapeHTML(img)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'"></div>` : `<div class="product-visual" aria-hidden="true">${escapeHTML(String(p.id||'').split('-')[0].toUpperCase())} / ${escapeHTML(String(p.id||'').split('-')[1]||'')}</div>`; };
 
   /* ---------- UI ---------- */
   const drawer = document.getElementById('side-drawer');
@@ -1176,7 +1176,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
         <div class="catalog-name">${escapeHTML(p.name)}</div>
         <div class="catalog-meta">${escapeHTML(p.category)}</div>
         <div class="catalog-price">${money(p.price)}</div>
-        ${p.comingSoon ? '<div class="catalog-meta" style="color:#f3f3f0;margin-top:10px">COMING SOON</div>' : `<button class="add-cart" type="button" data-product="${escapeHTML(p.name)}" data-price="${p.price}" data-id="${p.id}">ADD TO BAG</button>`}
+        ${p.comingSoon ? '<div class="catalog-meta" style="color:#f3f3f0;margin-top:10px">COMING SOON</div>' : Number.isFinite(Number(p.stock)) && Number(p.stock)<=0 ? '<div class="catalog-meta" style="color:#f3f3f0;margin-top:10px">SOLD OUT</div>' : Number.isFinite(Number(p.stock)) && Number(p.stock)<=Number(p.lowStockThreshold??3) ? `<div class="catalog-meta" style="margin-top:10px">LIMITED STOCK · ${Number(p.stock)} LEFT</div><button class="add-cart" type="button" data-product="${escapeHTML(p.name)}" data-price="${p.price}" data-id="${p.id}">ADD TO BAG</button>` : `<button class="add-cart" type="button" data-product="${escapeHTML(p.name)}" data-price="${p.price}" data-id="${p.id}">ADD TO BAG</button>`}
       </div>
     </article>`;
   }
@@ -1260,6 +1260,33 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     </article>`;
   bindAddButtons(bestTrack);
 
+  async function loadLiveCatalog(){
+    try{
+      const r=await fetch(`${BACKEND_URL}/api/catalog`,{cache:'no-store'});
+      const d=await r.json();
+      if(!r.ok||!Array.isArray(d.products))return;
+      const incoming=d.products.map(p=>{
+        const base=products.find(x=>String(x.id)===String(p.id))||{};
+        return {...base,...p};
+      });
+      if(!incoming.length)return;
+      products=incoming;
+      products.forEach(p=>{p.sizes=Array.isArray(p.sizes)&&p.sizes.length?p.sizes:(SIZE_MAP[p.category]||['ONE SIZE']);p.colors=Array.isArray(p.colors)&&p.colors.length?p.colors:(COLOR_MAP[p.category]||['Black','White']);});
+      newDrop=products.filter(p=>p.drop);
+      bestSellers=bestSellerIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
+      window.stayUnknownProducts=products;
+      renderCategoryButtons(document.getElementById('shop-category-bar'));
+      dropTrack.innerHTML=newDrop.map(p=>`<div class="carousel-slide">${cardMarkup(p,'new-drop-card')}</div>`).join('');
+      dropDots.innerHTML=newDrop.map((_,i)=>`<button class="carousel-dot${i===0?' active':''}" data-slide="${i}" aria-label="Go to slide ${i+1}"></button>`).join('');
+      dropDots.querySelectorAll('.carousel-dot').forEach(d=>d.addEventListener('click',()=>{updateDrop(Number(d.dataset.slide));startDropTimer()}));
+      updateDrop(0,false);bindAddButtons(dropTrack);
+      bestTrack.innerHTML=bestSellers.map(p=>cardMarkup(p,'best-seller-card')).join('')+`<article class="best-seller-card promo-card" data-content-type="promotion"><div class="promo-kicker">404 / FUTURE DROP</div><h3>MORE<br>UNKNOWN.</h3><p>This carousel accepts products, discount cards, sale announcements and promotional banners without changing the section structure.</p></article>`;
+      bindAddButtons(bestTrack);
+      if(!shopView.classList.contains('is-hidden'))renderShop();
+    }catch(e){console.warn('Live catalogue unavailable:',e)}
+  }
+  loadLiveCatalog();
+
   let bestDown=false,bestStart=0,bestScroll=0;
   bestTrack.addEventListener('pointerdown',e=>{bestDown=true;bestStart=e.clientX;bestScroll=bestTrack.scrollLeft;bestTrack.setPointerCapture?.(e.pointerId);bestTrack.style.cursor='grabbing'});
   bestTrack.addEventListener('pointermove',e=>{if(bestDown)bestTrack.scrollLeft=bestScroll-(e.clientX-bestStart)});
@@ -1283,7 +1310,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       if(name===q)score+=100; else if(name.startsWith(q))score+=60; else if(name.includes(q))score+=40;
       if(category===q)score+=55; else if(category.includes(q))score+=25;
       if(tags.includes(q))score+=20;
-      if(words.every(w=>normalize(`${p.name} ${p.category} ${p.tags}`).includes(w)))score+=15; else return null;
+      if(words.every(w=>normalize(`${p.name} ${p.category} ${p.collection||''} ${p.tags}`).includes(w)))score+=15; else return null;
       return {p,score};
     }).filter(Boolean).sort((a,b)=>b.score-a.score).map(x=>x.p);
     if(!matches.length){
@@ -1335,7 +1362,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
   function renderProductGallery(product){
     const code=String(product.id||'').split('-')[0].toUpperCase();
-    productGallery.innerHTML=[['FRONT',0],['DETAIL',1]].map(([label,i])=>`<div class="product-gallery-view ${i===0?'active':''}"><span>${escapeHTML(code)}<br><span class="product-gallery-label">${label}</span></span></div>`).join('');
+    const image=String(product.image||'').trim(); productGallery.innerHTML=image ? `<div class="product-gallery-view active"><img src="${escapeHTML(image)}" alt="${escapeHTML(product.name||'Product')}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div><div class="product-gallery-view"><img src="${escapeHTML(image)}" alt="${escapeHTML(product.name||'Product')}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>` : [['FRONT',0],['DETAIL',1]].map(([label,i])=>`<div class="product-gallery-view ${i===0?'active':''}"><span>${escapeHTML(code)}<br><span class="product-gallery-label">${label}</span></span></div>`).join('');
   }
   function renderRelatedProducts(product){
     const related=products.filter(p=>p.id!==product.id&&p.category===product.category).slice(0,4);
@@ -1368,8 +1395,10 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       productOptionsWishlist.setAttribute('aria-pressed',saved?'true':'false');
     }
     productOptionsPrice.textContent=money(product.price);
-    productStock.textContent=product.comingSoon?'COMING SOON':'IN STOCK';
-    productStock.className=`product-stock ${product.comingSoon?'sold':''}`;
+    const hasStock=Number.isFinite(Number(product.stock));
+    const liveStock=hasStock?Number(product.stock):null;
+    productStock.textContent=product.comingSoon?'COMING SOON':hasStock&&liveStock<=0?'SOLD OUT':hasStock&&liveStock<=Number(product.lowStockThreshold??3)?`LIMITED STOCK · ${liveStock} LEFT`:'IN STOCK';
+    productStock.className=`product-stock ${product.comingSoon||(hasStock&&liveStock<=0)?'sold':''}`;
     renderProductGallery(product);
     renderRelatedProducts(product);
     renderRecentlyViewed(product.id);
@@ -1377,8 +1406,8 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     sizeGuide.classList.remove('open');
     productSize.innerHTML=product.sizes.map(v=>`<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
     productColor.innerHTML=product.colors.map(v=>`<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
-    productOptionsAdd.disabled=!!product.comingSoon;
-    productOptionsAdd.textContent=product.comingSoon?'COMING SOON':'ADD TO BAG';
+    productOptionsAdd.disabled=!!product.comingSoon || (Number.isFinite(Number(product.stock)) && Number(product.stock)<=0);
+    productOptionsAdd.textContent=product.comingSoon?'COMING SOON':(Number.isFinite(Number(product.stock)) && Number(product.stock)<=0)?'SOLD OUT':'ADD TO BAG';
     productOptionsModal.classList.add('open');
     productOptionsModal.setAttribute('aria-hidden','false');
   }
@@ -2960,14 +2989,75 @@ onAuthStateChanged(auth, updateAccountUI);
       }
 
       if(section==='inventory'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/inventory`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to load inventory.');
-        const items=Array.isArray(d.items)?d.items:[];
-        const low=items.filter(i=>Number(i.stock)<=Number(i.lowStockThreshold));
-        routeBody.innerHTML=`<p class="account-subpage-note">PRODUCT STOCK AND LOW-STOCK ALERTS.</p>
-          <div class="admin-stat-grid"><div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.length}</strong></div><div class="admin-stat"><small>LOW STOCK</small><strong>${low.length}</strong></div></div>
-          <div class="admin-list">${items.map(i=>`<div class="admin-list-row"><div><strong>${esc(i.name)}</strong><small>${esc(i.category||'')} · STOCK ${Number(i.stock)}</small></div><span class="order-status ${Number(i.stock)<=Number(i.lowStockThreshold)?'processing':'delivered'}">${Number(i.stock)<=Number(i.lowStockThreshold)?'LOW':'OK'}</span></div>`).join('')}</div>`;
+        let editingId=null;
+        const renderManager=async()=>{
+          const r=await fetch(`${BACKEND_URL}/api/admin/products`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+          const d=await r.json();
+          if(!r.ok)throw new Error(d.error||'Unable to load products.');
+          const items=Array.isArray(d.products)?d.products:[];
+          const collections=[...new Set(items.map(p=>p.collection).filter(Boolean))];
+          const categories=[...new Set(items.map(p=>p.category).filter(Boolean))];
+          const form=(p={})=>`<div class="admin-product-editor" style="display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid #252525;background:#111">
+            <strong>${editingId?'EDIT PRODUCT':'ADD NEW PRODUCT'}</strong>
+            <input id="admin-product-id" class="checkout-input" placeholder="Product ID (optional for new)" value="${esc(p.id||'')}" ${editingId?'readonly':''}>
+            <input id="admin-product-name" class="checkout-input" placeholder="Product name" value="${esc(p.name||'')}">
+            <input id="admin-product-price" class="checkout-input" type="number" min="0" step="1" placeholder="Price (₦)" value="${p.price??''}">
+            <label class="account-subpage-note" style="display:grid;gap:7px">PRODUCT PICTURE
+              <input id="admin-product-image-file" class="checkout-input" type="file" accept="image/*">
+              <small>Choose a picture from your phone/computer, or paste an image URL below.</small>
+            </label>
+            <input id="admin-product-image" class="checkout-input" type="url" placeholder="Product image URL (optional)" value="${esc(p.image||'')}">
+            <div id="admin-product-image-preview" style="min-height:70px;display:flex;align-items:center;gap:10px"></div>
+            <textarea id="admin-product-description" class="checkout-input" rows="4" placeholder="Product description">${esc(p.description||'')}</textarea>
+            <input id="admin-product-category" class="checkout-input" list="admin-product-categories" placeholder="Category" value="${esc(p.category||'')}">
+            <datalist id="admin-product-categories">${categories.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+            <input id="admin-product-collection" class="checkout-input" list="admin-product-collections" placeholder="Collection e.g. Summer Drops" value="${esc(p.collection||'')}">
+            <datalist id="admin-product-collections">${collections.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+            <input id="admin-product-stock" class="checkout-input" type="number" min="0" step="1" placeholder="Stock quantity" value="${p.stock??0}">
+            <input id="admin-product-low" class="checkout-input" type="number" min="0" step="1" placeholder="Low-stock threshold" value="${p.lowStockThreshold??3}">
+            <input id="admin-product-sizes" class="checkout-input" placeholder="Sizes, comma separated" value="${esc((p.sizes||[]).join(', '))}">
+            <input id="admin-product-colors" class="checkout-input" placeholder="Colours, comma separated" value="${esc((p.colors||[]).join(', '))}">
+            <input id="admin-product-tags" class="checkout-input" placeholder="Search tags / keywords" value="${esc(p.tags||'')}">
+            <label><input id="admin-product-drop" type="checkbox" ${p.drop?'checked':''}> New drop</label>
+            <label><input id="admin-product-coming" type="checkbox" ${p.comingSoon?'checked':''}> Coming soon</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="account-subpage-action primary" id="admin-product-save">${editingId?'SAVE CHANGES':'ADD PRODUCT'}</button><button type="button" class="account-subpage-action" id="admin-product-cancel">CANCEL</button></div>
+            <div id="admin-product-message" class="account-subpage-note"></div>
+          </div>`;
+          const productRows=items.map(p=>{const hasStock=Number.isFinite(Number(p.stock));const stock=hasStock?Number(p.stock):null;const threshold=Number(p.lowStockThreshold??3);const status=!hasStock?'NOT SET':stock<=0?'SOLD OUT':stock<=threshold?`${stock} LEFT`:'OK';const statusClass=!hasStock?'delivered':stock<=threshold?'processing':'delivered';return `<div class="admin-list-row" style="gap:12px"><div style="flex:1"><strong>${esc(p.name)}</strong><small>${esc(p.collection||p.category||'')} · ₦${Number(p.price||0).toLocaleString('en-NG')} · STOCK ${hasStock?stock:'NOT SET'}</small></div><span class="order-status ${statusClass}">${status}</span><button type="button" class="account-subpage-action" data-edit-product="${esc(p.id)}">EDIT</button></div>`}).join('');
+          const list=items.length?`<div class="admin-list" style="margin-top:14px">${productRows}</div>`:'<div class="account-subpage-empty">NO PRODUCTS.</div>';
+          routeBody.innerHTML=`<p class="account-subpage-note">ADD, EDIT AND MANAGE EVERY PRODUCT IN THE STORE.</p><div class="admin-stat-grid"><div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.length}</strong></div><div class="admin-stat"><small>LOW STOCK</small><strong>${items.filter(p=>Number.isFinite(Number(p.stock))&&Number(p.stock)<=Number(p.lowStockThreshold??3)).length}</strong></div><div class="admin-stat"><small>COLLECTIONS</small><strong>${collections.length}</strong></div></div><button type="button" class="account-subpage-action primary" id="admin-new-product">+ ADD NEW PRODUCT</button>${list}`;
+          document.getElementById('admin-new-product')?.addEventListener('click',()=>{editingId=null;routeBody.insertAdjacentHTML('beforeend',form());bindForm();});
+          routeBody.querySelectorAll('[data-edit-product]').forEach(b=>b.addEventListener('click',()=>{editingId=b.dataset.editProduct;const p=items.find(x=>String(x.id)===String(editingId));routeBody.insertAdjacentHTML('beforeend',form(p));bindForm();}));
+          function bindForm(){
+            document.getElementById('admin-product-cancel')?.addEventListener('click',()=>document.querySelector('.admin-product-editor')?.remove());
+            const imageFile=document.getElementById('admin-product-image-file');
+            const imageInput=document.getElementById('admin-product-image');
+            const preview=document.getElementById('admin-product-image-preview');
+            const showPreview=(src)=>{preview.innerHTML=src?`<img src="${esc(src)}" alt="Product preview" style="width:74px;height:74px;object-fit:cover;border:1px solid #333;border-radius:8px"><small>Product picture preview</small>`:''};
+            showPreview(imageInput.value.trim());
+            imageInput?.addEventListener('input',()=>showPreview(imageInput.value.trim()));
+            imageFile?.addEventListener('change',async()=>{
+              const file=imageFile.files?.[0]; if(!file)return;
+              if(!file.type.startsWith('image/')){imageFile.value='';throw new Error('Please choose an image file.');}
+              try{
+                const src=await new Promise((resolve,reject)=>{
+                  const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result||'')); reader.onerror=reject; reader.readAsDataURL(file);
+                });
+                const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src;});
+                const max=1200, scale=Math.min(1,max/Math.max(img.width,img.height));
+                const canvas=document.createElement('canvas'); canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
+                const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,canvas.width,canvas.height);
+                imageInput.value=canvas.toDataURL('image/jpeg',0.82); showPreview(imageInput.value);
+              }catch(e){imageFile.value=''; alert('Unable to process that image. Please try another picture.');}
+            });
+            document.getElementById('admin-product-save')?.addEventListener('click',async()=>{
+              const btn=document.getElementById('admin-product-save'),msg=document.getElementById('admin-product-message');btn.disabled=true;
+              const payload={id:document.getElementById('admin-product-id').value.trim(),name:document.getElementById('admin-product-name').value.trim(),price:Number(document.getElementById('admin-product-price').value),image:document.getElementById('admin-product-image').value.trim(),description:document.getElementById('admin-product-description').value.trim(),category:document.getElementById('admin-product-category').value.trim(),collection:document.getElementById('admin-product-collection').value.trim(),stock:Math.max(0,Number(document.getElementById('admin-product-stock').value||0)),lowStockThreshold:Math.max(0,Number(document.getElementById('admin-product-low').value||3)),sizes:document.getElementById('admin-product-sizes').value.split(',').map(v=>v.trim()).filter(Boolean),colors:document.getElementById('admin-product-colors').value.split(',').map(v=>v.trim()).filter(Boolean),tags:document.getElementById('admin-product-tags').value.trim(),drop:document.getElementById('admin-product-drop').checked,comingSoon:document.getElementById('admin-product-coming').checked};
+              try{if(!payload.name||!payload.category||!Number.isFinite(payload.price)||payload.price<0)throw new Error('Enter a product name, category and valid price.');const url=editingId?`${BACKEND_URL}/api/admin/products/${encodeURIComponent(editingId)}`:`${BACKEND_URL}/api/admin/products`;const rr=await fetch(url,{method:editingId?'PATCH':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to save product.');await loadLiveCatalog();await renderManager();}catch(err){msg.textContent=err.message||'Unable to save product.'}finally{btn.disabled=false}
+            });
+          }
+        };
+        await renderManager();
         return;
       }
 
