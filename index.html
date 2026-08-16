@@ -678,12 +678,6 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
               <button id="btn-signout" class="auth-alt">SIGN OUT</button>
             </div>
           </div>
-          <div class="account-dashboard-section" id="admin-account-section" style="display:none !important">
-            <div class="account-dashboard-label">ADMIN</div>
-            <div class="account-dashboard-actions">
-              <button id="btn-admin-orders" class="orders-open-btn" type="button" style="display:none">DELIVERY ORDERS</button>
-            </div>
-          </div>
           <div class="account-dashboard-section">
             <div class="account-dashboard-label">ACCOUNT</div>
             <div class="account-dashboard-actions">
@@ -1084,8 +1078,6 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function closeAccountPage(){
-    document.getElementById('account-subpage')?.classList.remove('open');
-    if(accountPage.querySelector('.account-page-head'))accountPage.querySelector('.account-page-head').style.display='';
     accountPage.classList.remove('open');
     accountPage.setAttribute('aria-hidden','true');
     showHome();
@@ -1560,17 +1552,17 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       try{
         const token=await currentUser.getIdToken();
         const r=await fetch(`${BACKEND_URL}/api/profile`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        let profile=r.ok?((await r.json()).profile||{}):{};
-        if(!profile.phone && !profile.address){
-          try{profile=JSON.parse(localStorage.getItem('stayunknown_saved_checkout')||'{}')||{}}catch(_){}
+        if(r.ok){
+          const d=await r.json();
+          document.getElementById('checkout-phone').value=document.getElementById('checkout-phone').value||d.profile?.phone||'';
+          document.getElementById('checkout-address').value=document.getElementById('checkout-address').value||d.profile?.address||'';
         }
-        if(profile.phone)document.getElementById('checkout-phone').value=profile.phone;
-        if(profile.address)document.getElementById('checkout-address').value=profile.address;
-      }catch(e){
+      }catch(e){console.error(e)}
+      if(!document.getElementById('checkout-phone').value || !document.getElementById('checkout-address').value){
         try{
-          const profile=JSON.parse(localStorage.getItem('stayunknown_saved_checkout')||'{}')||{};
-          if(profile.phone)document.getElementById('checkout-phone').value=profile.phone;
-          if(profile.address)document.getElementById('checkout-address').value=profile.address;
+          const local=JSON.parse(localStorage.getItem('stayunknown_saved_checkout')||'{}')||{};
+          document.getElementById('checkout-phone').value=document.getElementById('checkout-phone').value||local.phone||'';
+          document.getElementById('checkout-address').value=document.getElementById('checkout-address').value||local.address||'';
         }catch(_){}
       }
     }else{submitButton.textContent='CONTINUE AS GUEST';saveWrap.style.display='none';document.getElementById('save-checkout-info').checked=false}
@@ -1750,9 +1742,8 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   let orderHistory=[];
   let orderHistoryFilter='ALL';
   function formatOrderDate(value){if(!value)return 'DATE NOT AVAILABLE';const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
+  window.formatOrderDate=formatOrderDate;
   function statusClass(status){return String(status||'PENDING').toLowerCase()}
-  window.stayUnknownFormatOrderDate=formatOrderDate;
-  window.stayUnknownStatusClass=statusClass;
   function renderOrderDetails(order){
     const body=document.getElementById('order-details-body');
     const status=String(order?.deliveryStatus||order?.paymentStatus||order?.status||'PENDING').toUpperCase();
@@ -1870,7 +1861,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   }
 
   async function fetchMyOrders(){const user=window.__stayUnknownCurrentUser;const list=document.getElementById('orders-list');if(!user){orderHistory=[];list.innerHTML='<div class="orders-empty">SIGN IN TO SEE YOUR ORDERS.</div>';return}list.innerHTML='<div class="orders-empty">LOADING YOUR ORDERS…</div>';try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load orders.');orderHistory=removeSupersededPendingOrders(Array.isArray(data.orders)?data.orders:[]);renderOrderHistory()}catch(error){list.innerHTML=`<div class="orders-empty">${escapeHTML(error.message||'Unable to load your orders.')}</div>`}}
-  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}" role="button" tabindex="0"><div class="order-history-top"><div><div class="order-history-product">${escapeHTML(((o.items||[])[0]?.name)||'ORDER')}</div><div class="order-history-variants">${escapeHTML(((o.items||[])[0]?.size)||'ONE SIZE')} · ${escapeHTML(((o.items||[])[0]?.color)||'BLACK')} · QTY ${itemCount}${(o.items||[]).length>1?' · +'+((o.items||[]).length-1)+' MORE':''}</div></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(formatOrderDate(o.createdAt))} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card,index)=>{const open=()=>openOrderDetails(filtered[index]);card.addEventListener('click',open);card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}})})}
+  function renderOrderHistory(){const list=document.getElementById('orders-list');const filtered=orderHistoryFilter==='ALL'?orderHistory:orderHistory.filter(o=>String(o.deliveryStatus||o.paymentStatus||'PENDING').toUpperCase()===orderHistoryFilter);if(!filtered.length){list.innerHTML='<div class="orders-empty">NO ORDERS IN THIS CATEGORY.</div>';return}list.innerHTML=filtered.map((o,i)=>{const status=String(o.deliveryStatus||o.paymentStatus||'PENDING').toUpperCase();const itemCount=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);return `<article class="order-history-card" data-order-index="${i}" role="button" tabindex="0"><div class="order-history-top"><div><div class="order-history-product">${escapeHTML(((o.items||[])[0]?.name)||'ORDER')}</div><div class="order-history-variants">${escapeHTML(((o.items||[])[0]?.size)||'ONE SIZE')} · ${escapeHTML(((o.items||[])[0]?.color)||'BLACK')} · QTY ${itemCount}${(o.items||[]).length>1?' · +'+((o.items||[]).length-1)+' MORE':''}</div></div><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(window.formatOrderDate(o.createdAt))} · ${money(Number(o.total||0))}</div></article>`}).join('');list.querySelectorAll('.order-history-card').forEach((card,index)=>{const open=()=>openOrderDetails(filtered[index]);card.addEventListener('click',open);card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}})})}
   async function openOrdersPage(){document.getElementById('account-page').classList.remove('open');document.getElementById('account-page').setAttribute('aria-hidden','true');document.getElementById('order-confirmation').classList.remove('open');document.getElementById('order-confirmation').setAttribute('aria-hidden','true');document.getElementById('order-details-modal').classList.remove('open');document.getElementById('order-details-modal').setAttribute('aria-hidden','true');document.getElementById('side-drawer').classList.remove('open');document.getElementById('orders-page').classList.add('open');document.getElementById('orders-page').setAttribute('aria-hidden','false');orderHistoryFilter='ALL';document.querySelectorAll('.orders-filter').forEach(b=>b.classList.toggle('active',b.dataset.status==='ALL'));await fetchMyOrders()}
   window.openOrdersPage=openOrdersPage;
   document.getElementById('order-confirm-card').addEventListener('click',()=>{if(lastOrderForDetails)openOrderDetails(lastOrderForDetails)});
@@ -1885,7 +1876,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   const adminOrdersPage=document.getElementById('admin-orders-page');
   const adminDeliveryModal=document.getElementById('admin-delivery-modal');
   const adminOrdersList=document.getElementById('admin-orders-list');
-  const adminButton=document.getElementById('btn-admin-orders');
+  const legacyAdminButton=document.getElementById('btn-admin-orders');
   const adminDeliveryMsg=document.getElementById('admin-delivery-status-msg');
   const ADMIN_BACKEND=BACKEND_URL;
 
@@ -1896,17 +1887,17 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   }
 
   async function checkAdminAccess(){
-    if(!window.__stayUnknownCurrentUser){adminButton.style.display='none';return false}
+    if(!window.__stayUnknownCurrentUser){if(legacyAdminButton)legacyAdminButton.style.display='none';return false}
     try{
       const token=await adminToken();
       const r=await fetch(`${ADMIN_BACKEND}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`}});
       const d=await r.json();
       const allowed=Boolean(r.ok&&d.isAdmin);
-      adminButton.style.display=allowed?'block':'none';
+      if(legacyAdminButton)legacyAdminButton.style.display=allowed?'block':'none';
       const adminSection=document.getElementById('admin-account-section');
       if(adminSection)adminSection.style.display=allowed?'block':'none';
       return allowed;
-    }catch(_){adminButton.style.display='none';return false}
+    }catch(_){if(legacyAdminButton)legacyAdminButton.style.display='none';return false}
   }
   window.checkStayUnknownAdminAccess=checkAdminAccess;
 
@@ -1937,9 +1928,9 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       const status=String(o.deliveryStatus||o.paymentStatus||'PAID').toUpperCase();
       const customer=o.customer||{};
       const items=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);
-      return `<article class="order-history-card" data-admin-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(customer.name||'Customer')} · ${escapeHTML(formatOrderDate(o.createdAt))} · ${items} ITEM${items===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`
+      return `<article class="order-history-card" data-admin-index="${i}"><div class="order-history-top"><span class="order-history-name">${escapeHTML(o.orderNumber||o.paymentReference||o.id||'ORDER')}</span><span class="order-status ${statusClass(status)}">${escapeHTML(status)}</span></div><div class="order-history-meta">${escapeHTML(customer.name||'Customer')} · ${escapeHTML(window.formatOrderDate(o.createdAt))} · ${items} ITEM${items===1?'':'S'} · ${money(Number(o.total||0))}</div></article>`
     }).join('');
-    adminOrdersList.querySelectorAll('[data-admin-index]').forEach(card=>card.addEventListener('click',()=>window.openStayUnknownAdminDelivery?.(adminOrderHistory[Number(card.dataset.adminIndex)])));
+    adminOrdersList.querySelectorAll('[data-admin-index]').forEach(card=>card.addEventListener('click',()=>openAdminDelivery(adminOrderHistory[Number(card.dataset.adminIndex)])));
   }
 
   function openAdminDelivery(order){
@@ -1956,8 +1947,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     adminDeliveryModal.setAttribute('aria-hidden','false');
   }
 
-  window.openStayUnknownAdminDelivery=openAdminDelivery;
-
+  window.openAdminDelivery=openAdminDelivery;
   async function saveAdminDelivery(){
     if(!adminSelectedOrder)return;
     const button=document.getElementById('admin-save-delivery');
@@ -1985,7 +1975,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     finally{button.disabled=false}
   }
 
-  adminButton.addEventListener('click',openAdminOrders);
+  legacyAdminButton?.addEventListener('click',openAdminOrders);
   document.getElementById('admin-orders-close').addEventListener('click',closeAdminOrders);
   document.getElementById('admin-delivery-close').addEventListener('click',closeAdminDelivery);
   document.getElementById('admin-save-delivery').addEventListener('click',saveAdminDelivery);
@@ -2254,7 +2244,7 @@ function updateAccountUI(user) {
 
     headerGreeting.textContent = '';
     headerGreeting.classList.remove('visible');
-    adminButton.style.display = 'none';
+    if(legacyAdminButton)legacyAdminButton.style.display = 'none';
 
     emailInput.value = '';
     passwordInput.value = '';
@@ -2293,7 +2283,7 @@ onAuthStateChanged(auth, updateAccountUI);
 <style id="stayunknown-account-experience-update">
 #account-subpage{display:none;min-height:calc(100vh - 132px);background:#111}
 #account-subpage.open{display:block}
-.account-subpage-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:22px;border-bottom:1px solid #292929;position:relative;background:#111;z-index:1}
+.account-subpage-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:22px;border-bottom:1px solid #292929;position:relative;background:#111;z-index:3}
 .account-subpage-head h2{font:30px/1 Anton,sans-serif;margin:0;text-transform:uppercase}
 .account-subpage-back{background:none;border:1px solid #444;color:#fff;padding:9px 12px;cursor:pointer;font-size:10px;font-weight:800;text-transform:uppercase}
 .account-subpage-body{padding:22px}
@@ -2330,19 +2320,16 @@ onAuthStateChanged(auth, updateAccountUI);
   const title=document.getElementById('account-subpage-title');
   const body=document.getElementById('account-subpage-body');
   const accountBack=document.getElementById('account-subpage-back');
-  const accountPageHead=accountPage.querySelector('.account-page-head');
 
   function showSubPage(name){
     title.textContent=name;
     accountContent.style.display='none';
-    if(accountPageHead)accountPageHead.style.display='none';
     sub.classList.add('open');
     accountPage.scrollTop=0;
   }
   function hideSubPage(){
     sub.classList.remove('open');
     accountContent.style.display='';
-    if(accountPageHead)accountPageHead.style.display='';
     accountPage.scrollTop=0;
   }
   accountBack.addEventListener('click',hideSubPage);
@@ -2390,29 +2377,13 @@ onAuthStateChanged(auth, updateAccountUI);
     if(!user){alert('Please sign in to use your wishlist.');return}
     document.getElementById('wishlist-panel')?.classList.remove('open');
     showSubPage('WISHLIST');
-    body.innerHTML='<div class="account-subpage-empty">LOADING YOUR WISHLIST…</div>';
-
-    const renderAccountWishlist=()=>{
-      const ids=window.getStayUnknownWishlistIds?window.getStayUnknownWishlistIds():[];
-      const items=ids.map(id=>products().find(p=>String(p.id)===String(id))).filter(Boolean);
-      if(!items.length){body.innerHTML='<div class="account-subpage-empty">YOUR WISHLIST IS EMPTY.</div>';return}
-      body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>`<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div></div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-view="${esc(p.id)}">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}">REMOVE</button></div></article>`).join('')}</div>`;
-      body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',()=>{
-        hideSubPage();
-        accountPage.classList.remove('open');
-        accountPage.setAttribute('aria-hidden','true');
-        window.openStayUnknownProduct?.(b.dataset.wishView);
-      }));
-      body.querySelectorAll('[data-wish-remove]').forEach(b=>b.addEventListener('click',()=>{window.toggleStayUnknownWishlist?.(b.dataset.wishRemove);openWishlistPage()}));
-    };
-
-    renderAccountWishlist();
-    void (async()=>{
-      try{
-        if(window.syncStayUnknownWishlist) await window.syncStayUnknownWishlist(user);
-      }catch(_){}
-      if(sub.classList.contains('open'))renderAccountWishlist();
-    })();
+    const ids=window.getStayUnknownWishlistIds?window.getStayUnknownWishlistIds():[];
+    const items=ids.map(id=>products().find(p=>String(p.id)===String(id))).filter(Boolean);
+    if(!items.length){body.innerHTML='<div class="account-subpage-empty">YOUR WISHLIST IS EMPTY.</div>';return}
+    body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>`<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div></div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-view="${esc(p.id)}">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}">REMOVE</button></div></article>`).join('')}</div>`;
+    body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',()=>{closeAccountPage();window.requestAnimationFrame(()=>window.openStayUnknownProduct?.(b.dataset.wishView));}));
+    body.querySelectorAll('[data-wish-remove]').forEach(b=>b.addEventListener('click',()=>{window.toggleStayUnknownWishlist?.(b.dataset.wishRemove);openWishlistPage()}));
+    if(window.syncStayUnknownWishlist) void window.syncStayUnknownWishlist(user);
   }
 
   async function openSavedCheckoutPage(){
@@ -2586,7 +2557,7 @@ onAuthStateChanged(auth, updateAccountUI);
   }
 
   function renderAdminRouteShell(title, content='<div class="account-subpage-empty">LOADING…</div>'){
-    showSubPage('ADMIN DASHBOARD');
+    showSubPage(title);
     body.innerHTML=`
       <div class="admin-route-head">
         <button type="button" class="account-subpage-action" id="admin-route-back">← ADMIN DASHBOARD</button>
@@ -2669,14 +2640,14 @@ onAuthStateChanged(auth, updateAccountUI);
             const items=(o.items||[]).reduce((n,x)=>n+Number(x.quantity||1),0);
             return `<article class="admin-list-row admin-order-row" data-admin-order-index="${i}">
               <div><strong>${esc(o.orderNumber||o.paymentReference||o.id||'ORDER')}</strong>
-              <small>${esc(customer.name||'Customer')} · ${esc(window.stayUnknownFormatOrderDate(o.createdAt))} · ${items} ITEM${items===1?'':'S'} · ${money(Number(o.total||0))}</small></div>
-              <span class="order-status ${window.stayUnknownStatusClass(status)}">${esc(status)}</span>
+              <small>${esc(customer.name||'Customer')} · ${esc(window.formatOrderDate(o.createdAt))} · ${items} ITEM${items===1?'':'S'} · ${money(Number(o.total||0))}</small></div>
+              <span class="order-status ${statusClass(status)}">${esc(status)}</span>
             </article>`;
           }).join('')}</div>`;
         routeBody.querySelectorAll('[data-admin-order-index]').forEach(card=>{
           card.addEventListener('click',()=>{
             const order=orders[Number(card.dataset.adminOrderIndex)];
-            if(order)window.openStayUnknownAdminDelivery?.(order);
+            if(order)window.openAdminDelivery?.(order);
           });
         });
         return;
