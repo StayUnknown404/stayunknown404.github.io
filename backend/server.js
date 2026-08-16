@@ -226,7 +226,7 @@ app.use(cors());
    intentionally excluded because it must receive the original raw body. */
 app.use((req, res, next) => {
   if (req.path === "/api/paystack/webhook") return next();
-  return express.json()(req, res, next);
+  return express.json({limit:"2mb"})(req, res, next);
 });
 
 function deliveryStatusLabel(status) {
@@ -1916,6 +1916,36 @@ function safeCustomerEmail(req){
 function supportTicketDocId(id){ return String(id||'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,120); }
 function supportTicketData(t){ return {...t, replies:Array.isArray(t.replies)?t.replies:[]}; }
 
+function normalizeSupportAttachments(raw){
+  if(!Array.isArray(raw)) return [];
+  return raw.slice(0,2).filter(a=>a&&typeof a.dataUrl==='string'&&/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(a.dataUrl)&&a.dataUrl.length<=230000).map(a=>({name:String(a.name||'image').slice(0,120),type:String(a.type||'image/jpeg').slice(0,40),dataUrl:a.dataUrl}));
+}
+async function persistSupportAttachments(ticketId, ownerUid, attachments){
+  const firestore=initFirebase();
+  if(!firestore||!attachments.length) return [];
+  const ids=[];
+  for(const attachment of attachments){
+    const ref=firestore.collection('supportAttachments').doc();
+    await ref.set({ticketId:String(ticketId),uid:String(ownerUid||''),name:attachment.name,type:attachment.type,dataUrl:attachment.dataUrl,createdAt:new Date().toISOString()});
+    ids.push(ref.id);
+  }
+  return ids;
+}
+async function hydrateSupportAttachments(ticket){
+  if(!ticket)return ticket;
+  const firestore=initFirebase();
+  if(!firestore)return ticket;
+  const ids=[];
+  if(Array.isArray(ticket.attachmentIds))ids.push(...ticket.attachmentIds);
+  for(const reply of (Array.isArray(ticket.replies)?ticket.replies:[])){if(Array.isArray(reply.attachmentIds))ids.push(...reply.attachmentIds)}
+  if(!ids.length)return ticket;
+  const unique=[...new Set(ids)];
+  const docs=await Promise.all(unique.map(id=>firestore.collection('supportAttachments').doc(id).get()));
+  const map=new Map(docs.filter(d=>d.exists).map(d=>[d.id,{id:d.id,...d.data()}]));
+  const attach=ids=>Array.isArray(ids)?ids.map(id=>map.get(id)).filter(Boolean):[];
+  return {...ticket,attachments:attach(ticket.attachmentIds),replies:(Array.isArray(ticket.replies)?ticket.replies:[]).map(r=>({...r,attachments:attach(r.attachmentIds)}))};
+}
+
 async function persistSupportTicket(ticket){
   const firestore=initFirebase();
   if(!firestore){ supportTickets.set(ticket.id,ticket); return ticket; }
@@ -1926,13 +1956,13 @@ async function getSupportTickets(){
   const firestore=initFirebase();
   if(!firestore) return [...supportTickets.values()];
   const snap=await firestore.collection('supportTickets').orderBy('createdAt','desc').get();
-  return snap.docs.map(d=>supportTicketData(d.data()));
+  return Promise.all(snap.docs.map(async d=>hydrateSupportAttachments(supportTicketData(d.data()))));
 }
 async function getSupportTicket(id){
   const firestore=initFirebase();
   if(!firestore) return supportTickets.get(String(id))||null;
   const doc=await firestore.collection('supportTickets').doc(supportTicketDocId(id)).get();
-  return doc.exists?supportTicketData(doc.data()):null;
+  return doc.exists?await hydrateSupportAttachments(supportTicketData(doc.data())):null;
 }
 async function createSupportNotification({uid,ticketId,ticketSubject,message,title='NEW SUPPORT REQUEST'}){
   const firestore=initFirebase();
@@ -2142,11 +2172,13 @@ app.post('/api/support', authenticate, async (req,res)=>{
     if(!subject) return res.status(400).json({error:'Please enter a subject.'});
     if(!message) return res.status(400).json({error:'Please enter a message.'});
     const now=new Date().toISOString();
+    const attachments=normalizeSupportAttachments(req.body?.attachments);
     const ticket={
       id:`ST-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
       uid,email,subject,orderNumber,message,status:'OPEN',
-      createdAt:now,updatedAt:now,replies:[]
+      createdAt:now,updatedAt:now,replies:[],attachmentIds:[]
     };
+    ticket.attachmentIds=await persistSupportAttachments(ticket.id,uid,attachments);
     await persistSupportTicket(ticket);
     await createAdminSupportNotification({ticketId:ticket.id,title:'NEW SUPPORT REQUEST',message:`${subject} · ${email}`});
     for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`New support ticket: ${subject}`,heading:'NEW SUPPORT REQUEST',message:`${email} opened a support ticket.\n\n${message}`,ticket});
@@ -2167,7 +2199,9 @@ app.post('/api/support/:id/reply', authenticate, async (req,res)=>{
     const message=String(req.body?.message||'').trim().slice(0,5000);
     if(!message) return res.status(400).json({error:'Please enter a reply.'});
     const now=new Date().toISOString();
-    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'CUSTOMER',message,createdAt:now,uid}];
+    const attachments=normalizeSupportAttachments(req.body?.attachments);
+    const attachmentIds=await persistSupportAttachments(ticket.id,uid,attachments);
+    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'CUSTOMER',message,createdAt:now,uid,attachmentIds}];
     ticket.status='OPEN'; ticket.updatedAt=now;
     await persistSupportTicket(ticket);
     await createAdminSupportNotification({ticketId:ticket.id,title:'CUSTOMER REPLIED TO SUPPORT',message:`${ticket.subject} · ${ticket.email}`});
@@ -2187,7 +2221,9 @@ app.post('/api/admin/support/:id/reply', authenticate, async (req,res)=>{
     const message=String(req.body?.message||'').trim().slice(0,5000);
     if(!message) return res.status(400).json({error:'Please enter a reply.'});
     const now=new Date().toISOString();
-    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'ADMIN',message,createdAt:now,uid:String(req.user?.uid||'')}];
+    const attachments=normalizeSupportAttachments(req.body?.attachments);
+    const attachmentIds=await persistSupportAttachments(ticket.id,String(req.user?.uid||''),attachments);
+    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'ADMIN',message,createdAt:now,uid:String(req.user?.uid||''),attachmentIds}];
     ticket.status='REPLIED'; ticket.updatedAt=now;
     await persistSupportTicket(ticket);
     await createSupportNotification({uid:ticket.uid,ticketId:ticket.id,title:'SUPPORT TICKET REPLY',message:`STAYUNKNOWN replied to “${ticket.subject}”.`});
