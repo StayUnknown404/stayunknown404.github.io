@@ -1339,8 +1339,16 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   });
 
   function openProductById(id){
-    const product=products.find(p=>String(p.id)===String(id));
-    if(product)openProductOptions(product);
+    const key=String(id ?? '').trim();
+    const list=Array.isArray(window.stayUnknownProducts)?window.stayUnknownProducts:products;
+    const product=list.find(p=>String(p?.id ?? '').trim()===key);
+    if(!product)return false;
+    closeWishlist?.();
+    document.getElementById('wishlist-panel')?.classList.remove('open');
+    document.getElementById('account-page')?.classList.remove('open');
+    document.getElementById('account-modal')?.setAttribute('aria-hidden','true');
+    openProductOptions(product);
+    return true;
   }
   window.openStayUnknownProduct=openProductById;
   window.stayUnknownProducts=products;
@@ -1438,8 +1446,10 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       const data=await response.json();
       const serverIds=normalizeWishlistIds(data.wishlistIds);
 
-      /* Never let a server response erase a local tap. */
-      const merged=normalizeWishlistIds([...serverIds,...localBefore]);
+      /* If the customer changed the wishlist while this request was in flight,
+         preserve that newest local state. Otherwise the authenticated server copy
+         is authoritative so removed items cannot reappear after refresh. */
+      const merged=serverIds;
       if(requestRevision!==wishlistRevision){
         /* The customer changed the wishlist while this request was in flight.
            Keep the newest local state and sync that exact state. */
@@ -1494,7 +1504,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       return `<div class="wishlist-row"><div class="wishlist-row-main"><div class="wishlist-row-name">${escapeHTML(p.name)}</div><div class="wishlist-row-meta">${escapeHTML(p.category)} · ${money(p.price)}</div>${inCart?'<div class="wishlist-row-status">ALREADY IN BAG</div>':''}</div><div class="wishlist-row-actions"><button class="wishlist-action" data-wish-add="${escapeHTML(p.id)}" type="button">${inCart?'VIEW BAG':'ADD TO BAG'}</button><button class="wishlist-action" data-wish-view="${escapeHTML(p.id)}" type="button">VIEW</button><button class="wishlist-action" data-wish-remove="${escapeHTML(p.id)}" type="button">REMOVE</button></div></div>`
     }).join('');
     box.querySelectorAll('[data-wish-add]').forEach(btn=>btn.addEventListener('click',()=>{const p=products.find(x=>x.id===btn.dataset.wishAdd);if(!p)return;if(cart.some(i=>i.id===p.id)){closeWishlist();openCart()}else{closeWishlist();openProductOptions(p)}}));
-    box.querySelectorAll('[data-wish-view]').forEach(btn=>btn.addEventListener('click',()=>{closeWishlist();openProductById(btn.dataset.wishView)}));
+    box.querySelectorAll('[data-wish-view]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();window.openStayUnknownProduct?.(btn.dataset.wishView);}));
     box.querySelectorAll('[data-wish-remove]').forEach(btn=>btn.addEventListener('click',()=>toggleWishlist(btn.dataset.wishRemove)));
     updateWishlistCount();
   }
@@ -2396,7 +2406,7 @@ onAuthStateChanged(auth, updateAccountUI);
     const items=ids.map(id=>products().find(p=>String(p.id)===String(id))).filter(Boolean);
     if(!items.length){body.innerHTML='<div class="account-subpage-empty">YOUR WISHLIST IS EMPTY.</div>';return}
     body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>`<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div></div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-view="${esc(p.id)}">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}">REMOVE</button></div></article>`).join('')}</div>`;
-    body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',()=>{const id=String(b.dataset.wishView||'');closeAccountPage();window.setTimeout(()=>{window.openStayUnknownProduct?.(id)},30);}));
+    body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const id=String(b.dataset.wishView||'');hideSubPage();closeAccountPage();window.openStayUnknownProduct?.(id);}));
     body.querySelectorAll('[data-wish-remove]').forEach(b=>b.addEventListener('click',()=>{window.toggleStayUnknownWishlist?.(b.dataset.wishRemove);openWishlistPage()}));
     if(window.syncStayUnknownWishlist) void window.syncStayUnknownWishlist(user);
   }
