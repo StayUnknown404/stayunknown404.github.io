@@ -1035,6 +1035,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   const bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
 
   const money = value => `₦${Number(value).toLocaleString('en-NG')}`;
+  window.money = money;
   const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const productVisual = p => `<div class="product-visual" aria-hidden="true">${escapeHTML(p.id.split('-')[0].toUpperCase())} / ${escapeHTML(p.id.split('-')[1])}</div>`;
 
@@ -1338,7 +1339,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   });
 
   function openProductById(id){
-    const product=products.find(p=>p.id===id);
+    const product=products.find(p=>String(p.id)===String(id));
     if(product)openProductOptions(product);
   }
   window.openStayUnknownProduct=openProductById;
@@ -1744,6 +1745,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   function formatOrderDate(value){if(!value)return 'DATE NOT AVAILABLE';const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
   window.formatOrderDate=formatOrderDate;
   function statusClass(status){return String(status||'PENDING').toLowerCase()}
+  window.statusClass = statusClass;
   function renderOrderDetails(order){
     const body=document.getElementById('order-details-body');
     const status=String(order?.deliveryStatus||order?.paymentStatus||order?.status||'PENDING').toUpperCase();
