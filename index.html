@@ -1192,7 +1192,8 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   ['acc-04','bag-02','bag-05'].forEach(id=>{const p=products.find(x=>x.id===id);if(p)p.comingSoon=true;});
 
   let categories = ['All','Newly Dropped','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
-  let newDrop = products.filter(p => p.drop && !p.hidden);
+  const isHiddenProduct = p => p?.hidden===true || p?.hidden===1 || String(p?.hidden||'').trim().toLowerCase()==='true';
+  let newDrop = products.filter(p => p.drop && !isHiddenProduct(p));
   const bestSellerIds = ['hood-03','tee-03','pants-01','jacket-01','track-01','jersey-01','tee-01','hood-01'];
   let bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
 
@@ -1291,7 +1292,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
   function renderShop(category='All'){
     const grid = document.getElementById('shop-grid');
-    const visibleProducts=products.filter(p=>p.hidden!==true); const wanted=normalize(category); const list = category === 'All' ? visibleProducts : category === 'Newly Dropped' ? visibleProducts.filter(p=>p.drop===true) : visibleProducts.filter(p => normalize(p.category) === wanted);
+    const visibleProducts=products.filter(p=>!isHiddenProduct(p)); const wanted=normalize(category); const list = category === 'All' ? visibleProducts : category === 'Newly Dropped' ? visibleProducts.filter(p=>p.drop===true) : visibleProducts.filter(p => normalize(p.category) === wanted);
     document.getElementById('shop-count').textContent = `${list.length} PRODUCTS · ${category.toUpperCase()}`;
     grid.innerHTML = list.length ? list.map(p => cardMarkup(p)).join('') : '<div class="no-products">NO PRODUCTS FOUND</div>';
     document.querySelectorAll('#shop-category-bar .category-chip').forEach(b => b.classList.toggle('active', b.dataset.category === category));
@@ -1370,9 +1371,17 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     </article>`;
   bindAddButtons(bestTrack);
 
+  let liveCatalogPromise=null;
+  function catalogRequestWithTimeout(url,ms=12000){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),ms);
+    return fetch(url,{cache:'no-store',signal:controller.signal}).finally(()=>clearTimeout(timer));
+  }
   async function loadLiveCatalog(){
+    if(liveCatalogPromise)return liveCatalogPromise;
+    liveCatalogPromise=(async()=>{
     try{
-      const r=await fetch(`${BACKEND_URL}/api/catalog?ts=${Date.now()}`,{cache:'no-store'});
+      const r=await catalogRequestWithTimeout(`${BACKEND_URL}/api/catalog?ts=${Date.now()}`,12000);
       const d=await r.json();
       if(!r.ok||!Array.isArray(d.products))throw new Error(d.error||'Unable to load live catalogue.');
       const incoming=d.products.map(p=>{
@@ -1383,7 +1392,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       products.forEach(p=>{p.sizes=Array.isArray(p.sizes)&&p.sizes.length?p.sizes:(SIZE_MAP[p.category]||['ONE SIZE']);p.colors=Array.isArray(p.colors)&&p.colors.length?p.colors:(COLOR_MAP[p.category]||['Black','White']);});
       const liveCats=[...new Set(products.map(p=>String(p.category||'').trim()).filter(Boolean))];
       categories=[...new Set(['All','Newly Dropped',...liveCats,...categories.filter(c=>!['All','Newly Dropped'].includes(c))])];
-      newDrop=products.filter(p=>p.drop&&!p.hidden);
+      newDrop=products.filter(p=>p.drop&&!isHiddenProduct(p));
       bestSellers=bestSellerIds.map(id=>products.find(p=>p.id===id)).filter(Boolean);
       window.stayUnknownProducts=products;
       renderCategoryButtons(document.getElementById('shop-category-bar'));
@@ -1397,8 +1406,19 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       bindAddButtons(bestTrack);
       if(typeof window.loadStayUnknownCollections==='function') await window.loadStayUnknownCollections();
       if(!shopView.classList.contains('is-hidden'))renderShop();
+      liveCatalogLoaded=true;
       return true;
-    }catch(e){console.warn('Live catalogue unavailable:',e);return false}
+    }catch(e){
+      console.warn('Live catalogue unavailable:',e);
+      // Keep the built-in catalogue usable when the backend is temporarily unavailable.
+      // Search must never remain on an endless loading state.
+      liveCatalogLoaded=true;
+      return false;
+    }finally{
+      liveCatalogPromise=null;
+    }
+    })();
+    return liveCatalogPromise;
   }
   window.loadStayUnknownCatalog=loadLiveCatalog;
   loadLiveCatalog();
@@ -1422,7 +1442,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     }
     if(!liveCatalogLoaded){ results.innerHTML='<div>LOADING PRODUCTS…</div>'; loadLiveCatalog().then(()=>{ if(liveCatalogLoaded && normalize(searchInput.value)===q) doSearch(q); }); return; }
     const words=q.split(/\s+/).filter(Boolean);
-    const matches=products.filter(p=>p.hidden!==true).map(p=>{
+    const matches=products.filter(p=>!isHiddenProduct(p)).map(p=>{
       const name=normalize(p.name),category=normalize(p.category),tags=normalize(p.tags);
       let score=0;
       if(name===q)score+=100; else if(name.startsWith(q))score+=60; else if(name.includes(q))score+=40;
