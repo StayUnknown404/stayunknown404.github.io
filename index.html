@@ -1411,11 +1411,6 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       // separate request and must never be allowed to block Shop/Search.
       liveCatalogLoaded=true;
       if(!shopView.classList.contains('is-hidden'))renderShop();
-      // Collections must refresh AFTER the live catalogue arrives.
-      // The initial collections request can start before products finish loading;
-      // calling loadStayUnknownCollections again while that request is pending
-      // previously returned the same promise and left Collections empty forever.
-      if(typeof window.refreshStayUnknownCollections==='function') window.refreshStayUnknownCollections();
       if(typeof window.loadStayUnknownCollections==='function') void window.loadStayUnknownCollections();
       return true;
     }catch(e){
@@ -3389,19 +3384,32 @@ onAuthStateChanged(auth, updateAccountUI);
   function collectionCardMarkup(c){
     const name=String(c?.name||'COLLECTION').trim()||'COLLECTION';
     const image=String(c?.image||'').trim();
-    const media=image
-      ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><div class="collection-card-fallback" style="display:none">${escapeHTML(name)}</div>`
-      : `<div class="collection-card-fallback">${escapeHTML(name)}</div>`;
     const count=Number(c?.productCount||0);
-    return `<article class="collection-card" data-collection-id="${escapeHTML(c?.id||'')}" tabindex="0" role="button">
-      <div class="collection-card-media">${media}</div>
+    const id=String(c?.id||'');
+    return `<article class="collection-card" data-collection-id="${escapeHTML(id)}" tabindex="0" role="button">
+      <div class="collection-card-media">
+        <div class="collection-card-fallback">${escapeHTML(name)}</div>
+        ${image?`<img class="collection-card-image-lazy" data-collection-image="${escapeHTML(image)}" alt="${escapeHTML(name)}" loading="lazy" style="display:none" onerror="this.style.display='none'">`:''}
+      </div>
       <div class="collection-card-copy">
         <div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div>
         <h3 class="collection-card-name">${escapeHTML(name)}</h3>
         <div class="collection-card-meta">${count} PIECE${count===1?'':'S'}${c?.limited?' · LIMITED':''}</div>
-        <button class="collection-view-btn" type="button" data-view-collection="${escapeHTML(c?.id||'')}">VIEW COLLECTION</button>
+        <button class="collection-view-btn" type="button" data-view-collection="${escapeHTML(id)}">VIEW COLLECTION</button>
       </div>
     </article>`;
+  }
+  function hydrateCollectionImages(){
+    collectionsTrack?.querySelectorAll('[data-collection-image]').forEach(img=>{
+      if(img.dataset.loaded==='1')return;
+      img.dataset.loaded='1';
+      const src=img.getAttribute('data-collection-image');
+      if(!src)return;
+      const show=()=>{img.style.display='block';const fallback=img.previousElementSibling;if(fallback)fallback.style.display='none'};
+      img.addEventListener('load',show,{once:true});
+      img.src=src;
+      if(img.complete&&img.naturalWidth)show();
+    });
   }
   function renderCollectionMenu(){
     if(!menuCollectionCategories)return;
@@ -3412,6 +3420,7 @@ onAuthStateChanged(auth, updateAccountUI);
     menuCollectionCategories.innerHTML=stayUnknownCollections.map(c=>`<button type="button" data-collection-menu="${escapeHTML(c.id)}">${escapeHTML(c.name)}</button>`).join('');
     menuCollectionCategories.querySelectorAll('[data-collection-menu]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeDrawer();openCollectionPage(b.dataset.collectionMenu)}));
   }
+
   function updateCollections(index,animate=true){
     if(!collectionsTrack)return;
     const visible=collectionVisible();
@@ -3451,14 +3460,6 @@ onAuthStateChanged(auth, updateAccountUI);
     });
     return [...seen.values()];
   }
-  function refreshStayUnknownCollections(){
-    const derived=deriveCollectionsFromProducts();
-    if(!derived.length)return false;
-    stayUnknownCollections=derived;
-    renderCollectionsUI();
-    return true;
-  }
-  window.refreshStayUnknownCollections=refreshStayUnknownCollections;
   function renderCollectionsUI(){
     window.stayUnknownCollections=stayUnknownCollections;
     const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));
@@ -3470,7 +3471,7 @@ onAuthStateChanged(auth, updateAccountUI);
     collectionsTrack.querySelectorAll('[data-view-collection]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openCollectionPage(btn.dataset.viewCollection)}));
     collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCollectionPage(el.dataset.collectionId)}}));
     collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide));startCollectionTimer()}));
-    renderCollectionMenu();updateCollections(0,false);startCollectionTimer();
+    renderCollectionMenu();updateCollections(0,false);hydrateCollectionImages();startCollectionTimer();
   }
   async function loadStayUnknownCollections(){
     if(collectionsLoadPromise)return collectionsLoadPromise;
