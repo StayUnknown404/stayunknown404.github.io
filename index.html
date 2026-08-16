@@ -2128,9 +2128,61 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   function notificationTime(value){if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString('en-NG',{dateStyle:'medium',timeStyle:'short'})}
   function updateNotificationIndicators(){const unread=stayUnknownNotifications.filter(n=>!n.read).length;const compact=unread>9?'9+':String(unread);if(notificationFabCount)notificationFabCount.textContent=compact;if(notificationMenuCount)notificationMenuCount.textContent=compact;if(accountNotificationCount)accountNotificationCount.textContent=compact;const showBell=Boolean(window.__stayUnknownCurrentUser)&&unread>0;notificationFab.classList.toggle('visible',showBell);notificationFab.setAttribute('aria-hidden',showBell?'false':'true')}
   function showNotificationPeek(notification){if(!notification||notification.read||!window.__stayUnknownCurrentUser)return;notificationPeekTitle.textContent=notification.title||'ORDER UPDATE';notificationPeekMessage.textContent=notification.message||'Your order has a new update.';notificationFab.classList.add('notification-peek-show');notificationPeek.setAttribute('aria-hidden','false');clearTimeout(notificationPeekTimer);notificationPeekTimer=setTimeout(()=>{notificationFab.classList.remove('notification-peek-show');notificationPeek.setAttribute('aria-hidden','true')},2000)}
-  function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}" data-notification-index="${i}" role="button" tabindex="0" aria-label="Open order notification"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));notificationList.querySelectorAll('.notification-row').forEach(row=>{const open=async()=>{const n=stayUnknownNotifications[Number(row.dataset.notificationIndex)];if(!n)return;if(!n.read)await markNotificationRead(n);if(n.orderId){const existing=orderHistory.find(o=>String(o.id||'')===String(n.orderId));if(existing){closeNotifications();await openOrderDetails(existing);return}const user=window.__stayUnknownCurrentUser;if(user){try{const token=await user.getIdToken();const r=await fetch(`${BACKEND_URL}/api/orders/${encodeURIComponent(n.orderId)}`,{headers:{Authorization:`Bearer ${token}`}});const d=await r.json();if(r.ok&&d.order){closeNotifications();await openOrderDetails(d.order);return}}catch(_){} }} };row.addEventListener('click',e=>{if(e.target.closest('button'))return;open()});row.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();open()}})});updateNotificationIndicators()}
-  async function fetchNotifications({showPeek=false}={}){const user=window.__stayUnknownCurrentUser;if(!user){stayUnknownNotifications=[];updateNotificationIndicators();return}try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load notifications.');const previousUnreadIds=new Set(stayUnknownNotifications.filter(n=>!n.read).map(n=>String(n.id)));stayUnknownNotifications=Array.isArray(data.notifications)?data.notifications:[];renderNotifications();const latest=stayUnknownNotifications.find(n=>!n.read);if(showPeek&&latest)showNotificationPeek(latest);else if(!showPeek&&latest&&!previousUnreadIds.has(String(latest.id)))showNotificationPeek(latest)}catch(error){console.error('Notification load error:',error)}}
-  async function markNotificationRead(notification){if(!notification||notification.read)return;const user=window.__stayUnknownCurrentUser;if(!user)return;try{const token=await user.getIdToken();const response=await fetch(`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();renderNotifications()}catch(error){console.error('Notification read error:',error)}}
+  function renderNotifications(){if(!stayUnknownNotifications.length){notificationList.innerHTML='<div class="orders-empty">NO NOTIFICATIONS.</div>';updateNotificationIndicators();return}notificationList.innerHTML=stayUnknownNotifications.map((n,i)=>{const unread=n.read?'':' unread';const mark=n.read?'':`<button class="notification-row-action" type="button" data-notification-read="${i}">MARK AS READ</button>`;return `<article class="notification-row${unread}" data-notification-index="${i}" role="button" tabindex="0" aria-label="Open order notification"><div class="notification-row-head"><span class="notification-row-title">${escapeHTML(n.title||'ORDER UPDATE')}</span><span class="notification-row-time">${escapeHTML(notificationTime(n.createdAt))}</span></div>${n.orderNumber?`<div style="color:#777;font-size:9px;letter-spacing:1px;margin-top:6px">${escapeHTML(n.orderNumber)}</div>`:''}<div class="notification-row-message">${escapeHTML(n.message||'')}</div>${mark}</article>`}).join('');notificationList.querySelectorAll('[data-notification-read]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const n=stayUnknownNotifications[Number(b.dataset.notificationRead)];if(n)await markNotificationRead(n)}));notificationList.querySelectorAll('.notification-row').forEach(row=>{
+      const open=async()=>{
+        const n=stayUnknownNotifications[Number(row.dataset.notificationIndex)];if(!n)return;
+        if(!n.read)await markNotificationRead(n);
+        if(n.ticketId){
+          closeNotifications();
+          const action=document.querySelector(`[data-account-action="help-desk"]`);
+          if(action){openHelpDeskPage();setTimeout(()=>document.querySelector(`[data-ticket-id="${CSS.escape(String(n.ticketId))}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),250);}
+          else if(n.audience==='admin'){closeNotifications();openAdminDashboardPage?.();setTimeout(()=>document.querySelector(`[data-admin-action="support"]`)?.click(),300);}
+          return;
+        }
+        if(n.orderId){
+          const existing=orderHistory.find(o=>String(o.id||'')===String(n.orderId));
+          if(existing){closeNotifications();await openOrderDetails(existing);return}
+          const currentUser=window.__stayUnknownCurrentUser;
+          if(currentUser){try{const token=await currentUser.getIdToken();const r=await fetch(`${BACKEND_URL}/api/orders/${encodeURIComponent(n.orderId)}`,{headers:{Authorization:`Bearer ${token}`}});const d=await r.json();if(r.ok&&d.order){closeNotifications();await openOrderDetails(d.order);return}}catch(_){}}
+        }
+      };
+      row.addEventListener('click',e=>{if(e.target.closest('button'))return;open()});
+      row.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();open()}});
+    });
+    updateNotificationIndicators()}
+  async function fetchNotifications({showPeek=false}={}){
+    const user=window.__stayUnknownCurrentUser;
+    if(!user){stayUnknownNotifications=[];updateNotificationIndicators();return}
+    try{
+      const token=await user.getIdToken();
+      let notifications=[];
+      let isAdmin=false;
+      try{isAdmin=Boolean((await (await fetch(`${BACKEND_URL}/api/admin/me`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})).json()).isAdmin)}catch(_){}
+      if(isAdmin){
+        const r=await fetch(`${BACKEND_URL}/api/admin/notifications`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json();if(r.ok)notifications=Array.isArray(d.notifications)?d.notifications.map(n=>({...n,audience:'admin'})):[];
+      }else{
+        const r=await fetch(`${BACKEND_URL}/api/notifications`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to load notifications.');notifications=Array.isArray(d.notifications)?d.notifications:[];
+      }
+      const previousUnreadIds=new Set(stayUnknownNotifications.filter(n=>!n.read).map(n=>String(n.id)));
+      stayUnknownNotifications=notifications;renderNotifications();
+      const latest=stayUnknownNotifications.find(n=>!n.read);
+      if(showPeek&&latest)showNotificationPeek(latest);
+      else if(!showPeek&&latest&&!previousUnreadIds.has(String(latest.id)))showNotificationPeek(latest);
+    }catch(error){console.error('Notification load error:',error)}
+  }
+  async function markNotificationRead(notification){
+    if(!notification||notification.read)return;
+    const user=window.__stayUnknownCurrentUser;if(!user)return;
+    try{
+      const token=await user.getIdToken();
+      const adminPath=notification.audience==='admin'?`${BACKEND_URL}/api/admin/notifications/${encodeURIComponent(notification.id)}/read`:`${BACKEND_URL}/api/notifications/${encodeURIComponent(notification.id)}/read`;
+      const response=await fetch(adminPath,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});
+      const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to mark notification as read.');
+      notification.read=true;notification.readAt=data.notification?.readAt||new Date().toISOString();renderNotifications();
+    }catch(error){console.error('Notification read error:',error)}
+  }
   function restoreNotificationFabPosition(){try{const saved=JSON.parse(localStorage.getItem('stayunknown_notification_fab_position')||'null');if(saved&&Number.isFinite(saved.left)&&Number.isFinite(saved.top)){notificationFab.style.left=`${Math.max(6,Math.min(window.innerWidth-notificationFab.offsetWidth-6,saved.left))}px`;notificationFab.style.top=`${Math.max(6,Math.min(window.innerHeight-notificationFab.offsetHeight-6,saved.top))}px`;notificationFab.style.right='auto';notificationFab.style.bottom='auto'}}catch(_){}}
   function saveNotificationFabPosition(){try{const r=notificationFab.getBoundingClientRect();localStorage.setItem('stayunknown_notification_fab_position',JSON.stringify({left:r.left,top:r.top}))}catch(_){}}
   function openNotifications(){clearTimeout(notificationPeekTimer);notificationFab.classList.remove('notification-peek-show');notificationPeek.setAttribute('aria-hidden','true');notificationModal.classList.add('open');notificationModal.setAttribute('aria-hidden','false');renderNotifications()}
@@ -2600,21 +2652,17 @@ onAuthStateChanged(auth, updateAccountUI);
   async function openHelpDeskPage(){
     const user=window.__stayUnknownCurrentUser;
     if(!user){alert('Please sign in to contact STAYUNKNOWN support.');return}
-
     showSubPage('HELP DESK');
     body.innerHTML=`
       <div class="account-subpage-help">
         <p class="account-subpage-note">NEED HELP WITH AN ORDER, PAYMENT, DELIVERY OR YOUR ACCOUNT?</p>
-
         <div class="help-desk-grid">
           <a class="account-subpage-action primary" href="https://wa.me/" target="_blank" rel="noopener">WHATSAPP</a>
           <a class="account-subpage-action" href="mailto:hello@stayunknown.com">EMAIL</a>
         </div>
-
         <div style="margin-top:26px;padding-top:22px;border-top:1px solid #242424">
-          <h3 style="margin:0 0 8px">CREATE A SUPPORT TICKET</h3>
+          <h3>CREATE A SUPPORT TICKET</h3>
           <p class="account-subpage-note">Use a ticket if you want STAYUNKNOWN to handle your request inside your account.</p>
-
           <form id="support-ticket-form" style="display:grid;gap:12px">
             <input id="support-subject" class="checkout-input" placeholder="SUBJECT" maxlength="120">
             <input id="support-order-number" class="checkout-input" placeholder="ORDER NUMBER (OPTIONAL)" maxlength="80">
@@ -2623,74 +2671,53 @@ onAuthStateChanged(auth, updateAccountUI);
             <div id="support-ticket-message" class="account-subpage-note" aria-live="polite"></div>
           </form>
         </div>
-
         <div style="margin-top:26px;padding-top:22px;border-top:1px solid #242424">
-          <h3 style="margin:0 0 12px">MY SUPPORT REQUESTS</h3>
+          <h3>MY SUPPORT REQUESTS</h3>
           <div id="customer-support-tickets"><div class="account-subpage-empty">LOADING…</div></div>
         </div>
       </div>`;
-
-    const form=document.getElementById('support-ticket-form');
-    const message=document.getElementById('support-ticket-message');
-    const list=document.getElementById('customer-support-tickets');
+    const form=document.getElementById('support-ticket-form'), message=document.getElementById('support-ticket-message'), list=document.getElementById('customer-support-tickets');
 
     async function loadTickets(){
       try{
         const token=await user.getIdToken(true);
-        const r=await fetch(`${BACKEND_URL}/api/support`,{
-          headers:{Authorization:`Bearer ${token}`},
-          cache:'no-store'
-        });
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
+        const r=await fetch(`${BACKEND_URL}/api/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
         const tickets=Array.isArray(d.tickets)?d.tickets:[];
-        if(!tickets.length){
-          list.innerHTML='<div class="account-subpage-empty">NO SUPPORT REQUESTS YET.</div>';
-          return;
-        }
+        if(!tickets.length){list.innerHTML='<div class="account-subpage-empty">NO SUPPORT REQUESTS YET.</div>';return}
         list.innerHTML=tickets.map(t=>{
           const replies=Array.isArray(t.replies)?t.replies:[];
-          return `<article class="admin-ticket" style="margin-bottom:12px">
+          return `<article class="admin-ticket support-ticket-card" data-ticket-id="${esc(t.id)}">
             <strong>${esc(t.subject||'SUPPORT REQUEST')}</strong>
-            <small>${esc(t.id||'')} · ${esc(t.orderNumber||'NO ORDER')}</small>
-            <p>${esc(t.message||'')}</p>
-            ${replies.map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}
-            <span>STATUS: ${esc(t.status||'OPEN')}</span>
+            <small>${esc(t.id||'')} · ${esc(t.orderNumber||'NO ORDER')} · ${esc(t.status||'OPEN')}</small>
+            <div style="margin-top:12px;padding:10px;border-left:2px solid #555"><small>CUSTOMER · ${esc(t.createdAt||'')}</small><p style="margin:5px 0 0">${esc(t.message||'')}</p></div>
+            ${replies.map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid ${r.from==='ADMIN'?'#888':'#555'}"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}
+            <form class="support-reply-form" data-ticket-id="${esc(t.id)}" style="display:grid;gap:8px;margin-top:12px">
+              <textarea class="checkout-textarea" name="message" maxlength="5000" placeholder="REPLY TO STAYUNKNOWN" required style="min-height:90px"></textarea>
+              <button class="account-subpage-action primary" type="submit">SEND REPLY</button>
+            </form>
           </article>`;
         }).join('');
-      }catch(e){
-        list.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load support requests.')}</div>`;
-      }
+        list.querySelectorAll('.support-reply-form').forEach(replyForm=>replyForm.addEventListener('submit',async e=>{
+          e.preventDefault(); const button=replyForm.querySelector('button'); button.disabled=true;
+          try{
+            const token=await user.getIdToken(true);
+            const r=await fetch(`${BACKEND_URL}/api/support/${encodeURIComponent(replyForm.dataset.ticketId)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:replyForm.message.value.trim()})});
+            const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to send reply.');
+            await loadTickets();
+          }catch(err){alert(err.message||'Unable to send reply.')}finally{button.disabled=false}
+        }));
+      }catch(e){list.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load support requests.')}</div>`}
     }
-
     form?.addEventListener('submit',async e=>{
-      e.preventDefault();
-      const submit=form.querySelector('button[type="submit"]');
-      submit.disabled=true;
-      message.textContent='SENDING…';
+      e.preventDefault(); const submit=form.querySelector('button[type="submit"]'); submit.disabled=true; message.textContent='SENDING…';
       try{
         const token=await user.getIdToken(true);
-        const r=await fetch(`${BACKEND_URL}/api/support`,{
-          method:'POST',
-          headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
-          body:JSON.stringify({
-            subject:document.getElementById('support-subject').value.trim(),
-            orderNumber:document.getElementById('support-order-number').value.trim(),
-            message:document.getElementById('support-message').value.trim()
-          })
-        });
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to create support request.');
-        message.textContent=`SUPPORT REQUEST CREATED — ${d.ticket?.id||''}`;
-        form.reset();
-        await loadTickets();
-      }catch(e){
-        message.textContent=e.message||'Unable to create support request.';
-      }finally{
-        submit.disabled=false;
-      }
+        const r=await fetch(`${BACKEND_URL}/api/support`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({subject:document.getElementById('support-subject').value.trim(),orderNumber:document.getElementById('support-order-number').value.trim(),message:document.getElementById('support-message').value.trim()})});
+        const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to create support request.');
+        message.textContent=`SUPPORT REQUEST CREATED — ${d.ticket?.id||''}`; form.reset(); await loadTickets();
+      }catch(e){message.textContent=e.message||'Unable to create support request.'}finally{submit.disabled=false}
     });
-
     await loadTickets();
   }
 
@@ -2950,10 +2977,17 @@ onAuthStateChanged(auth, updateAccountUI);
 
       if(section==='support'){
         const r=await fetch(`${BACKEND_URL}/api/admin/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
+        const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
         const tickets=Array.isArray(d.tickets)?d.tickets:[];
-        routeBody.innerHTML=tickets.length?`<p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS.</p><div class="admin-list">${tickets.map(t=>`<article class="admin-ticket"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small><p>${esc(t.message||'')}</p><span>${esc(t.status||'OPEN')} · ${esc(t.createdAt||'')}</span></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+        routeBody.innerHTML=tickets.length?`<p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS.</p><div class="admin-list">${tickets.map(t=>`<article class="admin-ticket admin-support-ticket" data-ticket-id="${esc(t.id)}"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small><p>${esc(t.message||'')}</p><div class="support-admin-replies">${(Array.isArray(t.replies)?t.replies:[]).map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}</div><span>${esc(t.status||'OPEN')} · ${esc(t.updatedAt||t.createdAt||'')}</span><form class="admin-support-reply-form" data-ticket-id="${esc(t.id)}" style="display:grid;gap:8px;margin-top:12px"><textarea name="message" class="checkout-textarea" maxlength="5000" placeholder="REPLY TO CUSTOMER" required style="min-height:90px"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="account-subpage-action primary">SEND REPLY</button><button type="button" class="account-subpage-action" data-support-close="${esc(t.id)}">${String(t.status||'').toUpperCase()==='CLOSED'?'REOPEN':'CLOSE'}</button></div></form></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+        routeBody.querySelectorAll('.admin-support-reply-form').forEach(f=>f.addEventListener('submit',async e=>{
+          e.preventDefault(); const btn=f.querySelector('button[type="submit"]');btn.disabled=true;
+          try{const r=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(f.dataset.ticketId)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:f.message.value.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to send reply.');await loadAdminSection('support');}catch(err){alert(err.message||'Unable to send reply.')}finally{btn.disabled=false}
+        }));
+        routeBody.querySelectorAll('[data-support-close]').forEach(btn=>btn.addEventListener('click',async()=>{
+          const card=btn.closest('.admin-support-ticket');const current=card?.querySelector('span')?.textContent||'';const status=current.startsWith('CLOSED')?'OPEN':'CLOSED';
+          try{const r=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(btn.dataset.supportClose)}/status`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to update ticket.');await loadAdminSection('support');}catch(err){alert(err.message||'Unable to update ticket.')}
+        }));
         return;
       }
     }catch(e){
