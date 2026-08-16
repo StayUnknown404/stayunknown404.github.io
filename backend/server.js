@@ -394,12 +394,16 @@ app.patch("/api/notifications/:notificationId/read", requireFirebaseUser, async 
 const catalogPath = path.join(__dirname, "catalog.json");
 const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
 
-let mergedPublicCache=null, mergedPublicCacheAt=0;
-let mergedAdminCache=null, mergedAdminCacheAt=0;
-let publicCollectionsCache=null, publicCollectionsCacheAt=0;
-let adminCollectionsCache=null, adminCollectionsCacheAt=0;
-const CATALOG_CACHE_MS=5000;
-function invalidateCatalogCaches(){mergedPublicCache=null;mergedAdminCache=null;publicCollectionsCache=null;adminCollectionsCache=null;mergedPublicCacheAt=0;mergedAdminCacheAt=0;publicCollectionsCacheAt=0;adminCollectionsCacheAt=0;}
+let mergedPublicCache=null, mergedPublicCacheAt=0, mergedPublicPromise=null;
+let mergedAdminCache=null, mergedAdminCacheAt=0, mergedAdminPromise=null;
+let publicCollectionsCache=null, publicCollectionsCacheAt=0, publicCollectionsPromise=null;
+let adminCollectionsCache=null, adminCollectionsCacheAt=0, adminCollectionsPromise=null;
+const CATALOG_CACHE_MS=30000;
+function invalidateCatalogCaches(){
+  mergedPublicCache=null;mergedAdminCache=null;publicCollectionsCache=null;adminCollectionsCache=null;
+  mergedPublicCacheAt=0;mergedAdminCacheAt=0;publicCollectionsCacheAt=0;adminCollectionsCacheAt=0;
+  mergedPublicPromise=null;mergedAdminPromise=null;publicCollectionsPromise=null;adminCollectionsPromise=null;
+}
 
 /*
   Firebase Admin
@@ -504,22 +508,34 @@ async function getMergedProducts({includeHidden=false}={}){
   const now=Date.now();
   const cache=includeHidden?mergedAdminCache:mergedPublicCache;
   const cacheAt=includeHidden?mergedAdminCacheAt:mergedPublicCacheAt;
+  const pending=includeHidden?mergedAdminPromise:mergedPublicPromise;
   if(cache && now-cacheAt<CATALOG_CACHE_MS)return cache.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
-  const base=Array.isArray(catalog)?catalog.map(p=>({...p})):[];
-  const firestore=initFirebase();
-  const map=new Map(base.map(p=>[String(p.id),p]));
-  if(firestore){
-    try{
-      const snap=await Promise.race([firestore.collection('products').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),3500))]);
-      snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
-    }catch(error){console.warn('Firestore catalogue unavailable; serving local catalogue:',error.message||error);}
-  }
-  const list=[...map.values()].map(p=>{const image=String(p.image||'').trim();const image2=String(p.image2||'').trim();const images=Array.isArray(p.images)?p.images.map(x=>String(x||'').trim()).filter(Boolean).slice(0,2):[];const mergedImages=[...new Set([image,...images,image2].filter(Boolean))].slice(0,2);return {...p,image:mergedImages[0]||image,image2:mergedImages[1]||image2,images:mergedImages};});
-  const isTrue=value=>value===true||value===1||String(value||'').trim().toLowerCase()==='true';
-  const isHiddenProduct=p=>isTrue(p.hidden)||(Object.prototype.hasOwnProperty.call(p,'visibleInStore')&&!isTrue(p.visibleInStore));
-  const result=includeHidden?list:list.filter(p=>!isHiddenProduct(p));
-  if(includeHidden){mergedAdminCache=result;mergedAdminCacheAt=now}else{mergedPublicCache=result;mergedPublicCacheAt=now}
-  return result.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
+  if(pending)return pending;
+
+  const load=(async()=>{
+    const base=Array.isArray(catalog)?catalog.map(p=>({...p})):[];
+    const firestore=initFirebase();
+    const map=new Map(base.map(p=>[String(p.id),p]));
+    if(firestore){
+      try{
+        const snap=await Promise.race([firestore.collection('products').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),3500))]);
+        snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
+      }catch(error){console.warn('Firestore catalogue unavailable; serving local catalogue:',error.message||error);}
+    }
+    const list=[...map.values()].map(p=>{
+      const image=String(p.image||'').trim(),image2=String(p.image2||'').trim();
+      const images=Array.isArray(p.images)?p.images.map(x=>String(x||'').trim()).filter(Boolean).slice(0,2):[];
+      const mergedImages=[...new Set([image,...images,image2].filter(Boolean))].slice(0,2);
+      return {...p,image:mergedImages[0]||image,image2:mergedImages[1]||image2,images:mergedImages};
+    });
+    const isTrue=value=>value===true||value===1||String(value||'').trim().toLowerCase()==='true';
+    const isHiddenProduct=p=>isTrue(p.hidden)||(Object.prototype.hasOwnProperty.call(p,'visibleInStore')&&!isTrue(p.visibleInStore));
+    const result=includeHidden?list:list.filter(p=>!isHiddenProduct(p));
+    if(includeHidden){mergedAdminCache=result;mergedAdminCacheAt=Date.now()}else{mergedPublicCache=result;mergedPublicCacheAt=Date.now()}
+    return result.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
+  })();
+  if(includeHidden)mergedAdminPromise=load;else mergedPublicPromise=load;
+  try{return await load;}finally{if(includeHidden)mergedAdminPromise=null;else mergedPublicPromise=null;}
 }
 
 app.get("/api/catalog", async (_req, res) => {
@@ -2300,41 +2316,29 @@ app.get('/api/collections', async (_req,res)=>{
   try{
     const now=Date.now();
     if(publicCollectionsCache && now-publicCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
+    if(publicCollectionsPromise)return res.json({collections:await publicCollectionsPromise});
 
-    // Collections must not wait for the full product catalogue. Load both sources
-    // independently and return the collection records as soon as they are available.
-    const firestore=initFirebase();
-    let explicit=[];
-    let products=[];
-    if(firestore){
-      const collectionPromise=firestore.collection('collections').get();
+    publicCollectionsPromise=(async()=>{
+      const firestore=initFirebase();
       const productPromise=getMergedProducts();
-      const [collectionResult,productResult]=await Promise.allSettled([
-        Promise.race([collectionPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]),
-        Promise.race([productPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Catalogue timeout while loading collections')),2500))])
-      ]);
-      if(collectionResult.status==='fulfilled')explicit=collectionResult.value.docs.map(d=>({id:d.id,...d.data()}));
-      if(productResult.status==='fulfilled')products=productResult.value;
-    }else{
-      products=await getMergedProducts().catch(()=>[]);
-    }
-
-    const map=new Map(explicit.filter(c=>!c.hidden&&String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
-    const counts=new Map();
-    for(const p of products){
-      const name=String(p.collection||'').trim();
-      if(!name)continue;
-      const key=name.toLowerCase();
-      counts.set(key,(counts.get(key)||0)+1);
-      if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name).replace(/%/g,'')}`,name,image:'',description:'',order:9999,hidden:false});
-    }
-    const list=[...map.values()]
-      .map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0}))
-      .filter(c=>c&&!c.hidden&&String(c.name||'').trim())
-      .sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
-
-    publicCollectionsCache=list;publicCollectionsCacheAt=now;
-    return res.json({collections:list.map(c=>({...c}))});
+      const collectionPromise=firestore?Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]):Promise.resolve(null);
+      const [products,snap]=await Promise.all([productPromise,collectionPromise.catch(()=>null)]);
+      const explicit=snap?snap.docs.map(d=>({id:d.id,...d.data()})):[];
+      const explicitByName=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
+      const hiddenNames=new Set(explicit.filter(c=>c.hidden).map(c=>String(c.name||'').trim().toLowerCase()).filter(Boolean));
+      const map=new Map();
+      for(const p of products){
+        const name=String(p.collection||'').trim();if(!name)continue;
+        const key=name.toLowerCase();if(hiddenNames.has(key))continue;
+        if(!map.has(key))map.set(key,explicitByName.get(key)||{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});
+      }
+      for(const [key,c] of explicitByName){if(c.hidden)continue;if(!map.has(key))map.set(key,c);}
+      const counts=new Map();for(const p of products){const key=String(p.collection||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1);}
+      const list=[...map.values()].map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0})).filter(c=>c&&!c.hidden&&String(c.name||'').trim()).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+      publicCollectionsCache=list;publicCollectionsCacheAt=Date.now();return list.map(c=>({...c}));
+    })();
+    try{return res.json({collections:await publicCollectionsPromise});}
+    finally{publicCollectionsPromise=null;}
   }catch(e){
     console.error('Collections load error:',e);
     if(publicCollectionsCache)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
@@ -2343,8 +2347,19 @@ app.get('/api/collections', async (_req,res)=>{
 });
 
 app.get('/api/admin/collections', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const now=Date.now();if(adminCollectionsCache&&now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c}))});const products=await getMergedProducts({includeHidden:true});const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]);const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));const map=new Map(explicit.map(c=>[String(c.name).toLowerCase(),c]));for(const p of products){const name=String(p.collection||'').trim();if(name&&!map.has(name.toLowerCase()))map.set(name.toLowerCase(),{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}const list=[...map.values()].sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));adminCollectionsCache=list;adminCollectionsCacheAt=now;res.json({collections:list.map(c=>({...c}))});}
-  catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
+  try{
+    const firestore=await requireAdminUser(req,res);if(!firestore)return;
+    const now=Date.now();
+    if(adminCollectionsCache && now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c})),products:await getMergedProducts({includeHidden:true})});
+    const products=await getMergedProducts({includeHidden:true});
+    const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]);
+    const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const map=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
+    for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}
+    const list=[...map.values()].map(c=>({...c,productCount:products.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()).length})).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+    adminCollectionsCache=list;adminCollectionsCacheAt=Date.now();
+    return res.json({collections:list.map(c=>({...c})),products});
+  }catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
 });
 
 app.post('/api/admin/collections', authenticate, async (req,res)=>{
