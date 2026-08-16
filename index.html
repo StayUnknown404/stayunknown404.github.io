@@ -1291,7 +1291,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
   function renderShop(category='All'){
     const grid = document.getElementById('shop-grid');
-    const visibleProducts=products.filter(p=>!p.hidden); const list = category === 'All' ? visibleProducts : category === 'Newly Dropped' ? visibleProducts.filter(p=>p.drop) : visibleProducts.filter(p => p.category === category);
+    const visibleProducts=products.filter(p=>p.hidden!==true); const wanted=normalize(category); const list = category === 'All' ? visibleProducts : category === 'Newly Dropped' ? visibleProducts.filter(p=>p.drop===true) : visibleProducts.filter(p => normalize(p.category) === wanted);
     document.getElementById('shop-count').textContent = `${list.length} PRODUCTS · ${category.toUpperCase()}`;
     grid.innerHTML = list.length ? list.map(p => cardMarkup(p)).join('') : '<div class="no-products">NO PRODUCTS FOUND</div>';
     document.querySelectorAll('#shop-category-bar .category-chip').forEach(b => b.classList.toggle('active', b.dataset.category === category));
@@ -1400,7 +1400,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       return true;
     }catch(e){console.warn('Live catalogue unavailable:',e);return false}
   }
-  window.loadStayUnknownCatalog=loadLiveCatalog; window.loadLiveCatalog=loadLiveCatalog;
+  window.loadStayUnknownCatalog=loadLiveCatalog;
   loadLiveCatalog();
 
   let bestDown=false,bestStart=0,bestScroll=0;
@@ -1411,6 +1411,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   /* ---------- SEARCH ---------- */
   function normalize(value){return String(value||'').trim().toLowerCase()}
   let searchTimer=null;
+  let liveCatalogLoaded=false;
   function doSearch(query){
     const q=normalize(query);
     const results=document.getElementById('search-results');
@@ -1419,8 +1420,9 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       results.innerHTML='<div>SEARCH BY PRODUCT NAME, CATEGORY OR KEYWORD.</div>';
       return;
     }
+    if(!liveCatalogLoaded){ results.innerHTML='<div>LOADING PRODUCTS…</div>'; loadLiveCatalog().then(()=>{ if(liveCatalogLoaded && normalize(searchInput.value)===q) doSearch(q); }); return; }
     const words=q.split(/\s+/).filter(Boolean);
-    const matches=products.map(p=>{
+    const matches=products.filter(p=>p.hidden!==true).map(p=>{
       const name=normalize(p.name),category=normalize(p.category),tags=normalize(p.tags);
       let score=0;
       if(name===q)score+=100; else if(name.startsWith(q))score+=60; else if(name.includes(q))score+=40;
@@ -1436,7 +1438,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     }
     results.innerHTML=`<div class="shop-count">${matches.length} RESULT${matches.length===1?'':'S'} FOUND</div>
       <div class="search-panel-results">${matches.map(p=>`<article class="search-result-card" data-search-product="${escapeHTML(p.id)}" tabindex="0" role="button">
-        <div class="search-result-image">${productVisualCode(p.id)}</div>
+        <div class="search-result-image">${productVisual(p)}</div>
         <div class="search-result-name">${escapeHTML(p.name)}</div>
         <div class="search-result-meta">${escapeHTML(p.category)}</div>
         <div class="search-result-price">${money(p.price)}</div>
@@ -1480,7 +1482,9 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     const code=String(product.id||'').split('-')[0].toUpperCase();
     const images=(Array.isArray(product.images)?product.images:[]).map(x=>String(x||'').trim()).filter(Boolean);
     const legacy=String(product.image||'').trim();
+    const legacy2=String(product.image2||'').trim();
     if(!images.length && legacy) images.push(legacy);
+    if(images.length<2 && legacy2 && !images.includes(legacy2)) images.push(legacy2);
     if(images.length){
       const galleryImages=images.slice(0,2);
       productGallery.innerHTML=galleryImages.map((src,i)=>`<div class="product-gallery-view ${i===0?'active':''}"><img src="${escapeHTML(src)}" alt="${escapeHTML(product.name||'Product')} ${i+1}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`).join('');
