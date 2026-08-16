@@ -510,7 +510,7 @@ async function getMergedProducts({includeHidden=false}={}){
   const map=new Map(base.map(p=>[String(p.id),p]));
   if(firestore){
     try{
-      const snap=await Promise.race([firestore.collection('products').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),8000))]);
+      const snap=await Promise.race([firestore.collection('products').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),3500))]);
       snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
     }catch(error){console.warn('Firestore catalogue unavailable; serving local catalogue:',error.message||error);}
   }
@@ -2300,20 +2300,50 @@ app.get('/api/collections', async (_req,res)=>{
   try{
     const now=Date.now();
     if(publicCollectionsCache && now-publicCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
-    const products=await getMergedProducts();
+
+    // Collections must not wait for the full product catalogue. Load both sources
+    // independently and return the collection records as soon as they are available.
     const firestore=initFirebase();
-    const explicit=[];
-    if(firestore){try{const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),5000))]);snap.docs.forEach(d=>explicit.push({id:d.id,...d.data()}));}catch(error){console.warn('Firestore collections unavailable; deriving from products:',error.message||error);}}
-    const map=new Map(explicit.filter(c=>!c.hidden).map(c=>[String(c.name).toLowerCase(),c]));
+    let explicit=[];
+    let products=[];
+    if(firestore){
+      const collectionPromise=firestore.collection('collections').get();
+      const productPromise=getMergedProducts();
+      const [collectionResult,productResult]=await Promise.allSettled([
+        Promise.race([collectionPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]),
+        Promise.race([productPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Catalogue timeout while loading collections')),2500))])
+      ]);
+      if(collectionResult.status==='fulfilled')explicit=collectionResult.value.docs.map(d=>({id:d.id,...d.data()}));
+      if(productResult.status==='fulfilled')products=productResult.value;
+    }else{
+      products=await getMergedProducts().catch(()=>[]);
+    }
+
+    const map=new Map(explicit.filter(c=>!c.hidden&&String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
     const counts=new Map();
-    for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();counts.set(key,(counts.get(key)||0)+1);if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name).replace(/%/g,'')}`,name,image:'',description:'',order:9999,hidden:false});}
-    const list=[...map.values()].map(c=>({...c,productCount:counts.get(String(c.name||'').toLowerCase())||0})).filter(c=>c.productCount>0).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
-    publicCollectionsCache=list;publicCollectionsCacheAt=now;res.json({collections:list.map(c=>({...c}))});
-  }catch(e){console.error('Collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
+    for(const p of products){
+      const name=String(p.collection||'').trim();
+      if(!name)continue;
+      const key=name.toLowerCase();
+      counts.set(key,(counts.get(key)||0)+1);
+      if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name).replace(/%/g,'')}`,name,image:'',description:'',order:9999,hidden:false});
+    }
+    const list=[...map.values()]
+      .map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0}))
+      .filter(c=>c&&!c.hidden&&String(c.name||'').trim())
+      .sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+
+    publicCollectionsCache=list;publicCollectionsCacheAt=now;
+    return res.json({collections:list.map(c=>({...c}))});
+  }catch(e){
+    console.error('Collections load error:',e);
+    if(publicCollectionsCache)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
+    return res.status(200).json({collections:[]});
+  }
 });
 
 app.get('/api/admin/collections', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const now=Date.now();if(adminCollectionsCache&&now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c}))});const products=await getMergedProducts({includeHidden:true});const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),5000))]);const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));const map=new Map(explicit.map(c=>[String(c.name).toLowerCase(),c]));for(const p of products){const name=String(p.collection||'').trim();if(name&&!map.has(name.toLowerCase()))map.set(name.toLowerCase(),{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}const list=[...map.values()].sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));adminCollectionsCache=list;adminCollectionsCacheAt=now;res.json({collections:list.map(c=>({...c}))});}
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const now=Date.now();if(adminCollectionsCache&&now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c}))});const products=await getMergedProducts({includeHidden:true});const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]);const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));const map=new Map(explicit.map(c=>[String(c.name).toLowerCase(),c]));for(const p of products){const name=String(p.collection||'').trim();if(name&&!map.has(name.toLowerCase()))map.set(name.toLowerCase(),{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}const list=[...map.values()].sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));adminCollectionsCache=list;adminCollectionsCacheAt=now;res.json({collections:list.map(c=>({...c}))});}
   catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
 });
 
