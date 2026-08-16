@@ -522,12 +522,12 @@ app.get("/api/health", (_req, res) => {
 /*
   Public catalogue endpoint.
 */
-async function getMergedProducts({includeHidden=false}={}){
+async function getMergedProducts({includeHidden=false, forceRefresh=false}={}){
   const now=Date.now();
   const cache=includeHidden?mergedAdminCache:mergedPublicCache;
   const cacheAt=includeHidden?mergedAdminCacheAt:mergedPublicCacheAt;
   const pending=includeHidden?mergedAdminPromise:mergedPublicPromise;
-  if(cache && now-cacheAt<CATALOG_CACHE_MS)return cache.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
+  if(!forceRefresh && cache && now-cacheAt<CATALOG_CACHE_MS)return cache.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
   if(pending)return pending;
 
   const load=(async()=>{
@@ -536,9 +536,19 @@ async function getMergedProducts({includeHidden=false}={}){
     const map=new Map(base.map(p=>[String(p.id),p]));
     if(firestore){
       try{
-        const snap=await Promise.race([firestore.collection('products').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),3500))]);
+        // Firestore can be slow on a cold Render instance. Do not throw away
+        // newly-created products just because a short request timeout fired.
+        const snap=await Promise.race([
+          firestore.collection('products').get(),
+          new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),12000))
+        ]);
         snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
-      }catch(error){console.warn('Firestore catalogue unavailable; serving local catalogue:',error.message||error);}
+      }catch(error){
+        console.warn('Firestore catalogue refresh unavailable:',error.message||error);
+        // If an older cache exists, preserve it. Otherwise the local catalogue
+        // is still a safe fallback while the next background refresh retries.
+        if(cache && cache.length)return cache.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
+      }
     }
     const list=[...map.values()].map(p=>{
       const image=String(p.image||'').trim(),image2=String(p.image2||'').trim();
@@ -556,15 +566,31 @@ async function getMergedProducts({includeHidden=false}={}){
   try{return await load;}finally{if(includeHidden)mergedAdminPromise=null;else mergedPublicPromise=null;}
 }
 
+// Warm the public catalogue in the background. This keeps storefront requests
+// fast while still allowing newly-added Firestore products to replace the
+// built-in catalogue after a cold server start.
+let publicCatalogRefreshTimer=null;
+async function refreshPublicCatalogInBackground(){
+  if(publicCatalogRefreshTimer)return publicCatalogRefreshTimer;
+  publicCatalogRefreshTimer=getMergedProducts({forceRefresh:true}).catch(error=>console.warn('Background catalogue refresh failed:',error?.message||error)).finally(()=>{publicCatalogRefreshTimer=null});
+  return publicCatalogRefreshTimer;
+}
+
 app.get("/api/catalog", async (_req, res) => {
   try {
     res.set('Cache-Control','no-store, max-age=0');
-    res.json({products:await getMergedProducts()});
+    // Serve warm data immediately. If there is no warm cache yet, return the
+    // local catalogue now and refresh Firestore in the background. The client
+    // retries shortly after so new products appear without a blank/slow page.
+    if(mergedPublicCache && mergedPublicCacheAt){
+      void refreshPublicCatalogInBackground();
+      return res.json({products:mergedPublicCache.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]})),stale:false});
+    }
+    void refreshPublicCatalogInBackground();
+    return res.json({products:Array.isArray(catalog)?catalog:[],stale:true,refreshing:true});
   } catch(error){
     console.error('Catalog error:',error);
-    // Never leave the storefront waiting for a database error.
-    const products=Array.isArray(catalog)?catalog:[];
-    res.status(200).json({products});
+    return res.status(200).json({products:Array.isArray(catalog)?catalog:[],stale:true,refreshing:true});
   }
 });
 
@@ -1901,6 +1927,9 @@ app.listen(
   }
 );
 
+// Start warming Firestore data after the server begins listening.
+setTimeout(()=>{ void refreshPublicCatalogInBackground(); }, 250);
+
 
 
 async function findUserUidByEmail(email){
@@ -2341,7 +2370,7 @@ app.get('/api/admin/collections', authenticate, async (req,res)=>{
     const now=Date.now();
     if(adminCollectionsCache && now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c})),products:await getMergedProducts({includeHidden:true})});
     const products=await getMergedProducts({includeHidden:true});
-    const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]);
+    const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),12000))]);
     const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));
     const map=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
     for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}
