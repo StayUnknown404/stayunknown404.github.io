@@ -226,7 +226,7 @@ app.use(cors());
    intentionally excluded because it must receive the original raw body. */
 app.use((req, res, next) => {
   if (req.path === "/api/paystack/webhook") return next();
-  return express.json({limit:"2mb"})(req, res, next);
+  return express.json({ limit: "8mb" })(req, res, next);
 });
 
 function deliveryStatusLabel(status) {
@@ -493,90 +493,45 @@ app.get("/api/health", (_req, res) => {
 /*
   Public catalogue endpoint.
 */
-app.get("/api/catalog", (_req, res) => {
-  res.json({
-    products: catalog
-  });
-});
-
-/*
-  Find product in trusted server-side catalogue.
-*/
-function findProduct(productId) {
-  return catalog.find(product => product.id === productId);
+async function getMergedProducts({includeHidden=false}={}){
+  const base=Array.isArray(catalog)?catalog.map(p=>({...p})):[];
+  const firestore=initFirebase();
+  const map=new Map(base.map(p=>[String(p.id),p]));
+  if(firestore){
+    const snap=await firestore.collection('products').get();
+    snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
+  }
+  const list=[...map.values()];
+  return includeHidden?list:list.filter(p=>!p.hidden);
 }
 
-/*
-  Build trusted cart items.
-*/
-function buildTrustedItems(items) {
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error("Cart is empty.");
-  }
+app.get("/api/catalog", async (_req, res) => {
+  try { res.json({products:await getMergedProducts()}); }
+  catch(error){ console.error('Catalog error:',error); res.status(500).json({error:'Unable to load product catalogue.'}); }
+});
 
-  return items.map(item => {
-    const product = findProduct(item.productId);
+async function findProduct(productId){
+  const products=await getMergedProducts({includeHidden:true});
+  return products.find(product=>String(product.id)===String(productId));
+}
 
-    if (!product) {
-      throw new Error(
-        `Product not found: ${item.productId}`
-      );
-    }
-
-    if (product.comingSoon) {
-      throw new Error(
-        `${product.name} is coming soon.`
-      );
-    }
-
-    const quantity = Number(item.quantity);
-
-    if (
-      !Number.isInteger(quantity) ||
-      quantity < 1 ||
-      quantity > 20
-    ) {
-      throw new Error(
-        `Invalid quantity for ${product.name}.`
-      );
-    }
-
-    const size = String(
-      item.size || ""
-    ).trim();
-
-    const color = String(
-      item.color || ""
-    ).trim();
-
-    if (!size || !color) {
-      throw new Error(
-        `Size and colour are required for ${product.name}.`
-      );
-    }
-
-    if (!product.sizes.includes(size)) {
-      throw new Error(
-        `Invalid size for ${product.name}.`
-      );
-    }
-
-    if (!product.colors.includes(color)) {
-      throw new Error(
-        `Invalid colour for ${product.name}.`
-      );
-    }
-
-    return {
-      productId: product.id,
-      name: product.name,
-      category: product.category,
-      price: product.price,
-      quantity,
-      size,
-      color,
-      lineTotal: product.price * quantity
-    };
+async function buildTrustedItems(items){
+  if(!Array.isArray(items)||items.length===0)throw new Error('Cart is empty.');
+  const products=await getMergedProducts({includeHidden:true});
+  const productMap=new Map(products.map(product=>[String(product.id),product]));
+  return items.map(item=>{
+    const product=productMap.get(String(item.productId));
+    if(!product||product.hidden)throw new Error(`Product not found: ${item.productId}`);
+    if(product.comingSoon)throw new Error(`${product.name} is coming soon.`);
+    const quantity=Number(item.quantity);
+    if(!Number.isInteger(quantity)||quantity<1||quantity>20)throw new Error(`Invalid quantity for ${product.name}.`);
+    const stock=Number(product.stock);
+    if(Number.isFinite(stock)&&quantity>stock)throw new Error(`${product.name} only has ${stock} left in stock.`);
+    const size=String(item.size||'').trim(),color=String(item.color||'').trim();
+    if(!size||!color)throw new Error(`Size and colour are required for ${product.name}.`);
+    if(!Array.isArray(product.sizes)||!product.sizes.includes(size))throw new Error(`Invalid size for ${product.name}.`);
+    if(!Array.isArray(product.colors)||!product.colors.includes(color))throw new Error(`Invalid colour for ${product.name}.`);
+    return {productId:product.id,name:product.name,category:product.category,collection:product.collection||'',price:Number(product.price||0),quantity,size,color,lineTotal:Number(product.price||0)*quantity};
   });
 }
 
@@ -718,7 +673,7 @@ app.post(
       }
 
       const trustedItems =
-        buildTrustedItems(items);
+        await buildTrustedItems(items);
 
       const subtotal =
         trustedItems.reduce(
@@ -1017,6 +972,25 @@ app.post(
   }
 );
 
+async function decrementInventoryForOrder(firestore, items){
+  if(!firestore||!Array.isArray(items)||!items.length)return;
+  await firestore.runTransaction(async transaction=>{
+    const refs=items.map(item=>firestore.collection('products').doc(String(item.productId)));
+    const snaps=[];
+    for(const ref of refs) snaps.push(await transaction.get(ref));
+    for(let i=0;i<items.length;i++){
+      const item=items[i], ref=refs[i], snap=snaps[i];
+      const base=Array.isArray(catalog)?catalog.find(p=>String(p.id)===String(item.productId))||{}:{};
+      const current=snap.exists?{...base,...snap.data()}:base;
+      const stock=Number(current.stock);
+      if(!Number.isFinite(stock)) continue;
+      const next=stock-Number(item.quantity||0);
+      if(next<0) throw new Error(`${current.name||item.name} is no longer available in the requested quantity.`);
+      transaction.set(ref,{id:String(item.productId),stock:next,updatedAt:new Date().toISOString()},{merge:true});
+    }
+  });
+}
+
 /*
   Save/update verified payment.
 */
@@ -1168,9 +1142,15 @@ async function savePaidOrder(
         ""
     };
 
+    if(!existingData.inventoryAdjustedAt){
+      await decrementInventoryForOrder(firestore, existingData.items?.length?existingData.items:items);
+    }
+
     const updates = {
       paymentStatus:
         "PAID",
+
+      inventoryAdjustedAt: existingData.inventoryAdjustedAt || new Date().toISOString(),
 
       paymentChannel:
         transaction.channel ||
@@ -1232,6 +1212,8 @@ async function savePaidOrder(
     return savedOrder;
   }
 
+  await decrementInventoryForOrder(firestore, items);
+
   const order = {
     orderNumber:
       reference,
@@ -1291,6 +1273,9 @@ async function savePaidOrder(
       new Date().toISOString(),
 
     updatedAt:
+      new Date().toISOString(),
+
+    inventoryAdjustedAt:
       new Date().toISOString()
   };
 
@@ -1913,82 +1898,21 @@ function safeCustomerEmail(req){
   return req.user?.email || req.body?.email || '';
 }
 
-function supportTicketDocId(id){ return String(id||'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,120); }
-function supportTicketData(t){ return {...t, replies:Array.isArray(t.replies)?t.replies:[]}; }
-function supportTicketUid(t){ return String(t?.uid||t?.userId||'').trim(); }
-
-function normalizeSupportAttachments(raw){
-  if(!Array.isArray(raw)) return [];
-  return raw.slice(0,2).filter(a=>a&&typeof a.dataUrl==='string'&&/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(a.dataUrl)&&a.dataUrl.length<=230000).map(a=>({name:String(a.name||'image').slice(0,120),type:String(a.type||'image/jpeg').slice(0,40),dataUrl:a.dataUrl}));
-}
-async function persistSupportAttachments(ticketId, ownerUid, attachments){
-  const firestore=initFirebase();
-  if(!firestore||!attachments.length) return [];
-  const ids=[];
-  for(const attachment of attachments){
-    const ref=firestore.collection('supportAttachments').doc();
-    await ref.set({ticketId:String(ticketId),uid:String(ownerUid||''),name:attachment.name,type:attachment.type,dataUrl:attachment.dataUrl,createdAt:new Date().toISOString()});
-    ids.push(ref.id);
-  }
-  return ids;
-}
-async function hydrateSupportAttachments(ticket){
-  if(!ticket)return ticket;
-  const firestore=initFirebase();
-  if(!firestore)return ticket;
-  const ids=[];
-  if(Array.isArray(ticket.attachmentIds))ids.push(...ticket.attachmentIds);
-  for(const reply of (Array.isArray(ticket.replies)?ticket.replies:[])){if(Array.isArray(reply.attachmentIds))ids.push(...reply.attachmentIds)}
-  if(!ids.length)return ticket;
-  const unique=[...new Set(ids)];
-  const docs=await Promise.all(unique.map(id=>firestore.collection('supportAttachments').doc(id).get()));
-  const map=new Map(docs.filter(d=>d.exists).map(d=>[d.id,{id:d.id,...d.data()}]));
-  const attach=ids=>Array.isArray(ids)?ids.map(id=>map.get(id)).filter(Boolean):[];
-  return {...ticket,attachments:attach(ticket.attachmentIds),replies:(Array.isArray(ticket.replies)?ticket.replies:[]).map(r=>({...r,attachments:attach(r.attachmentIds)}))};
-}
-
-async function persistSupportTicket(ticket){
-  const firestore=initFirebase();
-  if(!firestore){ supportTickets.set(ticket.id,ticket); return ticket; }
-  await firestore.collection('supportTickets').doc(supportTicketDocId(ticket.id)).set(supportTicketData(ticket),{merge:true});
-  return ticket;
-}
-async function getSupportTickets(){
-  const firestore=initFirebase();
-  if(!firestore) return [...supportTickets.values()];
-  const snap=await firestore.collection('supportTickets').orderBy('createdAt','desc').get();
-  return Promise.all(snap.docs.map(async d=>hydrateSupportAttachments(supportTicketData(d.data()))));
-}
-async function getSupportTicket(id){
-  const firestore=initFirebase();
-  if(!firestore) return supportTickets.get(String(id))||null;
-  const doc=await firestore.collection('supportTickets').doc(supportTicketDocId(id)).get();
-  return doc.exists?await hydrateSupportAttachments(supportTicketData(doc.data())):null;
-}
-async function createSupportNotification({uid,ticketId,ticketSubject,message,title='NEW SUPPORT REQUEST'}){
-  const firestore=initFirebase();
-  if(!firestore) return null;
-  const notification={uid:String(uid||''),ticketId:String(ticketId||''),title,message,read:false,readAt:null,createdAt:new Date().toISOString(),type:'SUPPORT'};
-  if(!notification.uid) return null;
-  const doc=await firestore.collection('notifications').add(notification);
-  return {id:doc.id,...notification};
-}
-async function createAdminSupportNotification({ticketId,title,message}){
-  const firestore=initFirebase();
-  if(!firestore) return;
-  const notification={audience:'admin',ticketId:String(ticketId||''),title,message,read:false,readAt:null,createdAt:new Date().toISOString(),type:'SUPPORT'};
-  await firestore.collection('adminNotifications').add(notification);
-}
-async function sendSupportEmail({to,subject,heading,message,ticket}){
-  if(!process.env.RESEND_API_KEY || !to) return;
-  const safeSubject=escapeEmailHtml(subject);
-  const safeHeading=escapeEmailHtml(heading);
-  const safeMessage=escapeEmailHtml(message).replace(/\n/g,'<br>');
-  const safeTicket=escapeEmailHtml(ticket?.id||'');
+app.post('/api/support', authenticate, async (req,res)=>{
   try{
-    await sendResendEmail({to,subject:safeSubject,html:`<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;line-height:1.6"><h1>STAYUNKNOWN</h1><h2>${safeHeading}</h2><p><strong>Ticket:</strong> ${safeTicket}</p><p>${safeMessage}</p><p>Open STAYUNKNOWN Help Desk to continue the conversation.</p></div>`});
-  }catch(e){ console.error('Support email error:',e); }
-}
+    const {subject='',message='',orderNumber=''}=req.body||{};
+    if(!String(message).trim()) return res.status(400).json({error:'Message is required.'});
+    const id=`SUP-${Date.now()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+    const ticket={id,userId:req.user.uid,email:safeCustomerEmail(req),subject:String(subject).trim().slice(0,120),message:String(message).trim().slice(0,5000),orderNumber:String(orderNumber).trim().slice(0,80),status:'OPEN',createdAt:new Date().toISOString()};
+    supportTickets.set(id,ticket);
+    return res.json({ok:true,ticket});
+  }catch(e){return res.status(500).json({error:'Unable to create support request.'})}
+});
+
+app.get('/api/support', authenticate, async (req,res)=>{
+  const mine=[...supportTickets.values()].filter(t=>t.userId===req.user.uid);
+  res.json({tickets:mine});
+});
 
 app.post('/api/restock-subscriptions', async (req,res)=>{
   try{
@@ -2034,47 +1958,14 @@ function promoDiscount(promo, items){
   return {discount,eligibleSubtotal};
 }
 
-async function getStoredPromo(code){
-  const key=String(code||'').trim().toUpperCase();
-  if(!key) return null;
-  try{
-    const firestore=initFirebase();
-    if(firestore){
-      const snap=await firestore.collection('promos').doc(key).get();
-      if(snap.exists) return {code:key,...(snap.data()||{})};
-    }
-  }catch(error){
-    console.error('Promo load error:',error);
-  }
-  return promoCodes.get(key)||null;
-}
-
-async function saveStoredPromo(promo){
-  promoCodes.set(String(promo.code).toUpperCase(),promo);
-  try{
-    const firestore=initFirebase();
-    if(firestore){
-      await firestore.collection('promos').doc(String(promo.code).toUpperCase()).set(promo,{merge:true});
-    }
-  }catch(error){
-    console.error('Promo save error:',error);
-  }
-  return promo;
-}
-
 app.post('/api/promo/validate', async (req,res)=>{
-  try{
-    const code=String(req.body?.code||'').trim().toUpperCase();
-    const items=Array.isArray(req.body?.items)?req.body.items:[];
-    const promo=await getStoredPromo(code);
-    if(!promo || !promoIsCurrentlyActive(promo)) return res.status(404).json({valid:false,error:'Invalid or expired promo code.'});
-    const {discount,eligibleSubtotal}=promoDiscount(promo,items);
-    if(Number(promo.minOrder||0)>eligibleSubtotal) return res.status(400).json({valid:false,error:`Minimum eligible order is ₦${Number(promo.minOrder).toLocaleString()}.`});
-    res.json({valid:true,...promo,discount,eligibleSubtotal});
-  }catch(error){
-    console.error('Promo validation error:',error);
-    res.status(500).json({valid:false,error:'Unable to validate promo code.'});
-  }
+  const code=String(req.body?.code||'').trim().toUpperCase();
+  const items=Array.isArray(req.body?.items)?req.body.items:[];
+  const promo=promoCodes.get(code);
+  if(!promo || !promoIsCurrentlyActive(promo)) return res.status(404).json({valid:false,error:'Invalid or expired promo code.'});
+  const {discount,eligibleSubtotal}=promoDiscount(promo,items);
+  if(Number(promo.minOrder||0)>eligibleSubtotal) return res.status(400).json({valid:false,error:`Minimum eligible order is ₦${Number(promo.minOrder).toLocaleString()}.`});
+  res.json({valid:true,...promo,discount,eligibleSubtotal});
 });
 
 app.post('/api/admin/promos', authenticate, async (req,res)=>{
@@ -2100,7 +1991,7 @@ app.post('/api/admin/promos', authenticate, async (req,res)=>{
       productIds:scope.type==='products'?[...new Set(scope.productIds.map(String))]:[]
     }
   };
-  await saveStoredPromo(promo);
+  promoCodes.set(code,promo);
   res.json({ok:true,promo});
 });
 
@@ -2111,7 +2002,7 @@ app.patch('/api/admin/promos/:code', authenticate, async (req,res)=>{
   if(!existing) return res.status(404).json({error:'Promo not found.'});
   const next={...existing,...(req.body||{}),code};
   if(req.body?.appliesTo) next.appliesTo={...existing.appliesTo,...req.body.appliesTo};
-  await saveStoredPromo(next);
+  promoCodes.set(code,next);
   res.json({ok:true,promo:next});
 });
 
@@ -2119,7 +2010,6 @@ app.delete('/api/admin/promos/:code', authenticate, async (req,res)=>{
   if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
   const code=String(req.params.code||'').toUpperCase();
   promoCodes.delete(code);
-  try{const firestore=initFirebase();if(firestore) await firestore.collection('promos').doc(code).delete();}catch(error){console.error('Promo delete error:',error)}
   res.json({ok:true});
 });
 
@@ -2148,152 +2038,74 @@ app.get('/api/admin/restock-subscriptions', authenticate, async (req,res)=>{
   res.json({subscriptions});
 });
 
-
-// ---------- PERSISTENT CUSTOMER / ADMIN SUPPORT TICKETS ----------
-app.get('/api/support', authenticate, async (req,res)=>{
-  try{
-    const uid=String(req.user?.uid||'').trim();
-    if(!uid) return res.status(401).json({error:'Authentication required.'});
-    const tickets=(await getSupportTickets()).filter(t=>supportTicketUid(t)===uid);
-    return res.json({ok:true,tickets});
-  }catch(error){
-    console.error('Customer support load error:',error);
-    return res.status(500).json({error:'Unable to load support requests.'});
-  }
-});
-
-app.post('/api/support', authenticate, async (req,res)=>{
-  try{
-    const uid=String(req.user?.uid||'').trim();
-    const email=String(req.user?.email||'').trim().toLowerCase();
-    if(!uid) return res.status(401).json({error:'Authentication required.'});
-    const subject=String(req.body?.subject||'').trim().slice(0,120);
-    const orderNumber=String(req.body?.orderNumber||'').trim().slice(0,80);
-    const message=String(req.body?.message||'').trim().slice(0,5000);
-    if(!subject) return res.status(400).json({error:'Please enter a subject.'});
-    if(!message) return res.status(400).json({error:'Please enter a message.'});
-    const now=new Date().toISOString();
-    const attachments=normalizeSupportAttachments(req.body?.attachments);
-    const ticket={
-      id:`ST-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
-      uid,email,subject,orderNumber,message,status:'OPEN',
-      createdAt:now,updatedAt:now,replies:[],attachmentIds:[]
-    };
-    ticket.attachmentIds=await persistSupportAttachments(ticket.id,uid,attachments);
-    await persistSupportTicket(ticket);
-    await createAdminSupportNotification({ticketId:ticket.id,title:'NEW SUPPORT REQUEST',message:`${subject} · ${email}`});
-    for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`New support ticket: ${subject}`,heading:'NEW SUPPORT REQUEST',message:`${email} opened a support ticket.\n\n${message}`,ticket});
-    return res.status(201).json({ok:true,ticket});
-  }catch(error){
-    console.error('Support ticket create error:',error);
-    return res.status(500).json({error:'Unable to create support request.'});
-  }
-});
-
-app.post('/api/support/:id/reply', authenticate, async (req,res)=>{
-  try{
-    const uid=String(req.user?.uid||'').trim();
-    const ticket=await getSupportTicket(req.params.id);
-    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
-    if(supportTicketUid(ticket)!==uid) return res.status(403).json({error:'You are not allowed to reply to this ticket.'});
-    if(String(ticket.status||'').toUpperCase()==='CLOSED') return res.status(400).json({error:'This ticket is closed. Reopen it before replying.'});
-    const message=String(req.body?.message||'').trim().slice(0,5000);
-    if(!message) return res.status(400).json({error:'Please enter a reply.'});
-    const now=new Date().toISOString();
-    const attachments=normalizeSupportAttachments(req.body?.attachments);
-    const attachmentIds=await persistSupportAttachments(ticket.id,uid,attachments);
-    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'CUSTOMER',message,createdAt:now,uid,attachmentIds}];
-    ticket.status='OPEN'; ticket.updatedAt=now;
-    await persistSupportTicket(ticket);
-    await createAdminSupportNotification({ticketId:ticket.id,title:'CUSTOMER REPLIED TO SUPPORT',message:`${ticket.subject} · ${ticket.email}`});
-    for(const adminEmail of getAdminEmails()) await sendSupportEmail({to:adminEmail,subject:`Customer replied: ${ticket.subject}`,heading:'CUSTOMER REPLIED TO SUPPORT',message,ticket});
-    return res.json({ok:true,ticket});
-  }catch(error){
-    console.error('Customer support reply error:',error);
-    return res.status(500).json({error:'Unable to send reply.'});
-  }
-});
-
-app.post('/api/admin/support/:id/reply', authenticate, async (req,res)=>{
-  try{
-    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-    const ticket=await getSupportTicket(req.params.id);
-    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
-    const message=String(req.body?.message||'').trim().slice(0,5000);
-    if(!message) return res.status(400).json({error:'Please enter a reply.'});
-    const now=new Date().toISOString();
-    const attachments=normalizeSupportAttachments(req.body?.attachments);
-    const attachmentIds=await persistSupportAttachments(ticket.id,String(req.user?.uid||''),attachments);
-    ticket.replies=[...(Array.isArray(ticket.replies)?ticket.replies:[]),{from:'ADMIN',message,createdAt:now,uid:String(req.user?.uid||''),attachmentIds}];
-    ticket.status='REPLIED'; ticket.updatedAt=now;
-    await persistSupportTicket(ticket);
-    const customerUid=supportTicketUid(ticket); if(customerUid) await createSupportNotification({uid:customerUid,ticketId:ticket.id,title:'SUPPORT TICKET REPLY',message:`STAYUNKNOWN replied to “${ticket.subject}”.`});
-    await sendSupportEmail({to:ticket.email,subject:`Reply to support ticket: ${ticket.subject}`,heading:'SUPPORT TICKET REPLY',message,ticket});
-    return res.json({ok:true,ticket});
-  }catch(error){
-    console.error('Admin support reply error:',error);
-    return res.status(500).json({error:'Unable to send reply.'});
-  }
-});
-
-app.patch('/api/admin/support/:id/status', authenticate, async (req,res)=>{
-  try{
-    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-    const ticket=await getSupportTicket(req.params.id);
-    if(!ticket) return res.status(404).json({error:'Support ticket not found.'});
-    const status=String(req.body?.status||'').toUpperCase();
-    if(!['OPEN','REPLIED','CLOSED'].includes(status)) return res.status(400).json({error:'Invalid ticket status.'});
-    ticket.status=status; ticket.updatedAt=new Date().toISOString();
-    await persistSupportTicket(ticket);
-    if(status==='CLOSED'){
-      const customerUid=supportTicketUid(ticket); if(customerUid) await createSupportNotification({uid:customerUid,ticketId:ticket.id,title:'SUPPORT TICKET CLOSED',message:`Your support ticket “${ticket.subject}” has been closed.`});
-      await sendSupportEmail({to:ticket.email,subject:`Support ticket closed: ${ticket.subject}`,heading:'SUPPORT TICKET CLOSED',message:`Your support ticket has been closed.`,ticket});
-    }
-    return res.json({ok:true,ticket});
-  }catch(error){
-    console.error('Support status error:',error);
-    return res.status(500).json({error:'Unable to update ticket.'});
-  }
-});
-
-app.get('/api/admin/notifications', authenticate, async (req,res)=>{
-  try{
-    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-    const firestore=initFirebase();
-    if(!firestore) return res.status(503).json({error:'Firebase is not configured.'});
-    const snapshot=await firestore.collection('adminNotifications').get();
-    const notifications=snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,100);
-    return res.json({ok:true,notifications});
-  }catch(error){
-    console.error('Admin notification load error:',error);
-    return res.status(500).json({error:'Unable to load admin notifications.'});
-  }
-});
-
-app.patch('/api/admin/notifications/:notificationId/read', authenticate, async (req,res)=>{
-  try{
-    if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-    const firestore=initFirebase();
-    if(!firestore) return res.status(503).json({error:'Firebase is not configured.'});
-    const ref=firestore.collection('adminNotifications').doc(req.params.notificationId);
-    const snap=await ref.get();
-    if(!snap.exists) return res.status(404).json({error:'Notification not found.'});
-    const readAt=new Date().toISOString();
-    await ref.update({read:true,readAt});
-    return res.json({ok:true,notification:{id:snap.id,...snap.data(),read:true,readAt}});
-  }catch(error){
-    console.error('Admin notification read error:',error);
-    return res.status(500).json({error:'Unable to mark notification as read.'});
-  }
-});
-
 app.get('/api/admin/support', authenticate, async (req,res)=>{
   if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
-  try{
-    const tickets=await getSupportTickets();
-    return res.json({ok:true,tickets});
-  }catch(error){
-    console.error('Admin support load error:',error);
-    return res.status(500).json({error:'Unable to load support requests.'});
-  }
+  res.json({tickets:[...supportTickets.values()].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))});
 });
+
+// ---------- STAYUNKNOWN PRODUCT + COLLECTION MANAGER ----------
+async function requireAdminUser(req,res){
+  if(!req.user?.isAdmin){res.status(403).json({error:'Admin only.'});return false;}
+  const firestore=initFirebase();
+  if(!firestore){res.status(503).json({error:'Firebase is not configured.'});return false;}
+  return firestore;
+}
+
+app.get('/api/admin/products', authenticate, async (req,res)=>{
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;res.json({products:await getMergedProducts({includeHidden:true})});}
+  catch(e){console.error('Admin products load error:',e);res.status(500).json({error:'Unable to load products.'})}
+});
+
+function cleanProductPayload(body,id){
+  const p=body||{};
+  return {
+    id:String(id||p.id||'').trim(),name:String(p.name||'').trim().slice(0,180),price:Number(p.price||0),image:String(p.image||'').trim(),description:String(p.description||'').trim().slice(0,3000),category:String(p.category||'').trim().slice(0,100),collection:String(p.collection||'').trim().slice(0,120),stock:Math.max(0,Math.floor(Number(p.stock||0))),lowStockThreshold:Math.max(0,Math.floor(Number(p.lowStockThreshold??3))),sizes:Array.isArray(p.sizes)?p.sizes.map(String).map(x=>x.trim()).filter(Boolean).slice(0,30):[],colors:Array.isArray(p.colors)?p.colors.map(String).map(x=>x.trim()).filter(Boolean).slice(0,30):[],tags:String(p.tags||'').trim().slice(0,500),drop:Boolean(p.drop),comingSoon:Boolean(p.comingSoon),hidden:Boolean(p.hidden),updatedAt:new Date().toISOString()
+  };
+}
+
+app.post('/api/admin/products', authenticate, async (req,res)=>{
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const p=cleanProductPayload(req.body,req.body?.id||`product-${Date.now()}`);if(!p.name||!p.category||!Number.isFinite(p.price)||p.price<0)return res.status(400).json({error:'Name, category and valid price are required.'});const ref=firestore.collection('products').doc(p.id);if((await ref.get()).exists)return res.status(409).json({error:'Product ID already exists.'});await ref.set(p);res.json({ok:true,product:p});}
+  catch(e){console.error('Create product error:',e);res.status(500).json({error:'Unable to create product.'})}
+});
+
+app.patch('/api/admin/products/:id', authenticate, async (req,res)=>{
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'').trim();const ref=firestore.collection('products').doc(id);const snap=await ref.get();const base=await findProduct(id);if(!base&&!snap.exists)return res.status(404).json({error:'Product not found.'});const p=cleanProductPayload({...base,...(snap.exists?snap.data():{}),...(req.body||{})},id);await ref.set(p,{merge:true});res.json({ok:true,product:p});}
+  catch(e){console.error('Update product error:',e);res.status(500).json({error:'Unable to update product.'})}
+});
+
+app.get('/api/collections', async (_req,res)=>{
+  try{
+    const products=await getMergedProducts();
+    const firestore=initFirebase();
+    const explicit=[];
+    if(firestore){const snap=await firestore.collection('collections').get();snap.docs.forEach(d=>explicit.push({id:d.id,...d.data()}));}
+    const map=new Map(explicit.filter(c=>!c.hidden).map(c=>[String(c.name).toLowerCase(),c]));
+    for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name).replace(/%/g,'')}`,name,image:'',description:'',order:9999,hidden:false});}
+    const list=[...map.values()].map(c=>({...c,productCount:products.filter(p=>String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()).length})).filter(c=>c.productCount>0).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+    res.json({collections:list});
+  }catch(e){console.error('Collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
+});
+
+app.get('/api/admin/collections', authenticate, async (req,res)=>{
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const products=await getMergedProducts({includeHidden:true});const snap=await firestore.collection('collections').get();const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));const map=new Map(explicit.map(c=>[String(c.name).toLowerCase(),c]));for(const p of products){const name=String(p.collection||'').trim();if(name&&!map.has(name.toLowerCase()))map.set(name.toLowerCase(),{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}res.json({collections:[...map.values()].sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)))});}
+  catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
+});
+
+app.post('/api/admin/collections', authenticate, async (req,res)=>{
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const name=String(req.body?.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});const id=`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;const collection={name,image:String(req.body?.image||'').trim(),description:String(req.body?.description||'').trim().slice(0,1000),order:Math.max(0,Number(req.body?.order||0)),hidden:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};await firestore.collection('collections').doc(id).set(collection);if(Array.isArray(req.body?.productIds))await assignProductsToCollection(firestore,name,req.body.productIds);res.json({ok:true,collection:{id,...collection}});}
+  catch(e){console.error('Create collection error:',e);res.status(500).json({error:'Unable to create collection.'})}
+});
+
+async function assignProductsToCollection(firestore,name,productIds){
+  const ids=new Set((Array.isArray(productIds)?productIds:[]).map(String));
+  const products=await getMergedProducts({includeHidden:true});
+  const batch=firestore.batch();
+  for(const p of products){const ref=firestore.collection('products').doc(String(p.id));if(ids.has(String(p.id)))batch.set(ref,{id:String(p.id),collection:name,updatedAt:new Date().toISOString()},{merge:true});else if(String(p.collection||'').toLowerCase()===String(name).toLowerCase())batch.set(ref,{id:String(p.id),collection:'',updatedAt:new Date().toISOString()},{merge:true});}
+  await batch.commit();
+}
+
+app.patch('/api/admin/collections/:id', authenticate, async (req,res)=>{
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'');const ref=firestore.collection('collections').doc(id);const snap=await ref.get();const old=snap.exists?(snap.data()||{}):{};const name=String(req.body?.name||old.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});if(!snap.exists && !id.startsWith('derived-'))return res.status(404).json({error:'Collection not found.'});const next={...old,name,image:req.body?.image!==undefined?String(req.body.image||'').trim():old.image||'',description:req.body?.description!==undefined?String(req.body.description||'').trim().slice(0,1000):old.description||'',order:req.body?.order!==undefined?Math.max(0,Number(req.body.order||0)):Number(old.order||0),hidden:req.body?.hidden!==undefined?Boolean(req.body.hidden):Boolean(old.hidden),updatedAt:new Date().toISOString()};const targetId=snap.exists?id:`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;await firestore.collection('collections').doc(targetId).set(next,{merge:true});if(Array.isArray(req.body?.productIds))await assignProductsToCollection(firestore,name,req.body.productIds);res.json({ok:true,collection:{id:targetId,...next}});}
+  catch(e){console.error('Update collection error:',e);res.status(500).json({error:'Unable to update collection.'})}
+});
+
