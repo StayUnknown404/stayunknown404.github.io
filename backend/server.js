@@ -501,12 +501,17 @@ async function getMergedProducts({includeHidden=false}={}){
     const snap=await firestore.collection('products').get();
     snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
   }
-  const list=[...map.values()];
+  const list=[...map.values()].filter(p=>!p.deleted);
   return includeHidden?list:list.filter(p=>!p.hidden);
 }
 
 app.get("/api/catalog", async (_req, res) => {
-  try { res.json({products:await getMergedProducts()}); }
+  try {
+    res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma','no-cache');
+    res.set('Expires','0');
+    res.json({products:await getMergedProducts()});
+  }
   catch(error){ console.error('Catalog error:',error); res.status(500).json({error:'Unable to load product catalogue.'}); }
 });
 
@@ -2261,8 +2266,22 @@ app.post('/api/admin/products', authenticate, async (req,res)=>{
 });
 
 app.patch('/api/admin/products/:id', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'').trim();const ref=firestore.collection('products').doc(id);const snap=await ref.get();const base=await findProduct(id);if(!base&&!snap.exists)return res.status(404).json({error:'Product not found.'});const p=cleanProductPayload({...base,...(snap.exists?snap.data():{}),...(req.body||{})},id);await ref.set(p,{merge:true});res.json({ok:true,product:p});}
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'').trim();if(!id)return res.status(400).json({error:'Product ID is required.'});const ref=firestore.collection('products').doc(id);const snap=await ref.get();const base=await findProduct(id);if(!base&&!snap.exists)return res.status(404).json({error:'Product not found.'});const p=cleanProductPayload({...base,...(snap.exists?snap.data():{}),...(req.body||{})},id);if(!p.name||!p.category||!Number.isFinite(p.price)||p.price<0)return res.status(400).json({error:'Name, category and valid price are required.'});await ref.set(p,{merge:true});res.set('Cache-Control','no-store');res.json({ok:true,product:p});}
   catch(e){console.error('Update product error:',e);res.status(500).json({error:'Unable to update product.'})}
+});
+
+app.delete('/api/admin/products/:id', authenticate, async (req,res)=>{
+  try{
+    const firestore=await requireAdminUser(req,res);
+    if(!firestore)return;
+    const id=String(req.params.id||'').trim();
+    if(!id)return res.status(400).json({error:'Product ID is required.'});
+    const existing=await findProduct(id);
+    if(!existing)return res.status(404).json({error:'Product not found.'});
+    // Keep a tombstone so products originating from catalog.json stay deleted from the merged catalogue.
+    await firestore.collection('products').doc(id).set({id,deleted:true,deletedAt:new Date().toISOString()},{merge:true});
+    res.json({ok:true,id});
+  }catch(e){console.error('Permanent product delete error:',e);res.status(500).json({error:'Unable to permanently delete product.'})}
 });
 
 app.get('/api/collections', async (_req,res)=>{
@@ -2271,33 +2290,105 @@ app.get('/api/collections', async (_req,res)=>{
     const firestore=initFirebase();
     const explicit=[];
     if(firestore){const snap=await firestore.collection('collections').get();snap.docs.forEach(d=>explicit.push({id:d.id,...d.data()}));}
-    const map=new Map(explicit.filter(c=>!c.hidden).map(c=>[String(c.name).toLowerCase(),c]));
-    for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name).replace(/%/g,'')}`,name,image:'',description:'',order:9999,hidden:false});}
-    const list=[...map.values()].map(c=>({...c,productCount:products.filter(p=>String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()).length})).filter(c=>c.productCount>0).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+    const map=new Map(explicit.filter(c=>!c.hidden&&!c.deleted).map(c=>[String(c.name||'').toLowerCase(),c]));
+    for(const p of products){
+      const name=String(p.collection||'').trim();
+      if(!name)continue;
+      const key=name.toLowerCase();
+      if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name).replace(/%/g,'')}`,name,image:'',description:'',order:9999,hidden:false,limited:false,derived:true,productIds:[]});
+    }
+    const list=[...map.values()].map(c=>{
+      const linked=new Set(Array.isArray(c.productIds)?c.productIds.map(String):[]);
+      const productCount=products.filter(p=>linked.has(String(p.id))||String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()).length;
+      return {...c,productCount};
+    }).filter(c=>c.productCount>0).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+    res.set('Cache-Control','no-store');
     res.json({collections:list});
   }catch(e){console.error('Collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
 });
 
 app.get('/api/admin/collections', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const products=await getMergedProducts({includeHidden:true});const snap=await firestore.collection('collections').get();const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));const map=new Map(explicit.map(c=>[String(c.name).toLowerCase(),c]));for(const p of products){const name=String(p.collection||'').trim();if(name&&!map.has(name.toLowerCase()))map.set(name.toLowerCase(),{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}res.json({collections:[...map.values()].sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)))});}
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const products=await getMergedProducts({includeHidden:true});const snap=await firestore.collection('collections').get();const explicit=snap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>!c.deleted);const map=new Map(explicit.map(c=>[String(c.name||'').toLowerCase(),c]));for(const p of products){const name=String(p.collection||'').trim();if(name&&!map.has(name.toLowerCase()))map.set(name.toLowerCase(),{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}res.json({collections:[...map.values()].sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)))});}
   catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
 });
 
 app.post('/api/admin/collections', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const name=String(req.body?.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});const id=`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;const collection={name,image:String(req.body?.image||'').trim(),description:String(req.body?.description||'').trim().slice(0,1000),order:Math.max(0,Number(req.body?.order||0)),hidden:false,limited:Boolean(req.body?.limited),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};await firestore.collection('collections').doc(id).set(collection);if(Array.isArray(req.body?.productIds))await assignProductsToCollection(firestore,name,req.body.productIds);res.json({ok:true,collection:{id,...collection}});}
-  catch(e){console.error('Create collection error:',e);res.status(500).json({error:'Unable to create collection.'})}
+  try{
+    const firestore=await requireAdminUser(req,res);
+    if(!firestore)return;
+    const name=String(req.body?.name||'').trim().slice(0,120);
+    if(!name)return res.status(400).json({error:'Collection name is required.'});
+    const id=`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    const productIds=[...new Set((Array.isArray(req.body?.productIds)?req.body.productIds:[]).map(String))];
+    const collection={name,image:String(req.body?.image||'').trim(),description:String(req.body?.description||'').trim().slice(0,1000),order:Math.max(0,Number(req.body?.order||0)),hidden:false,deleted:false,limited:Boolean(req.body?.limited),productIds,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    await firestore.collection('collections').doc(id).set(collection);
+    await assignProductsToCollection(firestore,name,productIds,'');
+    res.set('Cache-Control','no-store');
+    res.json({ok:true,collection:{id,...collection}});
+  }catch(e){console.error('Create collection error:',e);res.status(500).json({error:'Unable to create collection.'})}
 });
 
-async function assignProductsToCollection(firestore,name,productIds){
+async function assignProductsToCollection(firestore,name,productIds,previousName=''){
   const ids=new Set((Array.isArray(productIds)?productIds:[]).map(String));
   const products=await getMergedProducts({includeHidden:true});
   const batch=firestore.batch();
-  for(const p of products){const ref=firestore.collection('products').doc(String(p.id));if(ids.has(String(p.id)))batch.set(ref,{id:String(p.id),collection:name,updatedAt:new Date().toISOString()},{merge:true});else if(String(p.collection||'').toLowerCase()===String(name).toLowerCase())batch.set(ref,{id:String(p.id),collection:'',updatedAt:new Date().toISOString()},{merge:true});}
+  const oldName=String(previousName||'').trim().toLowerCase();
+  for(const p of products){
+    const current=String(p.collection||'').trim().toLowerCase();
+    const selected=ids.has(String(p.id));
+    const belongsToOld=oldName?current===oldName:current===String(name||'').trim().toLowerCase();
+    const ref=firestore.collection('products').doc(String(p.id));
+    if(selected)batch.set(ref,{id:String(p.id),collection:name,updatedAt:new Date().toISOString(),deleted:false},{merge:true});
+    else if(belongsToOld)batch.set(ref,{id:String(p.id),collection:'',updatedAt:new Date().toISOString()},{merge:true});
+  }
   await batch.commit();
 }
 
 app.patch('/api/admin/collections/:id', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'');const ref=firestore.collection('collections').doc(id);const snap=await ref.get();const old=snap.exists?(snap.data()||{}):{};const name=String(req.body?.name||old.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});if(!snap.exists && !id.startsWith('derived-'))return res.status(404).json({error:'Collection not found.'});const next={...old,name,image:req.body?.image!==undefined?String(req.body.image||'').trim():old.image||'',description:req.body?.description!==undefined?String(req.body.description||'').trim().slice(0,1000):old.description||'',order:req.body?.order!==undefined?Math.max(0,Number(req.body.order||0)):Number(old.order||0),hidden:req.body?.hidden!==undefined?Boolean(req.body.hidden):Boolean(old.hidden),limited:req.body?.limited!==undefined?Boolean(req.body.limited):Boolean(old.limited),updatedAt:new Date().toISOString()};const targetId=snap.exists?id:`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;await firestore.collection('collections').doc(targetId).set(next,{merge:true});if(Array.isArray(req.body?.productIds))await assignProductsToCollection(firestore,name,req.body.productIds);res.json({ok:true,collection:{id:targetId,...next}});}
-  catch(e){console.error('Update collection error:',e);res.status(500).json({error:'Unable to update collection.'})}
+  try{
+    const firestore=await requireAdminUser(req,res);
+    if(!firestore)return;
+    const id=String(req.params.id||'');
+    const ref=firestore.collection('collections').doc(id);
+    const snap=await ref.get();
+    const old=snap.exists?(snap.data()||{}):{};
+    if(!snap.exists && id.startsWith('derived-')){try{old.name=decodeURIComponent(id.slice('derived-'.length));}catch(_){old.name=id.slice('derived-'.length)}}
+    const name=String(req.body?.name||old.name||'').trim().slice(0,120);
+    if(!name)return res.status(400).json({error:'Collection name is required.'});
+    if(!snap.exists && !id.startsWith('derived-'))return res.status(404).json({error:'Collection not found.'});
+    const productIds=req.body?.productIds!==undefined?[...new Set((Array.isArray(req.body?.productIds)?req.body.productIds:[]).map(String))]:Array.isArray(old.productIds)?old.productIds.map(String):[];
+    const next={...old,name,image:req.body?.image!==undefined?String(req.body.image||'').trim():old.image||'',description:req.body?.description!==undefined?String(req.body.description||'').trim().slice(0,1000):old.description||'',order:req.body?.order!==undefined?Math.max(0,Number(req.body.order||0)):Number(old.order||0),hidden:req.body?.hidden!==undefined?Boolean(req.body.hidden):Boolean(old.hidden),deleted:false,limited:req.body?.limited!==undefined?Boolean(req.body.limited):Boolean(old.limited),productIds,updatedAt:new Date().toISOString()};
+    const targetId=snap.exists?id:`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    await firestore.collection('collections').doc(targetId).set(next,{merge:true});
+    const shouldSyncProducts=req.body?.productIds!==undefined || String(old.name||'').trim().toLowerCase()!==name.toLowerCase();
+    if(shouldSyncProducts)await assignProductsToCollection(firestore,name,productIds,String(old.name||''));
+    res.set('Cache-Control','no-store');
+    res.json({ok:true,collection:{id:targetId,...next}});
+  }catch(e){console.error('Update collection error:',e);res.status(500).json({error:'Unable to update collection.'})}
+});
+
+app.delete('/api/admin/collections/:id', authenticate, async (req,res)=>{
+  try{
+    const firestore=await requireAdminUser(req,res);
+    if(!firestore)return;
+    const id=String(req.params.id||'');
+    const ref=firestore.collection('collections').doc(id);
+    const snap=await ref.get();
+    if(!snap.exists)return res.status(404).json({error:'Collection not found.'});
+    const c=snap.exists?(snap.data()||{}):{};
+    let name=String(c.name||'').trim();
+    if(!name && id.startsWith('derived-')){try{name=decodeURIComponent(id.slice('derived-'.length));}catch(_){name=id.slice('derived-'.length)}}
+    if(!name)return res.status(404).json({error:'Collection not found.'});
+    const products=await getMergedProducts({includeHidden:true});
+    const batch=firestore.batch();
+    for(const p of products){
+      if(String(p.collection||'').toLowerCase()===name.toLowerCase()){
+        batch.set(firestore.collection('products').doc(String(p.id)),{id:String(p.id),collection:'',updatedAt:new Date().toISOString()},{merge:true});
+      }
+    }
+    if(snap.exists)batch.delete(ref);
+    await batch.commit();
+    res.json({ok:true,id});
+  }catch(e){console.error('Permanent collection delete error:',e);res.status(500).json({error:'Unable to permanently delete collection.'})}
 });
 
