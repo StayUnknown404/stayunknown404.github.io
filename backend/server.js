@@ -2402,15 +2402,23 @@ app.get('/api/admin/collections', authenticate, async (req,res)=>{
   try{
     const firestore=await requireAdminUser(req,res);if(!firestore)return;
     const now=Date.now();
-    if(adminCollectionsCache && now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c})),products:await getMergedProducts({includeHidden:true})});
-    const products=await getMergedProducts({includeHidden:true});
-    const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]);
+    if(adminCollectionsCache && now-adminCollectionsCacheAt<CATALOG_CACHE_MS){
+      return res.json({collections:adminCollectionsCache.map(c=>({...c}))});
+    }
+    // Collections are metadata. Do NOT load the full product catalogue here.
+    // The admin UI already requests /api/admin/products separately, and waiting
+    // for products here was the source of the 2–8 second admin slowdown.
+    const snap=await Promise.race([
+      firestore.collection('collections').get(),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))
+    ]);
     const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));
-    const map=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
-    for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}
-    const list=[...map.values()].map(c=>({...c,productCount:products.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()).length})).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+    const list=explicit
+      .filter(c=>String(c.name||'').trim())
+      .map(c=>({...c,productIds:Array.isArray(c.productIds)?c.productIds.map(String):[]}))
+      .sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
     adminCollectionsCache=list;adminCollectionsCacheAt=Date.now();
-    return res.json({collections:list.map(c=>({...c})),products});
+    return res.json({collections:list.map(c=>({...c}))});
   }catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
 });
 
