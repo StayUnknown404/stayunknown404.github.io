@@ -542,9 +542,6 @@ body{background:#101010}
 .admin-order-row{cursor:pointer}
 @media(max-width:520px){.admin-promo-actions{width:100%}.admin-promo-actions .account-subpage-action{flex:1}}
 </style>
-<style id="stayunknown-support-flow-style">
-.support-flow{padding-bottom:24px}.support-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #292929}.support-flow-head>span{font:26px/1 Anton,sans-serif;text-transform:uppercase;text-align:right}.support-list-actions{display:flex;justify-content:flex-end;margin-bottom:12px}.support-ticket-list{display:grid;gap:8px}.support-ticket-list-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;background:#151515;color:#fff;border:1px solid #292929;padding:15px;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease}.support-ticket-list-item:hover{transform:translateY(-1px);border-color:#555;background:#181818}.support-ticket-list-item strong,.support-ticket-list-item small{display:block}.support-ticket-list-item strong{font-size:12px;font-weight:900;text-transform:uppercase}.support-ticket-list-item small{font-size:9px;color:#777;margin-top:6px;line-height:1.5}.support-ticket-list-item>span{font-size:16px;color:#777}.support-ticket-meta{font-size:9px;color:#777;letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px}.support-thread{display:grid;gap:9px;margin-bottom:14px}.support-message{border:1px solid #292929;background:#151515;padding:13px}.support-message.admin{border-color:#444;background:#181818}.support-message small{display:block;color:#777;font-size:8px;letter-spacing:1px;text-transform:uppercase}.support-message p{font-size:11px;line-height:1.6;color:#ddd;white-space:pre-wrap;margin:7px 0 0}.support-compose-form{display:grid;gap:9px;margin-top:14px}.support-empty-create{display:block;margin:14px auto 0}.support-closed-note{padding:24px 10px}.support-flow .account-subpage-note{margin-bottom:10px}@media(max-width:520px){.support-flow-head>span{font-size:22px}.support-list-actions .account-subpage-action{width:100%}.support-ticket-list-item{padding:14px 12px}}
-</style>
 <style id="stayunknown-final-ui-fixes">
 .account-page{overflow:auto;overscroll-behavior:contain}
 .account-page-card{position:relative}
@@ -2141,8 +2138,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
           closeNotifications();
           if(n.audience==='admin'){
             await openAdminDashboardPage();
-            await openAdminSection('support');
-            setTimeout(()=>document.querySelector(`[data-ticket-id="${CSS.escape(String(n.ticketId))}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),100);
+            await openAdminSection('support', n.ticketId);
             return;
           }
           const action=document.querySelector(`[data-account-action="help-desk"]`);
@@ -2680,136 +2676,54 @@ onAuthStateChanged(auth, updateAccountUI);
     return out;
   }
 
-  async function openHelpDeskPage(focusTicketId=''){
+  async function openHelpDeskPage(ticketId=null){
     const user=window.__stayUnknownCurrentUser;
     if(!user){alert('Please sign in to contact STAYUNKNOWN support.');return}
-
-    const ticketShell=(title,content)=>{
-      showSubPage(title);
-      body.innerHTML=`<div class="support-flow">${content}</div>`;
+    showSubPage('HELP DESK');
+    const renderShell=()=>{
+      body.innerHTML=`<div class="account-subpage-help">
+        <div class="admin-route-head" style="margin-bottom:18px"><button type="button" class="account-subpage-action" id="support-back-account">← ACCOUNT</button><span>HELP DESK</span></div>
+        <p class="account-subpage-note">NEED HELP WITH AN ORDER, PAYMENT, DELIVERY OR YOUR ACCOUNT?</p>
+        <div class="help-desk-grid"><a class="account-subpage-action primary" href="https://wa.me/" target="_blank" rel="noopener">WHATSAPP</a><a class="account-subpage-action" href="mailto:hello@stayunknown.com">EMAIL</a></div>
+        <div id="customer-support-view" style="margin-top:26px"></div>
+      </div>`;
+      document.getElementById('support-back-account')?.addEventListener('click',hideSubPage);
     };
-
-    async function fetchTickets(){
-      const token=await user.getIdToken(true);
-      const r=await fetch(`${BACKEND_URL}/api/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-      const d=await r.json();
-      if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
-      return Array.isArray(d.tickets)?d.tickets:[];
-    }
-
-    async function populateOrders(select){
-      try{
-        if(!Array.isArray(orderHistory)||!orderHistory.length){
-          const token=await user.getIdToken(true);
-          const r=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-          const d=await r.json();
-          if(r.ok)orderHistory=Array.isArray(d.orders)?d.orders:[];
-        }
-      }catch(_){ }
-      const orders=Array.isArray(orderHistory)?orderHistory:[];
-      select.innerHTML='<option value="">NO ORDER ATTACHED</option>'+orders.map(o=>{
-        const label=String(o.orderNumber||o.reference||o.id||'ORDER');
-        return `<option value="${esc(label)}">${esc(label)}${o.deliveryStatus?` · ${esc(o.deliveryStatus)}`:''}</option>`;
-      }).join('');
-    }
-
-    async function createTicketView(){
-      ticketShell('CREATE SUPPORT TICKET',`
-        <div class="support-flow-head">
-          <button type="button" class="account-subpage-action" id="support-list-back">← SUPPORT REQUESTS</button>
-          <span>NEW TICKET</span>
-        </div>
-        <p class="account-subpage-note">USE A TICKET IF YOU WANT STAYUNKNOWN TO HANDLE YOUR REQUEST INSIDE YOUR ACCOUNT.</p>
-        <form id="support-ticket-form" class="support-compose-form">
-          <input id="support-subject" class="checkout-input" placeholder="SUBJECT" maxlength="120" required>
-          <select id="support-order-select" class="checkout-input"><option value="">NO ORDER ATTACHED</option></select>
+    renderShell();
+    const view=document.getElementById('customer-support-view');
+    let tickets=[];
+    const renderAttachments=(atts)=>Array.isArray(atts)&&atts.length?`<div class="support-attachments">${atts.map(a=>`<a href="${esc(a.dataUrl||'#')}" target="_blank" rel="noopener"><img src="${esc(a.dataUrl||'')}" alt="Support attachment" loading="lazy"></a>`).join('')}</div>`:'';
+    const getTickets=async()=>{const token=await user.getIdToken(true);const r=await fetch(`${BACKEND_URL}/api/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to load support requests.');return Array.isArray(d.tickets)?d.tickets:[]};
+    const getOrders=async()=>{const token=await user.getIdToken(true);const r=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to load orders.');return Array.isArray(d.orders)?d.orders:[]};
+    const createForm=async()=>{
+      let orders=[];try{orders=await getOrders()}catch(e){console.error('Support order load error:',e)}
+      view.innerHTML=`<div style="border-top:1px solid #242424;padding-top:22px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h3>CREATE A SUPPORT TICKET</h3><p class="account-subpage-note">Tell us what you need help with. You can attach an order and up to 2 images.</p></div></div>
+        <form id="support-ticket-form" style="display:grid;gap:12px">
+          <input id="support-subject" class="checkout-input" placeholder="SUBJECT" maxlength="120">
+          <select id="support-order-select" class="checkout-input"><option value="">NO ORDER ATTACHED</option>${orders.map(o=>{const label=String(o.orderNumber||o.reference||o.id||'ORDER');return `<option value="${esc(label)}">${esc(label)}${o.deliveryStatus?` · ${esc(o.deliveryStatus)}`:''}</option>`}).join('')}</select>
           <textarea id="support-message" class="checkout-textarea" placeholder="TELL US HOW WE CAN HELP" maxlength="5000" required style="min-height:140px"></textarea>
-          <input id="support-attachments" class="checkout-input" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+          <input id="support-attachments" class="checkout-input" type="file" accept="image/*" multiple>
           <small id="support-attachment-note" class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small>
-          <button class="account-subpage-action primary" type="submit">SEND SUPPORT REQUEST</button>
-          <div id="support-ticket-message" class="account-subpage-note" aria-live="polite"></div>
-        </form>`);
-
-      document.getElementById('support-list-back')?.addEventListener('click',()=>openHelpDeskPage());
-      const form=document.getElementById('support-ticket-form');
-      const attachmentInput=document.getElementById('support-attachments');
-      const attachmentNote=document.getElementById('support-attachment-note');
-      const orderSelect=document.getElementById('support-order-select');
-      const message=document.getElementById('support-ticket-message');
-      await populateOrders(orderSelect);
-      attachmentInput?.addEventListener('change',()=>{
-        const count=Math.min(2,attachmentInput.files?.length||0);
-        attachmentNote.textContent=count?`${count} IMAGE${count===1?'':'S'} READY TO ATTACH.`:'ADD UP TO 2 IMAGES · JPG, PNG OR WEBP';
-      });
-      form?.addEventListener('submit',async e=>{
-        e.preventDefault();
-        const submit=form.querySelector('button[type="submit"]');submit.disabled=true;message.textContent='SENDING…';
-        try{
-          const attachments=await prepareSupportAttachments(attachmentInput);
-          const token=await user.getIdToken(true);
-          const r=await fetch(`${BACKEND_URL}/api/support`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({subject:document.getElementById('support-subject').value.trim(),orderNumber:orderSelect.value||'',message:document.getElementById('support-message').value.trim(),attachments})});
-          const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create support request.');
-          message.textContent='SUPPORT REQUEST CREATED.';
-          await openHelpDeskPage(d.ticket?.id||'');
-        }catch(e){message.textContent=e.message||'Unable to create support request.'}finally{submit.disabled=false}
-      });
-    }
-
-    async function openTicket(ticket){
-      if(!ticket)return;
-      const replies=Array.isArray(ticket.replies)?ticket.replies:[];
-      const renderAttachments=atts=>Array.isArray(atts)&&atts.length?`<div class="support-attachments">${atts.map(a=>`<a href="${esc(a.dataUrl||'#')}" target="_blank" rel="noopener"><img src="${esc(a.dataUrl||'')}" alt="Support attachment" loading="lazy"></a>`).join('')}</div>`:'';
-      const status=String(ticket.status||'OPEN').toUpperCase();
-      ticketShell(ticket.subject||'SUPPORT TICKET',`
-        <div class="support-flow-head">
-          <button type="button" class="account-subpage-action" id="support-ticket-back">← SUPPORT REQUESTS</button>
-          <span>${esc(status)}</span>
-        </div>
-        <div class="support-ticket-meta">${esc(ticket.id||'')} · ${esc(ticket.orderNumber||'NO ORDER')} · ${esc(ticket.createdAt||'')}</div>
-        <div class="support-thread">
-          <div class="support-message customer"><small>YOU · ${esc(ticket.createdAt||'')}</small><p>${esc(ticket.message||'')}</p>${renderAttachments(ticket.attachments)}</div>
-          ${replies.map(r=>`<div class="support-message ${String(r.from||'').toUpperCase()==='ADMIN'?'admin':'customer'}"><small>${esc(r.from||'STAYUNKNOWN')} · ${esc(r.createdAt||'')}</small><p>${esc(r.message||'')}</p>${renderAttachments(r.attachments)}</div>`).join('')}
-        </div>
-        ${status==='CLOSED'?`<div class="account-subpage-empty support-closed-note">THIS TICKET IS CLOSED. PLEASE CREATE A NEW TICKET IF YOU STILL NEED HELP.</div>`:`<form id="support-reply-form" class="support-compose-form"><textarea class="checkout-textarea" name="message" maxlength="5000" placeholder="REPLY TO STAYUNKNOWN" required style="min-height:110px"></textarea><input class="checkout-input" name="attachments" type="file" accept="image/jpeg,image/png,image/webp" multiple><small class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small><button class="account-subpage-action primary" type="submit">SEND REPLY</button><div id="support-reply-message" class="account-subpage-note" aria-live="polite"></div></form>`}`);
-      document.getElementById('support-ticket-back')?.addEventListener('click',()=>openHelpDeskPage());
-      const replyForm=document.getElementById('support-reply-form');
-      replyForm?.addEventListener('submit',async e=>{
-        e.preventDefault();const btn=replyForm.querySelector('button[type="submit"]');const msg=document.getElementById('support-reply-message');btn.disabled=true;msg.textContent='SENDING…';
-        try{
-          const attachments=await prepareSupportAttachments(replyForm.attachments);
-          const token=await user.getIdToken(true);
-          const r=await fetch(`${BACKEND_URL}/api/support/${encodeURIComponent(ticket.id)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:replyForm.message.value.trim(),attachments})});
-          const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to send reply.');
-          await openHelpDeskPage(ticket.id);
-        }catch(e){msg.textContent=e.message||'Unable to send reply.'}finally{btn.disabled=false}
-      });
-    }
-
-    async function renderTicketList(){
-      ticketShell('HELP & SUPPORT',`<div class="support-flow-head"><span>SUPPORT REQUESTS</span></div><div id="customer-support-tickets"><div class="account-subpage-empty">LOADING…</div></div>`);
-      const list=document.getElementById('customer-support-tickets');
-      try{
-        const tickets=await fetchTickets();
-        if(!tickets.length){
-          list.innerHTML=`<div class="account-subpage-empty">NO SUPPORT REQUESTS YET.<button type="button" class="account-subpage-action primary support-empty-create" id="support-create-first">CREATE A SUPPORT TICKET</button></div>`;
-          document.getElementById('support-create-first')?.addEventListener('click',createTicketView);
-          return;
-        }
-        list.innerHTML=`<div class="support-list-actions"><button type="button" class="account-subpage-action primary" id="support-create-new">CREATE NEW TICKET</button></div><div class="support-ticket-list">${tickets.map(t=>`<button type="button" class="support-ticket-list-item" data-support-ticket="${esc(t.id)}"><div><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.orderNumber||'NO ORDER')} · ${esc(t.status||'OPEN')} · ${esc(t.updatedAt||t.createdAt||'')}</small></div><span>→</span></button>`).join('')}</div>`;
-        document.getElementById('support-create-new')?.addEventListener('click',createTicketView);
-        list.querySelectorAll('[data-support-ticket]').forEach(b=>b.addEventListener('click',async()=>{
-          const id=b.dataset.supportTicket;
-          const selected=tickets.find(t=>String(t.id)===String(id));
-          if(selected)await openTicket(selected);
-        }));
-        if(focusTicketId){
-          const selected=tickets.find(t=>String(t.id)===String(focusTicketId));
-          if(selected)await openTicket(selected);
-        }
-      }catch(e){list.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load support requests.')}</div>`}
-    }
-
-    await renderTicketList();
+          <button class="account-subpage-action primary" type="submit">SEND SUPPORT REQUEST</button><div id="support-ticket-message" class="account-subpage-note" aria-live="polite"></div>
+        </form></div>`;
+      const form=document.getElementById('support-ticket-form'), attachmentInput=document.getElementById('support-attachments'), note=document.getElementById('support-attachment-note');
+      attachmentInput?.addEventListener('change',()=>{const n=Math.min(2,attachmentInput.files?.length||0);note.textContent=n?`${n} IMAGE${n===1?'':'S'} READY TO ATTACH.`:'ADD UP TO 2 IMAGES · JPG, PNG OR WEBP'});
+      form.addEventListener('submit',async e=>{e.preventDefault();const button=form.querySelector('button[type="submit"]'),msg=document.getElementById('support-ticket-message');button.disabled=true;msg.textContent='SENDING…';try{const token=await user.getIdToken(true);const attachments=await prepareSupportAttachments(attachmentInput);const r=await fetch(`${BACKEND_URL}/api/support`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({subject:document.getElementById('support-subject').value.trim(),orderNumber:document.getElementById('support-order-select').value,message:document.getElementById('support-message').value.trim(),attachments})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create support request.');await openHelpDeskPage(d.ticket?.id||null)}catch(err){msg.textContent=err.message||'Unable to create support request.'}finally{button.disabled=false}});
+    };
+    const listView=async()=>{
+      tickets=await getTickets();
+      if(!tickets.length){await createForm();return}
+      view.innerHTML=`<div style="border-top:1px solid #242424;padding-top:22px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h3>MY SUPPORT TICKETS</h3><p class="account-subpage-note">Select a ticket to view the conversation.</p></div><button id="support-new-ticket" type="button" class="account-subpage-action primary">CREATE NEW TICKET</button></div><div class="admin-list" id="support-ticket-list" style="margin-top:14px">${tickets.map(t=>{const replies=Array.isArray(t.replies)?t.replies:[];const last=replies.length?replies[replies.length-1]:null;return `<button type="button" class="admin-list-row" data-open-ticket="${esc(t.id)}" style="width:100%;text-align:left;background:transparent;color:inherit;cursor:pointer"><div><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.orderNumber||'NO ORDER')} · ${esc(last?.createdAt||t.createdAt||'')}</small></div><span class="order-status ${String(t.status).toUpperCase()==='CLOSED'?'delivered':'processing'}">${esc(t.status||'OPEN')}</span></button>`}).join('')}</div></div>`;
+      document.getElementById('support-new-ticket')?.addEventListener('click',createForm);view.querySelectorAll('[data-open-ticket]').forEach(b=>b.addEventListener('click',()=>openTicket(b.dataset.openTicket)));
+    };
+    const openTicket=async id=>{
+      tickets=await getTickets();const t=tickets.find(x=>String(x.id)===String(id));if(!t){await listView();return}
+      const replies=Array.isArray(t.replies)?t.replies:[];const closed=String(t.status||'').toUpperCase()==='CLOSED';
+      view.innerHTML=`<div><div class="admin-route-head" style="margin-bottom:18px"><button type="button" class="account-subpage-action" id="support-list-back">← MY SUPPORT TICKETS</button><span>${esc(t.subject||'SUPPORT REQUEST')}</span></div><div class="account-subpage-note">${esc(t.orderNumber?'ORDER ATTACHED: '+t.orderNumber:'NO ORDER ATTACHED')} · ${esc(t.status||'OPEN')}</div><div class="admin-list" style="margin-top:14px"><article class="admin-ticket"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>CUSTOMER · ${esc(t.createdAt||'')}</small><p>${esc(t.message||'')}</p>${renderAttachments(t.attachments)}${replies.map(r=>`<div style="margin-top:12px;padding:12px;border-left:2px solid ${r.from==='ADMIN'?'#888':'#555'}"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p>${renderAttachments(r.attachments)}</div>`).join('')}</article></div>${closed?`<div class="account-subpage-note" style="margin-top:16px">THIS TICKET IS CLOSED. CREATE A NEW TICKET IF YOU STILL NEED HELP.</div>`:`<form id="support-reply-form" style="display:grid;gap:10px;margin-top:16px"><textarea name="message" class="checkout-textarea" maxlength="5000" placeholder="REPLY TO STAYUNKNOWN" required style="min-height:110px"></textarea><input name="attachments" class="checkout-input" type="file" accept="image/*" multiple><small class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small><button type="submit" class="account-subpage-action primary">SEND REPLY</button></form>`}</div>`;
+      document.getElementById('support-list-back')?.addEventListener('click',listView);
+      document.getElementById('support-reply-form')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector('button');b.disabled=true;try{const token=await user.getIdToken(true);const r=await fetch(`${BACKEND_URL}/api/support/${encodeURIComponent(t.id)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:f.message.value.trim(),attachments:await prepareSupportAttachments(f.attachments)})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to send reply.');await openHelpDeskPage(t.id)}catch(err){alert(err.message||'Unable to send reply.')}finally{b.disabled=false}});
+    };
+    try{await listView();if(ticketId){setTimeout(()=>openTicket(ticketId),0)}}catch(e){view.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load support requests.')}</div>`}
   }
 
   async function adminAuth(){
@@ -2853,7 +2767,7 @@ onAuthStateChanged(auth, updateAccountUI);
     body.querySelectorAll('[data-admin-action]').forEach(b=>b.addEventListener('click',()=>openAdminSection(b.dataset.adminAction)));
   }
 
-  async function openAdminSection(section, focusTicketId=''){
+  async function openAdminSection(section, ticketId=null){
     const titles={
       overview:'SALES / ORDER OVERVIEW',
       orders:'ORDERS & DELIVERY',
@@ -3068,31 +2982,13 @@ onAuthStateChanged(auth, updateAccountUI);
 
       if(section==='support'){
         const r=await fetch(`${BACKEND_URL}/api/admin/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
+        const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
         const tickets=Array.isArray(d.tickets)?d.tickets:[];
-        const renderAttachments=atts=>Array.isArray(atts)&&atts.length?`<div class="support-attachments">${atts.map(a=>`<a href="${esc(a.dataUrl||'#')}" target="_blank" rel="noopener"><img src="${esc(a.dataUrl||'')}" alt="Support attachment" loading="lazy"></a>`).join('')}</div>`:'';
-        const openAdminTicket=async ticket=>{
-          if(!ticket)return;
-          const replies=Array.isArray(ticket.replies)?ticket.replies:[];
-          const status=String(ticket.status||'OPEN').toUpperCase();
-          const routeBody=renderAdminRouteShell(ticket.subject||'SUPPORT TICKET',`<div class="support-flow-head"><button type="button" class="account-subpage-action" id="admin-support-list-back">← SUPPORT REQUESTS</button><span>${esc(status)}</span></div><div class="support-ticket-meta">${esc(ticket.email||'')} · ${esc(ticket.orderNumber||'NO ORDER')} · ${esc(ticket.id||'')}</div><div class="support-thread"><div class="support-message customer"><small>CUSTOMER · ${esc(ticket.createdAt||'')}</small><p>${esc(ticket.message||'')}</p>${renderAttachments(ticket.attachments)}</div>${replies.map(r=>`<div class="support-message ${String(r.from||'').toUpperCase()==='ADMIN'?'admin':'customer'}"><small>${esc(r.from||'CUSTOMER')} · ${esc(r.createdAt||'')}</small><p>${esc(r.message||'')}</p>${renderAttachments(r.attachments)}</div>`).join('')}</div>${status==='CLOSED'?`<div class="account-subpage-note support-closed-note">THIS TICKET IS CLOSED. USE REOPEN BELOW IF THE CUSTOMER NEEDS TO CONTINUE.</div>`:''}<form class="admin-support-reply-form support-compose-form" data-ticket-id="${esc(ticket.id)}" ${status==='CLOSED'?'style="display:none"':''}><textarea name="message" class="checkout-textarea" maxlength="5000" placeholder="REPLY TO CUSTOMER" required style="min-height:110px"></textarea><input name="attachments" class="checkout-input" type="file" accept="image/jpeg,image/png,image/webp" multiple><small class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small><button type="submit" class="account-subpage-action primary">SEND REPLY</button><div class="account-subpage-note" data-admin-reply-message aria-live="polite"></div></form><button type="button" class="account-subpage-action ${status==='CLOSED'?'primary':''}" id="admin-support-status">${status==='CLOSED'?'REOPEN TICKET':'CLOSE TICKET'}</button>`);
-          document.getElementById('admin-support-list-back')?.addEventListener('click',()=>openAdminSection('support'));
-          const replyForm=routeBody.querySelector('.admin-support-reply-form');
-          replyForm?.addEventListener('submit',async e=>{
-            e.preventDefault();const btn=replyForm.querySelector('button[type="submit"]');const msg=replyForm.querySelector('[data-admin-reply-message]');btn.disabled=true;msg.textContent='SENDING…';
-            try{const rr=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(ticket.id)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:replyForm.message.value.trim(),attachments:await prepareSupportAttachments(replyForm.attachments)})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to send reply.');await openAdminSection('support',ticket.id)}catch(e){msg.textContent=e.message||'Unable to send reply.'}finally{btn.disabled=false}
-          });
-          document.getElementById('admin-support-status')?.addEventListener('click',async()=>{
-            const next=status==='CLOSED'?'OPEN':'CLOSED';const btn=document.getElementById('admin-support-status');btn.disabled=true;
-            try{const rr=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(ticket.id)}/status`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status:next})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to update ticket.');await openAdminSection('support',ticket.id)}catch(e){alert(e.message||'Unable to update ticket.')}finally{btn.disabled=false}
-          });
-        };
-        if(!tickets.length){routeBody.innerHTML='<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';return;}
-        routeBody.innerHTML=`<p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS. TAP A TICKET TO OPEN THE CONVERSATION.</p><div class="support-ticket-list">${tickets.map(t=>`<button type="button" class="support-ticket-list-item" data-admin-support-ticket="${esc(t.id)}"><div><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')} · ${esc(t.status||'OPEN')}</small></div><span>→</span></button>`).join('')}</div>`;
-        routeBody.querySelectorAll('[data-admin-support-ticket]').forEach(b=>b.addEventListener('click',()=>{const ticket=tickets.find(t=>String(t.id)===String(b.dataset.adminSupportTicket));if(ticket)openAdminTicket(ticket)}));
-        if(focusTicketId){const ticket=tickets.find(t=>String(t.id)===String(focusTicketId));if(ticket)await openAdminTicket(ticket);}
-        return;
-
+        const renderAdminAttachments=(atts)=>Array.isArray(atts)&&atts.length?`<div class="support-attachments">${atts.map(a=>`<a href="${esc(a.dataUrl||'#')}" target="_blank" rel="noopener"><img src="${esc(a.dataUrl||'')}" alt="Support attachment" loading="lazy"></a>`).join('')}</div>`:'';
+        const list=`<div><p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS.</p>${tickets.length?`<div class="admin-list">${tickets.map(t=>{const replies=Array.isArray(t.replies)?t.replies:[];const last=replies.length?replies[replies.length-1]:null;return `<button type="button" class="admin-list-row" data-open-admin-ticket="${esc(t.id)}" style="width:100%;text-align:left;background:transparent;color:inherit;cursor:pointer"><div><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')} · ${esc(last?.createdAt||t.createdAt||'')}</small></div><span class="order-status ${String(t.status).toUpperCase()==='CLOSED'?'delivered':'processing'}">${esc(t.status||'OPEN')}</span></button>`}).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>'}</div>`;
+        const openAdminTicket=async id=>{const t=tickets.find(x=>String(x.id)===String(id));if(!t){routeBody.innerHTML='<div class="account-subpage-empty">TICKET NOT FOUND.</div>';return}const replies=Array.isArray(t.replies)?t.replies:[],closed=String(t.status||'').toUpperCase()==='CLOSED';routeBody.innerHTML=`<div><div class="admin-route-head" style="margin-bottom:18px"><button type="button" class="account-subpage-action" id="admin-support-list-back">← SUPPORT REQUESTS</button><span>${esc(t.subject||'SUPPORT REQUEST')}</span></div><div class="account-subpage-note">${esc(t.email||'')} · ${esc(t.orderNumber?'ORDER ATTACHED: '+t.orderNumber:'NO ORDER ATTACHED')} · ${esc(t.status||'OPEN')}</div><article class="admin-ticket" style="margin-top:14px"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>CUSTOMER · ${esc(t.createdAt||'')}</small><p>${esc(t.message||'')}</p>${renderAdminAttachments(t.attachments)}${replies.map(r=>`<div style="margin-top:12px;padding:12px;border-left:2px solid ${r.from==='ADMIN'?'#888':'#555'}"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p>${renderAdminAttachments(r.attachments)}</div>`).join('')}</article>${closed?`<div class="account-subpage-note" style="margin-top:16px">THIS TICKET IS CLOSED.</div>`:`<form id="admin-support-reply-form" style="display:grid;gap:10px;margin-top:16px"><textarea name="message" class="checkout-textarea" maxlength="5000" placeholder="REPLY TO CUSTOMER" required style="min-height:110px"></textarea><input name="attachments" class="checkout-input" type="file" accept="image/*" multiple><small class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="account-subpage-action primary">SEND REPLY</button><button type="button" id="admin-support-status" class="account-subpage-action">CLOSE TICKET</button></div></form>`}</div>`;document.getElementById('admin-support-list-back')?.addEventListener('click',()=>openAdminSection('support'));document.getElementById('admin-support-reply-form')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector('button[type="submit"]');b.disabled=true;try{const rr=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(t.id)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:f.message.value.trim(),attachments:await prepareSupportAttachments(f.attachments)})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to send reply.');await openAdminSection('support',t.id)}catch(err){alert(err.message||'Unable to send reply.')}finally{b.disabled=false}});document.getElementById('admin-support-status')?.addEventListener('click',async()=>{try{const status=closed?'OPEN':'CLOSED';const rr=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(t.id)}/status`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to update ticket.');await openAdminSection('support',t.id)}catch(err){alert(err.message||'Unable to update ticket.')}})};
+        routeBody.innerHTML=list;routeBody.querySelectorAll('[data-open-admin-ticket]').forEach(b=>b.addEventListener('click',()=>openAdminTicket(b.dataset.openAdminTicket)));if(ticketId)setTimeout(()=>openAdminTicket(ticketId),0);return;
+      }
     }catch(e){
       routeBody.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load admin section.')}</div>`;
     }
