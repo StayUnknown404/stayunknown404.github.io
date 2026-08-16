@@ -2331,30 +2331,88 @@ app.patch('/api/admin/products/:id', authenticate, async (req,res)=>{
 app.get('/api/collections', async (_req,res)=>{
   try{
     const now=Date.now();
-    if(publicCollectionsCache && now-publicCollectionsCacheAt<COLLECTION_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
+    if(publicCollectionsCache && now-publicCollectionsCacheAt<COLLECTION_CACHE_MS){
+      return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
+    }
     if(publicCollectionsPromise)return res.json({collections:await publicCollectionsPromise});
+
     publicCollectionsPromise=(async()=>{
       const firestore=initFirebase();
-      const collectionPromise=firestore?firestore.collection('collections').get():Promise.resolve(null);
-      const productsPromise=getMergedProducts();
-      const [collectionResult,productsResult]=await Promise.allSettled([collectionPromise,productsPromise]);
-      const snap=collectionResult.status==='fulfilled'?collectionResult.value:null;
-      const products=productsResult.status==='fulfilled'?productsResult.value:[];
-      const explicit=snap?snap.docs.map(d=>({id:d.id,...d.data()})):[ ];
-      const explicitByName=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
-      const hiddenNames=new Set(explicit.filter(c=>c.hidden).map(c=>String(c.name||'').trim().toLowerCase()).filter(Boolean));
-      const map=new Map();
-      for(const p of products){
-        const name=String(p.collection||'').trim();if(!name)continue;
-        const key=name.toLowerCase();if(hiddenNames.has(key))continue;
-        if(!map.has(key))map.set(key,explicitByName.get(key)||{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});
+      let explicit=[];
+
+      // Collections must not wait for the product catalogue refresh. On a cold
+      // Render instance the product refresh can take several seconds; waiting
+      // for it here was the reason the storefront collection request timed out.
+      if(firestore){
+        try{
+          const snap=await Promise.race([
+            firestore.collection('collections').get(),
+            new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),8000))
+          ]);
+          explicit=snap.docs.map(d=>({id:d.id,...d.data()}));
+        }catch(error){
+          console.warn('Public collections Firestore refresh unavailable:',error.message||error);
+        }
       }
-      for(const [key,c] of explicitByName){if(c.hidden)continue;if(!map.has(key))map.set(key,c);}
-      const counts=new Map();for(const p of products){const key=String(p.collection||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1);}
-      const list=[...map.values()].map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0})).filter(c=>c&&!c.hidden&&String(c.name||'').trim()).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
-      publicCollectionsCache=list;publicCollectionsCacheAt=Date.now();
+
+      // Use whatever product catalogue is already available. Never wait on an
+      // in-flight product refresh here; the browser will re-run collection
+      // derivation as soon as the live catalogue arrives.
+      const products=(mergedPublicCache&&mergedPublicCache.length)
+        ? mergedPublicCache.map(p=>({...p}))
+        : (Array.isArray(catalog)?catalog.map(p=>({...p})):[]);
+
+      const explicitByName=new Map(
+        explicit
+          .filter(c=>String(c.name||'').trim())
+          .map(c=>[String(c.name).trim().toLowerCase(),c])
+      );
+      const hiddenNames=new Set(
+        explicit
+          .filter(c=>c.hidden)
+          .map(c=>String(c.name||'').trim().toLowerCase())
+          .filter(Boolean)
+      );
+      const map=new Map();
+
+      for(const p of products){
+        const name=String(p.collection||'').trim();
+        if(!name)continue;
+        const key=name.toLowerCase();
+        if(hiddenNames.has(key))continue;
+        if(!map.has(key)){
+          map.set(key,explicitByName.get(key)||{
+            id:`derived-${encodeURIComponent(name)}`,
+            name,image:'',description:'',order:9999,hidden:false,derived:true
+          });
+        }
+      }
+      for(const [key,c] of explicitByName){
+        if(c.hidden)continue;
+        if(!map.has(key))map.set(key,c);
+      }
+
+      const counts=new Map();
+      for(const p of products){
+        const key=String(p.collection||'').trim().toLowerCase();
+        if(key)counts.set(key,(counts.get(key)||0)+1);
+      }
+
+      const list=[...map.values()]
+        .map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0}))
+        .filter(c=>c&&!c.hidden&&String(c.name||'').trim())
+        .sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+
+      publicCollectionsCache=list;
+      publicCollectionsCacheAt=Date.now();
+
+      // Keep the product cache warming independently so the next request has
+      // fresh products without making this collection request slow.
+      if(!mergedPublicCache)void refreshPublicCatalogInBackground();
+
       return list.map(c=>({...c}));
     })();
+
     try{return res.json({collections:await publicCollectionsPromise});}
     finally{publicCollectionsPromise=null;}
   }catch(e){
