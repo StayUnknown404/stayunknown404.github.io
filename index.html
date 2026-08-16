@@ -1375,6 +1375,8 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   const BACKEND_URL='https://stayunknown404-backend.onrender.com'; window.BACKEND_URL=BACKEND_URL;
   let liveCatalogPromise=null;
   let liveCatalogLoaded=false;
+  let liveCatalogRefreshAttempts=0;
+  let liveCatalogRefreshTimer=null;
   function catalogRequestWithTimeout(url,ms=6000){
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),ms);
@@ -1384,7 +1386,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     if(liveCatalogPromise)return liveCatalogPromise;
     liveCatalogPromise=(async()=>{
     try{
-      const r=await catalogRequestWithTimeout(`${BACKEND_URL}/api/catalog`,6000);
+      const r=await catalogRequestWithTimeout(`${BACKEND_URL}/api/catalog?ts=${Date.now()}`,6000);
       const d=await r.json();
       if(!r.ok||!Array.isArray(d.products))throw new Error(d.error||'Unable to load live catalogue.');
       const incoming=d.products.map(p=>{
@@ -1412,6 +1414,20 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       liveCatalogLoaded=true;
       if(!shopView.classList.contains('is-hidden'))renderShop();
       if(typeof window.loadStayUnknownCollections==='function') void window.loadStayUnknownCollections();
+
+      // A cold Render instance may answer the first request with the built-in
+      // catalogue while Firestore is warming. Retry in the background so a
+      // newly-added product/category is picked up automatically.
+      if(d.refreshing===true || d.stale===true){
+        if(liveCatalogRefreshAttempts<5){
+          const delay=[900,1600,2800,4500,7000][liveCatalogRefreshAttempts]||7000;
+          liveCatalogRefreshAttempts++;
+          clearTimeout(liveCatalogRefreshTimer);
+          liveCatalogRefreshTimer=setTimeout(()=>{liveCatalogRefreshTimer=null;void loadLiveCatalog(true);},delay);
+        }
+      }else{
+        liveCatalogRefreshAttempts=0;
+      }
       return true;
     }catch(e){
       console.warn('Live catalogue unavailable:',e);
