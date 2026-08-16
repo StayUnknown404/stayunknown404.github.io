@@ -1973,14 +1973,47 @@ function promoDiscount(promo, items){
   return {discount,eligibleSubtotal};
 }
 
+async function getStoredPromo(code){
+  const key=String(code||'').trim().toUpperCase();
+  if(!key) return null;
+  try{
+    const firestore=initFirebase();
+    if(firestore){
+      const snap=await firestore.collection('promos').doc(key).get();
+      if(snap.exists) return {code:key,...(snap.data()||{})};
+    }
+  }catch(error){
+    console.error('Promo load error:',error);
+  }
+  return promoCodes.get(key)||null;
+}
+
+async function saveStoredPromo(promo){
+  promoCodes.set(String(promo.code).toUpperCase(),promo);
+  try{
+    const firestore=initFirebase();
+    if(firestore){
+      await firestore.collection('promos').doc(String(promo.code).toUpperCase()).set(promo,{merge:true});
+    }
+  }catch(error){
+    console.error('Promo save error:',error);
+  }
+  return promo;
+}
+
 app.post('/api/promo/validate', async (req,res)=>{
-  const code=String(req.body?.code||'').trim().toUpperCase();
-  const items=Array.isArray(req.body?.items)?req.body.items:[];
-  const promo=promoCodes.get(code);
-  if(!promo || !promoIsCurrentlyActive(promo)) return res.status(404).json({valid:false,error:'Invalid or expired promo code.'});
-  const {discount,eligibleSubtotal}=promoDiscount(promo,items);
-  if(Number(promo.minOrder||0)>eligibleSubtotal) return res.status(400).json({valid:false,error:`Minimum eligible order is ₦${Number(promo.minOrder).toLocaleString()}.`});
-  res.json({valid:true,...promo,discount,eligibleSubtotal});
+  try{
+    const code=String(req.body?.code||'').trim().toUpperCase();
+    const items=Array.isArray(req.body?.items)?req.body.items:[];
+    const promo=await getStoredPromo(code);
+    if(!promo || !promoIsCurrentlyActive(promo)) return res.status(404).json({valid:false,error:'Invalid or expired promo code.'});
+    const {discount,eligibleSubtotal}=promoDiscount(promo,items);
+    if(Number(promo.minOrder||0)>eligibleSubtotal) return res.status(400).json({valid:false,error:`Minimum eligible order is ₦${Number(promo.minOrder).toLocaleString()}.`});
+    res.json({valid:true,...promo,discount,eligibleSubtotal});
+  }catch(error){
+    console.error('Promo validation error:',error);
+    res.status(500).json({valid:false,error:'Unable to validate promo code.'});
+  }
 });
 
 app.post('/api/admin/promos', authenticate, async (req,res)=>{
@@ -2006,7 +2039,7 @@ app.post('/api/admin/promos', authenticate, async (req,res)=>{
       productIds:scope.type==='products'?[...new Set(scope.productIds.map(String))]:[]
     }
   };
-  promoCodes.set(code,promo);
+  await saveStoredPromo(promo);
   res.json({ok:true,promo});
 });
 
@@ -2017,7 +2050,7 @@ app.patch('/api/admin/promos/:code', authenticate, async (req,res)=>{
   if(!existing) return res.status(404).json({error:'Promo not found.'});
   const next={...existing,...(req.body||{}),code};
   if(req.body?.appliesTo) next.appliesTo={...existing.appliesTo,...req.body.appliesTo};
-  promoCodes.set(code,next);
+  await saveStoredPromo(next);
   res.json({ok:true,promo:next});
 });
 
@@ -2025,6 +2058,7 @@ app.delete('/api/admin/promos/:code', authenticate, async (req,res)=>{
   if(!req.user?.isAdmin) return res.status(403).json({error:'Admin only.'});
   const code=String(req.params.code||'').toUpperCase();
   promoCodes.delete(code);
+  try{const firestore=initFirebase();if(firestore) await firestore.collection('promos').doc(code).delete();}catch(error){console.error('Promo delete error:',error)}
   res.json({ok:true});
 });
 
