@@ -498,17 +498,41 @@ async function getMergedProducts({includeHidden=false}={}){
   const firestore=initFirebase();
   const map=new Map(base.map(p=>[String(p.id),p]));
   if(firestore){
-    const snap=await firestore.collection('products').get();
-    snap.docs.forEach(doc=>{const d=doc.data()||{};const id=String(d.id||doc.id);map.set(id,{...(map.get(id)||{}),...d,id});});
+    try{
+      const snap=await Promise.race([
+        firestore.collection('products').get(),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore catalogue timeout')),8000))
+      ]);
+      snap.docs.forEach(doc=>{
+        const d=doc.data()||{};
+        const id=String(d.id||doc.id);
+        map.set(id,{...(map.get(id)||{}),...d,id});
+      });
+    }catch(error){
+      console.warn('Firestore catalogue unavailable; serving local catalogue:',error.message||error);
+    }
   }
-  const list=[...map.values()];
+  const list=[...map.values()].map(p=>{
+    const image=String(p.image||'').trim();
+    const image2=String(p.image2||'').trim();
+    const images=Array.isArray(p.images)?p.images.map(x=>String(x||'').trim()).filter(Boolean).slice(0,2):[];
+    const mergedImages=[...new Set([image,...images,image2].filter(Boolean))].slice(0,2);
+    return {...p,image:mergedImages[0]||image,image2:mergedImages[1]||image2,images:mergedImages};
+  });
   const isHidden=value=>value===true || value===1 || String(value||'').trim().toLowerCase()==='true';
   return includeHidden?list:list.filter(p=>!isHidden(p.hidden));
 }
 
 app.get("/api/catalog", async (_req, res) => {
-  try { res.json({products:await getMergedProducts()}); }
-  catch(error){ console.error('Catalog error:',error); res.status(500).json({error:'Unable to load product catalogue.'}); }
+  try {
+    res.set('Cache-Control','no-store, max-age=0');
+    res.json({products:await getMergedProducts()});
+  } catch(error){
+    console.error('Catalog error:',error);
+    // Never leave the storefront waiting for a database error.
+    const products=Array.isArray(catalog)?catalog:[];
+    res.status(200).json({products});
+  }
 });
 
 async function findProduct(productId){
