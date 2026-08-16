@@ -2190,7 +2190,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
   let cachedAdminToken='',cachedAdminTokenAt=0;
   let cachedAdminAccess=null,cachedAdminAccessAt=0,adminAccessPromise=null;
-  async function adminToken(){
+  async function stayUnknownGetAdminToken(){
     const user=window.__stayUnknownCurrentUser;
     if(!user) throw new Error('Sign in first.');
     const now=Date.now();
@@ -2199,6 +2199,11 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     cachedAdminTokenAt=Date.now();
     return cachedAdminToken;
   }
+  // Compatibility aliases: older cached pages used ADMINTOKEN(). Keep both
+  // names valid so a stale Safari page cannot break the admin dashboard.
+  window.stayUnknownGetAdminToken=stayUnknownGetAdminToken;
+  window.ADMINTOKEN=stayUnknownGetAdminToken;
+  const adminToken=stayUnknownGetAdminToken;
 
   async function checkAdminAccess(){
     if(!window.__stayUnknownCurrentUser){if(legacyAdminButton)legacyAdminButton.style.display='none';cachedAdminAccess=null;return false}
@@ -2973,7 +2978,7 @@ onAuthStateChanged(auth, updateAccountUI);
   async function adminAuth(){
     const user=window.__stayUnknownCurrentUser;
     if(!user)throw new Error('Sign in first.');
-    return {user,token:await adminToken()};
+    return {user,token:await window.stayUnknownGetAdminToken()};
   }
 
   function adminButton(label,action){
@@ -3010,7 +3015,32 @@ onAuthStateChanged(auth, updateAccountUI);
         </div>
       </div>`;
     body.querySelectorAll('[data-admin-action]').forEach(b=>b.addEventListener('click',()=>openAdminSection(b.dataset.adminAction)));
+    // Warm the slow Firestore-backed admin endpoints in parallel while the
+    // dashboard is visible. This makes the first tap much faster.
+    void warmAdminData();
   }
+
+  const adminWarmCache=new Map();
+  let adminWarmPromise=null;
+  async function warmAdminData(){
+    if(adminWarmPromise)return adminWarmPromise;
+    adminWarmPromise=(async()=>{
+      try{
+        const token=await window.stayUnknownGetAdminToken();
+        const headers={Authorization:`Bearer ${token}`};
+        const endpoints={
+          orders:`${BACKEND_URL}/api/admin/orders`,
+          collections:`${BACKEND_URL}/api/admin/collections`,
+          products:`${BACKEND_URL}/api/admin/products`
+        };
+        await Promise.all(Object.entries(endpoints).map(async([key,url])=>{
+          try{const r=await fetch(url,{headers,cache:'no-store'});const d=await r.json();if(r.ok)adminWarmCache.set(key,d)}catch(_){}
+        }));
+      }finally{adminWarmPromise=null}
+    })();
+    return adminWarmPromise;
+  }
+  function takeWarmAdminData(key){return adminWarmCache.get(key)||null}
 
   async function openAdminSection(section, ticketId=null){
     const titles={
@@ -3030,8 +3060,9 @@ onAuthStateChanged(auth, updateAccountUI);
       const {token}=await adminAuth();
 
       if(section==='overview'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        const d=await r.json();
+        const warm=takeWarmAdminData('orders');
+        const r=warm?{ok:true}:await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=warm||await r.json();
         if(!r.ok)throw new Error(d.error||'Unable to load orders.');
         const orders=Array.isArray(d.orders)?d.orders:[];
         const paid=orders.filter(o=>['PAID','PROCESSING','SHIPPED','DELIVERED'].includes(String(o.deliveryStatus||o.paymentStatus||'').toUpperCase()));
@@ -3051,8 +3082,9 @@ onAuthStateChanged(auth, updateAccountUI);
       }
 
       if(section==='orders'){
-        const r=await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        const d=await r.json();
+        const warm=takeWarmAdminData('orders');
+        const r=warm?{ok:true}:await fetch(`${BACKEND_URL}/api/admin/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const d=warm||await r.json();
         if(!r.ok)throw new Error(d.error||'Unable to load delivery orders.');
         const orders=Array.isArray(d.orders)?d.orders:[];
         if(!orders.length){routeBody.innerHTML='<div class="account-subpage-empty">NO PAID ORDERS YET.</div>';return;}
@@ -3200,8 +3232,9 @@ onAuthStateChanged(auth, updateAccountUI);
       }
 
       if(section==='collections'){
-        const collectionResponse=await fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-        const cd=await collectionResponse.json();
+        const warmCollections=takeWarmAdminData('collections');
+        const collectionResponse=warmCollections?{ok:true}:await fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const cd=warmCollections||await collectionResponse.json();
         if(!collectionResponse.ok)throw new Error(cd.error||'Unable to load collections.');
         const collections=Array.isArray(cd.collections)?cd.collections:[];
         const items=Array.isArray(cd.products)?cd.products:[];
@@ -3470,26 +3503,42 @@ onAuthStateChanged(auth, updateAccountUI);
     renderCollectionMenu();updateCollections(0,false);startCollectionTimer();
   }
   async function loadStayUnknownCollections(){
-    // Always derive from the CURRENT product list first. The live catalogue can
-    // arrive after this function is first called; returning an existing promise
-    // before re-deriving used to leave the homepage permanently blank.
+    // Use the last successful collection response immediately. This prevents
+    // a slow/cold Firestore request from leaving the homepage and menu blank.
+    try{
+      const cached=JSON.parse(localStorage.getItem('stayunknown_collections_cache')||'[]');
+      if(Array.isArray(cached)&&cached.length){stayUnknownCollections=cached.filter(c=>c&&!c.hidden&&String(c.name||'').trim());renderCollectionsUI();}
+    }catch(_){}
+
     const currentDerived=deriveCollectionsFromProducts();
-    if(currentDerived.length){stayUnknownCollections=currentDerived;renderCollectionsUI();}
+    if(currentDerived.length){
+      const merged=new Map(stayUnknownCollections.map(c=>[String(c.name).trim().toLowerCase(),c]));
+      currentDerived.forEach(c=>{const key=String(c.name).trim().toLowerCase();if(!merged.has(key))merged.set(key,c);});
+      stayUnknownCollections=[...merged.values()];
+      renderCollectionsUI();
+    }
     if(collectionsLoadPromise)return collectionsLoadPromise;
     collectionsLoadPromise=(async()=>{
       try{
-        const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),2500);let response;
-        try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
-        const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
+        const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),4500);let response;
+        try{response=await fetch(`${BACKEND_URL}/api/collections?ts=${Date.now()}`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
+        const data=await response.json();
+        if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
         const remote=data.collections.filter(c=>c&&!c.hidden&&String(c.name||'').trim());
-        // Re-derive again after the network request so products loaded while the
-        // request was in flight are included too.
-        const latestDerived=deriveCollectionsFromProducts();
-        const merged=new Map(latestDerived.map(c=>[String(c.name).trim().toLowerCase(),c]));
-        remote.forEach(c=>{const key=String(c.name).trim().toLowerCase();const base=merged.get(key)||{};merged.set(key,{...base,...c,productCount:Number(c.productCount??base.productCount??0)});});
-        const next=[...merged.values()].filter(c=>c&&!c.hidden&&String(c.name||'').trim());
-        if(next.length){stayUnknownCollections=next;renderCollectionsUI();}
-      }catch(error){console.warn('Collections metadata unavailable; keeping local product-derived collections:',error)}
+        if(remote.length){
+          const derivedLatest=deriveCollectionsFromProducts();
+          const merged=new Map(derivedLatest.map(c=>[String(c.name).trim().toLowerCase(),c]));
+          remote.forEach(c=>{const key=String(c.name).trim().toLowerCase();const base=merged.get(key)||{};merged.set(key,{...base,...c,productCount:Number(c.productCount??base.productCount??0)});});
+          stayUnknownCollections=[...merged.values()];
+          try{localStorage.setItem('stayunknown_collections_cache',JSON.stringify(stayUnknownCollections.slice(0,50)))}catch(_){}
+          renderCollectionsUI();
+        }else if(!stayUnknownCollections.length){
+          renderCollectionsUI();
+        }
+      }catch(error){
+        console.warn('Collections metadata unavailable; keeping cached/local collections:',error);
+        renderCollectionsUI();
+      }
       return stayUnknownCollections;
     })().finally(()=>{collectionsLoadPromise=null});
     return collectionsLoadPromise;
