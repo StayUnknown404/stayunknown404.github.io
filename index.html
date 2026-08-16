@@ -1192,7 +1192,12 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   ['acc-04','bag-02','bag-05'].forEach(id=>{const p=products.find(x=>x.id===id);if(p)p.comingSoon=true;});
 
   let categories = ['All','Newly Dropped','T-Shirts','Hoodies','Sweatshirts','Jackets','Pants','Shorts','Tracksuits','Jerseys','Accessories','Bags'];
-  const isHiddenProduct = p => p?.hidden===true || p?.hidden===1 || String(p?.hidden||'').trim().toLowerCase()==='true';
+  const isHiddenProduct = p => {
+    const hidden = p?.hidden===true || p?.hidden===1 || String(p?.hidden||'').trim().toLowerCase()==='true';
+    const hasVisibilityFlag = p && Object.prototype.hasOwnProperty.call(p,'visibleInStore');
+    const visibleInStore = p?.visibleInStore===true || p?.visibleInStore===1 || String(p?.visibleInStore||'').trim().toLowerCase()==='true';
+    return hidden || (hasVisibilityFlag && !visibleInStore);
+  };
   let newDrop = products.filter(p => p.drop && !isHiddenProduct(p));
   const bestSellerIds = ['hood-03','tee-03','pants-01','jacket-01','track-01','jersey-01','tee-01','hood-01'];
   let bestSellers = bestSellerIds.map(id => products.find(p => p.id === id)).filter(Boolean);
@@ -1404,9 +1409,11 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       updateDrop(0,false);bindAddButtons(dropTrack);
       bestTrack.innerHTML=bestSellers.map(p=>cardMarkup(p,'best-seller-card')).join('')+`<article class="best-seller-card promo-card" data-content-type="promotion"><div class="promo-kicker">404 / FUTURE DROP</div><h3>MORE<br>UNKNOWN.</h3><p>This carousel accepts products, discount cards, sale announcements and promotional banners without changing the section structure.</p></article>`;
       bindAddButtons(bestTrack);
-      if(typeof window.loadStayUnknownCollections==='function') await window.loadStayUnknownCollections();
-      if(!shopView.classList.contains('is-hidden'))renderShop();
+      // The product catalogue must become usable immediately. Collections are a
+      // separate request and must never be allowed to block Shop/Search.
       liveCatalogLoaded=true;
+      if(!shopView.classList.contains('is-hidden'))renderShop();
+      if(typeof window.loadStayUnknownCollections==='function') void window.loadStayUnknownCollections();
       return true;
     }catch(e){
       console.warn('Live catalogue unavailable:',e);
@@ -3350,7 +3357,7 @@ onAuthStateChanged(auth, updateAccountUI);
   function startCollectionTimer(){clearInterval(collectionTimer);if(stayUnknownCollections.length<=collectionVisible())return;collectionTimer=setInterval(()=>updateCollections(collectionIndex>=Math.max(0,stayUnknownCollections.length-collectionVisible())?0:collectionIndex+1),4600)}
   function openCollectionPage(id){const c=stayUnknownCollections.find(x=>String(x.id)===String(id));if(!c)return;closeDrawer();closeCart();searchPanel.classList.remove('open');document.querySelector('.hero').style.display='none';document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');collectionTitle.textContent=c.name;const list=products.filter(p=>String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()&&!p.hidden);collectionContent.innerHTML=`<div class="collection-page-hero"><div class="collection-page-art">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-page-copy"><div class="eyebrow">Collection</div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${list.length} PRODUCT${list.length===1?'':'S'}</div><div class="collection-product-grid">${list.length?list.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;bindAddButtons(collectionContent);window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collection-'+encodeURIComponent(c.id))}
   window.openStayUnknownCollection=openCollectionPage;
-  window.loadStayUnknownCollections=async function(){try{const r=await fetch(`${BACKEND_URL}/api/collections`,{cache:'no-store'}),d=await r.json();if(!r.ok||!Array.isArray(d.collections))return;stayUnknownCollections=d.collections;window.stayUnknownCollections=stayUnknownCollections;const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));products.forEach(p=>{p.__limitedCollection=limitedNames.has(String(p.collection||'').toLowerCase())});collectionsTrack.innerHTML=stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join('');collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.collectionId)));collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide));startCollectionTimer()}));renderCollectionMenu();updateCollections(0,false);startCollectionTimer();}catch(e){console.warn('Collections unavailable:',e)}};
+  window.loadStayUnknownCollections=async function(){try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);let r;try{r=await fetch(`${BACKEND_URL}/api/collections?ts=${Date.now()}`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}const d=await r.json();if(!r.ok||!Array.isArray(d.collections))return;stayUnknownCollections=d.collections;window.stayUnknownCollections=stayUnknownCollections;const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));products.forEach(p=>{p.__limitedCollection=limitedNames.has(String(p.collection||'').toLowerCase())});collectionsTrack.innerHTML=stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join('');collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.collectionId)));collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide));startCollectionTimer()}));renderCollectionMenu();updateCollections(0,false);startCollectionTimer();}catch(e){console.warn('Collections unavailable:',e)}};
   const menuCollectionCategories=document.getElementById('menu-collection-categories');
   const menuCollectionsToggle=document.getElementById('menu-collections-toggle');
   const menuCollectionsPlus=document.getElementById('menu-collections-plus');
