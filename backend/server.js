@@ -519,8 +519,9 @@ async function getMergedProducts({includeHidden=false}={}){
     const mergedImages=[...new Set([image,...images,image2].filter(Boolean))].slice(0,2);
     return {...p,image:mergedImages[0]||image,image2:mergedImages[1]||image2,images:mergedImages};
   });
-  const isHidden=value=>value===true || value===1 || String(value||'').trim().toLowerCase()==='true';
-  return includeHidden?list:list.filter(p=>!isHidden(p.hidden));
+  const isTrue=value=>value===true || value===1 || String(value||'').trim().toLowerCase()==='true';
+  const isHiddenProduct=p=>isTrue(p.hidden) || (Object.prototype.hasOwnProperty.call(p,'visibleInStore') && !isTrue(p.visibleInStore));
+  return includeHidden?list:list.filter(p=>!isHiddenProduct(p));
 }
 
 app.get("/api/catalog", async (_req, res) => {
@@ -2283,7 +2284,7 @@ function cleanProductPayload(body,id){
   const hiddenValue=p.hidden;
   const hidden=hiddenValue===true || hiddenValue===1 || String(hiddenValue||'').trim().toLowerCase()==='true';
   return {
-    id:String(id||p.id||'').trim(),name:String(p.name||'').trim().slice(0,180),price:Number(p.price||0),image,image2,images:images.slice(0,2),description:String(p.description||'').trim().slice(0,3000),category:String(p.category||'').trim().slice(0,100),collection:String(p.collection||'').trim().slice(0,120),stock:Math.max(0,Math.floor(Number(p.stock||0))),lowStockThreshold:Math.max(0,Math.floor(Number(p.lowStockThreshold??3))),sizes:Array.isArray(p.sizes)?p.sizes.map(String).map(x=>x.trim()).filter(Boolean).slice(0,30):[],colors:Array.isArray(p.colors)?p.colors.map(String).map(x=>x.trim()).filter(Boolean).slice(0,30):[],tags:String(p.tags||'').trim().slice(0,500),drop:Boolean(p.drop),comingSoon:Boolean(p.comingSoon),hidden,updatedAt:new Date().toISOString()
+    id:String(id||p.id||'').trim(),name:String(p.name||'').trim().slice(0,180),price:Number(p.price||0),image,image2,images:images.slice(0,2),description:String(p.description||'').trim().slice(0,3000),category:String(p.category||'').trim().slice(0,100),collection:String(p.collection||'').trim().slice(0,120),stock:Math.max(0,Math.floor(Number(p.stock||0))),lowStockThreshold:Math.max(0,Math.floor(Number(p.lowStockThreshold??3))),sizes:Array.isArray(p.sizes)?p.sizes.map(String).map(x=>x.trim()).filter(Boolean).slice(0,30):[],colors:Array.isArray(p.colors)?p.colors.map(String).map(x=>x.trim()).filter(Boolean).slice(0,30):[],tags:String(p.tags||'').trim().slice(0,500),drop:Boolean(p.drop),comingSoon:Boolean(p.comingSoon),hidden,visibleInStore:!hidden,updatedAt:new Date().toISOString()
   };
 }
 
