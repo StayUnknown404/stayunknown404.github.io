@@ -410,6 +410,12 @@ function invalidateCatalogCaches(){
 */
 let db = null;
 
+// Short-lived token cache: repeated admin navigation should not make Firebase
+// verify the exact same ID token again and again. The token still comes from
+// Firebase and the cache expires quickly.
+const verifiedTokenCache = new Map();
+const VERIFIED_TOKEN_CACHE_MS = 30000;
+
 function initFirebase() {
   if (db) return db;
 
@@ -459,6 +465,13 @@ async function requireFirebaseUser(req, res, next) {
       });
     }
 
+    const now = Date.now();
+    const cached = verifiedTokenCache.get(token);
+    if(cached && now-cached.cachedAt<VERIFIED_TOKEN_CACHE_MS && Number(cached.exp||0)*1000>now+5000){
+      req.firebaseUser=cached.decoded;
+      return next();
+    }
+
     const firebase = initFirebase();
 
     if (!firebase) {
@@ -468,13 +481,15 @@ async function requireFirebaseUser(req, res, next) {
     }
 
     const decoded = await admin.auth().verifyIdToken(token);
-
+    verifiedTokenCache.set(token,{decoded,cachedAt:now,exp:decoded.exp});
+    if(verifiedTokenCache.size>500){
+      const firstKey=verifiedTokenCache.keys().next().value;
+      if(firstKey)verifiedTokenCache.delete(firstKey);
+    }
     req.firebaseUser = decoded;
-
     next();
   } catch (error) {
     console.error("Firebase authentication error:", error);
-
     return res.status(401).json({
       error: "Invalid or expired authentication token."
     });
