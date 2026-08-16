@@ -3482,7 +3482,7 @@ onAuthStateChanged(auth, updateAccountUI);
     if(derived.length){stayUnknownCollections=derived;renderCollectionsUI();}
     collectionsLoadPromise=(async()=>{
       try{
-        const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),2500);let response;
+        const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);let response;
         try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'default',signal:controller.signal})}finally{clearTimeout(timer)}
         const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
         const remote=data.collections.filter(c=>c&&!c.hidden);
