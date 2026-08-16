@@ -1477,9 +1477,10 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     updateWishlistCount();
     renderWishlist();
 
-    /* Sync in the background; never await it before updating the UI. */
+    /* Keep the UI immediate, but finish the account sync before this toggle
+       settles so a quick refresh cannot reload the previous server wishlist. */
     if(window.__stayUnknownCurrentUser){
-      void syncWishlistToAccount(wishlistIds);
+      await syncWishlistToAccount(wishlistIds);
     }
   }
   window.toggleStayUnknownWishlist=toggleWishlist;
