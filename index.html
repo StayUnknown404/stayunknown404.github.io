@@ -623,7 +623,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 <style id="stayunknown-collections-style">
 #collections-home{overflow:hidden;content-visibility:visible;contain:none}
 .collections-viewport{position:relative;overflow:hidden;touch-action:pan-y;cursor:grab;min-height:390px}.collections-viewport:active{cursor:grabbing}
-.collections-track{display:flex;gap:12px;width:100%;will-change:transform;transition:transform .45s cubic-bezier(.2,.75,.2,1)}
+.collections-track{display:flex;gap:12px;width:100%;min-height:430px;will-change:transform;transition:transform .45s cubic-bezier(.2,.75,.2,1)}
 .collection-slide{flex:0 0 calc((100% - 12px)/2);min-width:0;height:430px;display:block}.collection-card{position:relative;width:100%;height:100%;min-height:430px;background:#171717;border:1px solid #444;overflow:hidden;cursor:pointer;pointer-events:auto;z-index:2;display:flex;flex-direction:column;visibility:visible;opacity:1}.collection-card-media{position:relative;flex:0 0 275px;height:275px;background:radial-gradient(circle at 70% 25%,#303030,#171717 55%,#101010);display:grid;place-items:center;overflow:hidden}.collection-card-media img{width:100%;height:100%;object-fit:cover;display:block}.collection-card-fallback{width:100%;height:100%;display:grid;place-items:center;font:clamp(34px,7vw,72px)/.9 Anton,sans-serif;text-transform:uppercase;letter-spacing:-2px;text-align:center;padding:30px;color:#f3f3f0}.collection-card-copy{padding:16px 18px 18px;background:#171717;border-top:1px solid #333;flex:1 1 auto;min-height:150px;display:flex;flex-direction:column;justify-content:flex-start}.collection-card-kicker{font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}.collection-card-name{color:#fff;font:clamp(25px,4vw,44px)/.95 Anton,sans-serif;text-transform:uppercase;letter-spacing:.5px;margin:0}.collection-card-meta{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#aaa;margin-top:7px}.collection-view-btn{width:100%;margin-top:auto;padding:12px;background:#f3f3f0;color:#111;border:0;font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:block;min-height:38px}.collection-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}.collection-dot{width:7px;height:7px;border-radius:50%;border:1px solid #777;background:transparent;padding:0;cursor:pointer}.collection-dot.active{background:#f3f3f0}
 #collection-view .shop-view-inner{max-width:1200px}.collection-page-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:22px;margin-bottom:26px;align-items:stretch}.collection-page-art{min-height:330px;background:#111;border:1px solid #292929;overflow:hidden}.collection-page-art img{width:100%;height:100%;object-fit:cover;display:block}.collection-page-copy{border:1px solid #292929;background:#111;padding:28px;display:flex;flex-direction:column;justify-content:flex-end}.collection-page-copy .eyebrow{margin-bottom:12px}.collection-page-copy h2{font:clamp(40px,7vw,76px)/.9 Anton,sans-serif;text-transform:uppercase;margin:0}.collection-page-copy p{color:#aaa;line-height:1.7;font-size:12px;margin:14px 0 0}.collection-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.collection-admin-card{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;border:1px solid #292929;padding:10px;background:#151515}.collection-admin-thumb{width:90px;height:90px;object-fit:cover;background:#111;border:1px solid #292929}.collection-product-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:240px;overflow:auto;border:1px solid #292929;padding:10px;background:#0e0e0e}.collection-product-picker label{font-size:10px;color:#bbb;display:flex;gap:7px;align-items:center;padding:7px;border:1px solid #222}
 @media(max-width:700px){.collection-slide{flex-basis:100%;height:430px}.collection-card{min-height:430px}.collection-card-media{flex-basis:270px;height:270px}.collection-page-hero{grid-template-columns:1fr}.collection-page-art{min-height:250px}.collection-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-admin-card{grid-template-columns:64px 1fr}.collection-admin-thumb{width:64px;height:64px}.collection-product-picker{grid-template-columns:1fr}}
@@ -3186,15 +3186,11 @@ onAuthStateChanged(auth, updateAccountUI);
       }
 
       if(section==='collections'){
-        const [collectionResponse,productResponse]=await Promise.all([
-          fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'}),
-          fetch(`${BACKEND_URL}/api/admin/products?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})
-        ]);
-        const [cd,pd]=await Promise.all([collectionResponse.json(),productResponse.json()]);
+        const collectionResponse=await fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+        const cd=await collectionResponse.json();
         if(!collectionResponse.ok)throw new Error(cd.error||'Unable to load collections.');
-        if(!productResponse.ok)throw new Error(pd.error||'Unable to load products.');
         const collections=Array.isArray(cd.collections)?cd.collections:[];
-        const items=Array.isArray(pd.products)?pd.products:[];
+        const items=Array.isArray(cd.products)?cd.products:[];
         let editingCollectionId=null;
         const collectionRows=()=>collections.map(c=>{const count=items.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()).length;return `<button type="button" class="collection-admin-card admin-inventory-clickable" data-open-collection="${esc(c.id)}"><div class="collection-admin-thumb">${c.image?`<img src="${esc(c.image)}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:`<div style="height:100%;display:grid;place-items:center;font-weight:900">404</div>`}</div><div><strong>${esc(c.name)}</strong><small>${count} PRODUCT${count===1?'':'S'} · ${c.hidden?'HIDDEN':'VISIBLE'}${c.limited?' · LIMITED':''}</small><small>${esc(c.description||'')}</small></div><span class="inventory-chevron">›</span></button>`}).join('');
         const collectionForm=(c={})=>`<div class="admin-product-editor" style="display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid #252525;background:#111"><strong>${editingCollectionId?'EDIT COLLECTION':'CREATE COLLECTION'}</strong><input id="admin-collection-name" class="checkout-input" placeholder="Collection name e.g. Summer Drops" value="${esc(c.name||'')}"><label><input id="admin-collection-limited" type="checkbox" ${c.limited?'checked':''}> LIMITED COLLECTION — products in this collection show a LIMITED tag</label><input id="admin-collection-image" class="checkout-input" type="url" placeholder="Collection artwork image URL (optional)" value="${esc(c.image||'')}"><label style="display:grid;gap:6px">COLLECTION PICTURE<input id="admin-collection-image-file" class="checkout-input" type="file" accept="image/*"></label><textarea id="admin-collection-description" class="checkout-input" rows="3" placeholder="Short collection description">${esc(c.description||'')}</textarea><input id="admin-collection-order" class="checkout-input" type="number" min="0" step="1" placeholder="Display order" value="${c.order??0}"><div class="collection-product-picker">${items.map(p=>`<label><input type="checkbox" value="${esc(p.id)}" ${String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()?'checked':''}> ${esc(p.name)}</label>`).join('')}</div>${editingCollectionId?`<div class="admin-visibility-row"><span><strong>${c.hidden?'HIDDEN FROM STORE':'VISIBLE IN STORE'}</strong><small>${c.hidden?'Customers cannot see this collection.':'Customers can see this collection.'}</small></span><button type="button" class="visibility-switch ${c.hidden?'is-off':''}" id="admin-collection-visibility" aria-label="${c.hidden?'Restore collection to store':'Hide collection from store'}"><span></span></button></div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="account-subpage-action primary" id="admin-collection-save">${editingCollectionId?'SAVE CHANGES':'CREATE COLLECTION'}</button><button type="button" class="account-subpage-action" id="admin-collection-cancel">CANCEL</button>${editingCollectionId?`<button type="button" class="account-subpage-action danger" id="admin-collection-delete">DELETE PERMANENTLY</button>`:''}</div><div id="admin-collection-message" class="account-subpage-note"></div></div>`;
@@ -3461,18 +3457,24 @@ onAuthStateChanged(auth, updateAccountUI);
   }
   async function loadStayUnknownCollections(){
     if(collectionsLoadPromise)return collectionsLoadPromise;
-    // Render immediately from the already-loaded product catalogue. This makes
-    // Collections independent of Firestore latency and gives the menu real items
-    // on the first interaction. The API call below only enriches metadata.
+    // Build immediately from the live product catalogue so the homepage and menu
+    // never depend on a slow Firestore collections request. The server response
+    // only supplies richer collection metadata (artwork, description, order).
     const derived=deriveCollectionsFromProducts();
     if(derived.length){stayUnknownCollections=derived;renderCollectionsUI();}
     collectionsLoadPromise=(async()=>{
       try{
         const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),2500);let response;
-        try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'default',signal:controller.signal})}finally{clearTimeout(timer)}
+        try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
         const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
-        const remote=data.collections.filter(c=>c&&!c.hidden);
-        if(remote.length || !derived.length){stayUnknownCollections=remote;renderCollectionsUI();}
+        const remote=data.collections.filter(c=>c&&!c.hidden&&String(c.name||'').trim());
+        // Merge server-managed records with product-derived collections instead of
+        // replacing the derived list. This keeps every real product collection
+        // visible even when Firestore contains only part of the collection set.
+        const merged=new Map(derived.map(c=>[String(c.name).trim().toLowerCase(),c]));
+        remote.forEach(c=>{const key=String(c.name).trim().toLowerCase();const base=merged.get(key)||{};merged.set(key,{...base,...c,productCount:Number(c.productCount??base.productCount??0)});});
+        const next=[...merged.values()].filter(c=>c&&!c.hidden&&String(c.name||'').trim());
+        if(next.length){stayUnknownCollections=next;renderCollectionsUI();}
       }catch(error){console.warn('Collections metadata unavailable; keeping local product-derived collections:',error)}
       return stayUnknownCollections;
     })().finally(()=>{collectionsLoadPromise=null});
