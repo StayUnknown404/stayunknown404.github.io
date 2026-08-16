@@ -560,6 +560,53 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   .admin-route-head{align-items:flex-start}
 }
 </style>
+
+<style id="stayunknown-polish-upgrade">
+/* SEARCH / WISHLIST / BAG POLISH */
+.search-panel-results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-height:62vh;overflow:auto;padding-top:4px}
+.search-result-card{display:grid;grid-template-columns:58px 1fr;grid-template-areas:"visual name" "visual meta" "visual price";gap:2px 10px;align-items:center;padding:10px;border:1px solid #292929;background:#151515;min-width:0;transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.search-result-card:hover{transform:translateY(-2px);border-color:#666;background:#191919}
+.search-result-image{grid-area:visual;width:58px;height:72px;display:grid;place-items:center;border:1px solid #3a3a3a;background:linear-gradient(145deg,#222,#101010);font:18px/1 Anton,sans-serif;color:#aaa}
+.search-result-name{grid-area:name;font-size:10px;font-weight:900;line-height:1.25;text-transform:uppercase}
+.search-result-meta{grid-area:meta;color:#777;font-size:8px;text-transform:uppercase;letter-spacing:.7px}
+.search-result-price{grid-area:price;font-size:9px;font-weight:800}
+.search-empty-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.search-clear{background:transparent;color:#aaa;border:1px solid #333;padding:0 14px;font-weight:800;cursor:pointer}
+.wishlist-row{align-items:center}
+.wishlist-row-visual{width:58px;height:72px;flex:0 0 58px;display:grid;place-items:center;border:1px solid #333;background:linear-gradient(145deg,#222,#101010);font:18px/1 Anton,sans-serif;color:#aaa}
+.wishlist-row-main{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:center;flex:1;min-width:0}
+.wishlist-row-copy{min-width:0}
+.wishlist-row-actions{flex-wrap:wrap;justify-content:flex-end}
+.wishlist-action.primary{background:#f3f3f0;color:#111;border-color:#f3f3f0}
+.wishlist-action:hover{border-color:#777}
+.cart-item{grid-template-columns:58px minmax(0,1fr);grid-template-areas:"visual main" "visual actions";align-items:center;gap:9px 11px;padding:13px 0}
+.cart-item-visual{grid-area:visual;width:58px;height:72px;display:grid;place-items:center;border:1px solid #333;background:linear-gradient(145deg,#222,#101010);font:18px/1 Anton,sans-serif;color:#aaa}
+.cart-item-main{grid-area:main}
+.cart-item-actions{grid-area:actions;justify-content:flex-start;flex-wrap:wrap}
+.cart-total{position:sticky;bottom:0;background:#0d0d0d;padding:15px 0 3px;border-top:1px solid #292929;z-index:2}
+#cart-items{padding-bottom:8px}
+.account-dashboard-card,.admin-stat,.admin-list-row{transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.account-dashboard-card:hover,.admin-stat:hover,.admin-list-row:hover{transform:translateY(-1px);border-color:#555;background:#181818}
+.admin-stat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.admin-stat strong{font-variant-numeric:tabular-nums}
+.checkout-promo{margin:16px 0 0;padding:13px;border:1px solid #292929;background:#151515}
+.checkout-promo-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
+.checkout-promo-head strong{font-size:9px;letter-spacing:1.5px;text-transform:uppercase}
+.checkout-promo-row{display:flex;gap:7px}
+.checkout-promo-row input{flex:1;min-width:0}
+.checkout-promo-row button{padding:11px 12px;background:#f3f3f0;color:#111;border:0;font-size:9px;font-weight:900;cursor:pointer}
+.checkout-promo-message{font-size:9px;color:#999;margin-top:7px;min-height:12px}
+.checkout-summary-discount{display:flex;justify-content:space-between;color:#9f9;font-size:10px;padding-top:8px}
+.checkout-summary-total.discounted{padding-top:8px;border-top:1px solid #292929;margin-top:8px}
+.su-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,14px);z-index:5200;background:#f3f3f0;color:#111;padding:11px 15px;border-radius:2px;font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 12px 35px rgba(0,0,0,.45)}
+.su-toast.show{opacity:1;transform:translate(-50%,0)}
+@media(min-width:1200px){#search-panel{padding-left:8%;padding-right:8%}.search-panel-results{grid-template-columns:repeat(5,minmax(0,1fr))}.account-page-card{width:min(860px,100%)}.cart-panel{max-width:460px}}
+@media(max-width:1050px){.search-panel-results{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.search-panel-results{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.search-result-card{grid-template-columns:50px 1fr}.search-result-image{width:50px;height:64px}.wishlist-row{align-items:flex-start}.wishlist-row-actions{width:100%;justify-content:flex-start;margin-left:68px}.cart-item{grid-template-columns:52px minmax(0,1fr)}.cart-item-visual{width:52px;height:64px}.admin-stat-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.search-panel-results{grid-template-columns:1fr}.search-result-card{grid-template-columns:54px 1fr}.search-result-image{width:54px;height:66px}.wishlist-row-actions{margin-left:0}.checkout-promo-row{flex-direction:column}.checkout-promo-row button{width:100%}}
+@media(prefers-reduced-motion:reduce){.search-result-card,.account-dashboard-card,.admin-stat,.admin-list-row,.su-toast{transition:none!important}}
+</style>
+<div id="su-toast" class="su-toast" aria-live="polite"></div>
 </head>
 <body class="intro-active">
 
@@ -605,7 +652,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 <div id="search-panel" aria-label="Product search">
   <div class="search-wrap">
     <input id="search-input" type="search" placeholder="SEARCH STAYUNKNOWN..." autocomplete="off" aria-label="Search products">
-    <button class="search-close" id="search-close">CLOSE</button>
+    <button class="search-clear" id="search-clear" type="button">CLEAR</button><button class="search-close" id="search-close">CLOSE</button>
   </div>
   <div class="search-results" id="search-results">Search products by name.</div>
 </div>
@@ -783,6 +830,11 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
           <label class="auth-label" for="checkout-note">ORDER NOTE (OPTIONAL)</label>
           <textarea id="checkout-note" class="checkout-textarea"></textarea>
         </div>
+        <div class="checkout-promo">
+          <div class="checkout-promo-head"><strong>HAVE A PROMO CODE?</strong><span id="checkout-promo-applied"></span></div>
+          <div class="checkout-promo-row"><input id="checkout-promo-code" class="checkout-input" placeholder="ENTER CODE" autocomplete="off" inputmode="text"><button id="checkout-promo-apply" type="button">APPLY</button></div>
+          <div id="checkout-promo-message" class="checkout-promo-message" aria-live="polite"></div>
+        </div>
         <label id="save-checkout-info-wrap" style="display:none"><input id="save-checkout-info" type="checkbox"> SAVE PHONE &amp; ADDRESS FOR FUTURE ORDERS</label><button class="checkout-submit" id="checkout-submit-button" type="submit">CONTINUE AS GUEST</button>
         <div class="checkout-status" id="checkout-status" aria-live="polite"></div>
       </form>
@@ -790,7 +842,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       <div class="checkout-summary">
         <h3>ORDER SUMMARY</h3>
         <div id="checkout-summary-items"></div>
-        <div class="checkout-summary-total"><span>TOTAL</span><span id="checkout-summary-total">₦0</span></div>
+        <div id="checkout-summary-discount" class="checkout-summary-discount" style="display:none"><span>DISCOUNT</span><span id="checkout-summary-discount-value">-₦0</span></div><div class="checkout-summary-total" id="checkout-summary-total-row"><span>TOTAL</span><span id="checkout-summary-total">₦0</span></div>
         <p class="checkout-note">Account creation is optional. You can complete this checkout as a guest.</p>
       </div>
     </div>
@@ -1213,38 +1265,53 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
   /* ---------- SEARCH ---------- */
   function normalize(value){return String(value||'').trim().toLowerCase()}
+  let searchTimer=null;
   function doSearch(query){
     const q=normalize(query);
+    const results=document.getElementById('search-results');
     if(!q){
-      searchResults.textContent='Search all STAYUNKNOWN products by name, category or keyword.';
-      document.getElementById('search-results').className='search-results';
-      document.getElementById('search-results').innerHTML='Search all STAYUNKNOWN products by name, category or keyword.';
+      results.className='search-results';
+      results.innerHTML='<div>SEARCH BY PRODUCT NAME, CATEGORY OR KEYWORD.</div>';
       return;
     }
     const words=q.split(/\s+/).filter(Boolean);
-    const matches=products.filter(p => words.every(w => normalize(`${p.name} ${p.category} ${p.tags}`).includes(w)));
+    const matches=products.map(p=>{
+      const name=normalize(p.name),category=normalize(p.category),tags=normalize(p.tags);
+      let score=0;
+      if(name===q)score+=100; else if(name.startsWith(q))score+=60; else if(name.includes(q))score+=40;
+      if(category===q)score+=55; else if(category.includes(q))score+=25;
+      if(tags.includes(q))score+=20;
+      if(words.every(w=>normalize(`${p.name} ${p.category} ${p.tags}`).includes(w)))score+=15; else return null;
+      return {p,score};
+    }).filter(Boolean).sort((a,b)=>b.score-a.score).map(x=>x.p);
     if(!matches.length){
-      document.getElementById('search-results').innerHTML='NO PRODUCTS FOUND';
+      results.innerHTML='<div>NO PRODUCTS FOUND.</div><div class="search-empty-actions"><button type="button" class="search-clear" id="search-empty-clear">CLEAR SEARCH</button></div>';
+      document.getElementById('search-empty-clear')?.addEventListener('click',()=>{searchInput.value='';doSearch('');searchInput.focus()});
       return;
     }
-    document.getElementById('search-results').innerHTML =
-      `<div class="shop-count">${matches.length} RESULT${matches.length===1?'':'S'} FOUND</div>
-       <div class="search-panel-results">${matches.map(p => `
-         <article class="search-result-card" data-search-product="${p.id}">
-           <div class="search-result-image">${escapeHTML(p.category.split(/[- ]/)[0].toUpperCase())}</div>
-           <div class="search-result-name">${escapeHTML(p.name)}</div>
-           <div class="search-result-price">${money(p.price)}</div>
-         </article>`).join('')}</div>`;
-    document.querySelectorAll('[data-search-product]').forEach(card => card.addEventListener('click',()=>openProductById(card.dataset.searchProduct)));
+    results.innerHTML=`<div class="shop-count">${matches.length} RESULT${matches.length===1?'':'S'} FOUND</div>
+      <div class="search-panel-results">${matches.map(p=>`<article class="search-result-card" data-search-product="${escapeHTML(p.id)}" tabindex="0" role="button">
+        <div class="search-result-image">${productVisualCode(p.id)}</div>
+        <div class="search-result-name">${escapeHTML(p.name)}</div>
+        <div class="search-result-meta">${escapeHTML(p.category)}</div>
+        <div class="search-result-price">${money(p.price)}</div>
+      </article>`).join('')}</div>`;
+    results.querySelectorAll('[data-search-product]').forEach(card=>{
+      const open=()=>{openProductById(card.dataset.searchProduct);searchPanel.classList.remove('open');searchInput.value='';doSearch('')};
+      card.addEventListener('click',open);
+      card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}});
+    });
   }
   searchBtn.addEventListener('click',()=>{
     const open=searchPanel.classList.toggle('open');
     if(open)searchInput.focus();else{searchInput.value='';doSearch('')}
   });
+  document.getElementById('search-clear').addEventListener('click',()=>{searchInput.value='';doSearch('');searchInput.focus()});
   document.getElementById('search-close').addEventListener('click',()=>{
     searchPanel.classList.remove('open');searchInput.value='';doSearch('');
   });
-  searchInput.addEventListener('input',e=>doSearch(e.target.value));
+  searchInput.addEventListener('input',e=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>doSearch(e.target.value),70)});
+  searchInput.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('search-close').click()}if(e.key==='Enter'){document.querySelector('[data-search-product]')?.click()}});
 
   /* ---------- PRODUCT OPTIONS ---------- */
   const productOptionsModal=document.getElementById('product-options-modal');
@@ -1334,8 +1401,8 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     const size=productSize.value,color=productColor.value;
     const existing=cart.find(i=>i.id===selectedProduct.id&&i.size===size&&i.color===color);
     if(existing)existing.quantity++;
-    else cart.push({id:selectedProduct.id,name:selectedProduct.name,price:selectedProduct.price,size,color,quantity:1});
-    closeProductOptions();renderCart();openCart();
+    else cart.push({id:selectedProduct.id,name:selectedProduct.name,price:selectedProduct.price,category:selectedProduct.category,collection:selectedProduct.collection||selectedProduct.category,size,color,quantity:1});
+    persistCart(); closeProductOptions();renderCart();openCart();
   });
 
   function openProductById(id){
@@ -1356,33 +1423,42 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
   /* ---------- CART ---------- */
   let cart=[];
-  function cartQuantity(){return cart.reduce((s,i)=>s+i.quantity,0)}
-  function cartSubtotal(){return cart.reduce((s,i)=>s+i.price*i.quantity,0)}
+  try{const savedCart=JSON.parse(localStorage.getItem('stayunknown_cart')||'[]');if(Array.isArray(savedCart))cart=savedCart}catch(_){cart=[]}
+  function persistCart(){try{localStorage.setItem('stayunknown_cart',JSON.stringify(cart))}catch(_){}}
+  function cartQuantity(){return cart.reduce((s,i)=>s+Number(i.quantity||0),0)}
+  function cartSubtotal(){return cart.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||0),0)}
+  function productVisualCode(id){return escapeHTML(String(id||'404').split('-')[0].slice(0,6).toUpperCase())}
   function renderCart(){
     const box=document.getElementById('cart-items'), count=cartQuantity(), subtotal=cartSubtotal();
     document.getElementById('cart-count').textContent=count;
     document.getElementById('menu-cart-count').textContent=count;
     document.getElementById('cart-total').textContent=money(subtotal);
     document.getElementById('checkout-btn').disabled=!cart.length;
-    if(!cart.length){box.innerHTML='<div class="cart-empty">Your bag is empty.</div>';renderCheckoutSummary();return}
+    if(!cart.length){box.innerHTML='<div class="cart-empty">Your 404 Bag is empty.</div>';renderCheckoutSummary();persistCart();return}
     box.innerHTML=cart.map((item,index)=>`<div class="cart-item">
+      <div class="cart-item-visual" aria-hidden="true">${productVisualCode(item.id)}</div>
       <div class="cart-item-main"><div class="cart-item-name">${escapeHTML(item.name)}</div><div class="cart-item-price">SIZE ${escapeHTML(item.size||'ONE SIZE')} · ${escapeHTML(item.color||'BLACK')} · ${money(item.price)} each · ${money(item.price*item.quantity)}</div></div>
-      <div class="cart-item-actions"><button class="qty-btn" data-action="minus" data-index="${index}">−</button><span class="cart-qty">${item.quantity}</span><button class="qty-btn" data-action="plus" data-index="${index}">+</button><button class="cart-remove" data-action="remove" data-index="${index}">REMOVE</button></div>
+      <div class="cart-item-actions"><button class="qty-btn" data-action="minus" data-index="${index}" aria-label="Decrease quantity">−</button><span class="cart-qty">${item.quantity}</span><button class="qty-btn" data-action="plus" data-index="${index}" aria-label="Increase quantity">+</button><button class="cart-remove" data-action="remove" data-index="${index}">REMOVE</button></div>
     </div>`).join('');
     box.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{
       const i=Number(btn.dataset.index),a=btn.dataset.action;
+      if(!cart[i])return;
       if(a==='plus')cart[i].quantity++;
       if(a==='minus'){cart[i].quantity--;if(cart[i].quantity<=0)cart.splice(i,1)}
       if(a==='remove')cart.splice(i,1);
-      renderCart();
+      if(window.stayunknownClearPromo)window.stayunknownClearPromo();
+      persistCart();renderCart();
     }));
     renderCheckoutSummary();
+    persistCart();
   }
   /* ---------- WISHLIST ---------- */
   let wishlistIds=[];
   let wishlistSyncTimer=null;
   let wishlistRevision=0;
   try{const saved=JSON.parse(localStorage.getItem('stayunknown_wishlist')||'[]');wishlistIds=Array.isArray(saved)?saved.map(String):[]}catch(_){wishlistIds=[]}
+  let toastTimer=null;
+  function showStayUnknownToast(message){const el=document.getElementById('su-toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1800)}
   function isWishlisted(id){const key=String(id);return wishlistIds.some(x=>String(x)===key)}
   function normalizeWishlistIds(ids){
     return [...new Set((Array.isArray(ids)?ids:[]).map(x=>String(x||'').trim()).filter(Boolean))]
@@ -1496,13 +1572,14 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   }
   window.toggleStayUnknownWishlist=toggleWishlist;
   window.getStayUnknownWishlistIds=()=>[...wishlistIds];
+  window.stayUnknownGetCartItems=()=>cart.map(i=>({...i}));
   function renderWishlist(){
     const box=document.getElementById('wishlist-items'); if(!box)return;
     const items=wishlistIds.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
     if(!items.length){box.innerHTML='<div class="orders-empty">YOUR WISHLIST IS EMPTY.</div>';updateWishlistCount();return}
     box.innerHTML=items.map(p=>{
       const inCart=cart.some(i=>i.id===p.id);
-      return `<div class="wishlist-row"><div class="wishlist-row-main"><div class="wishlist-row-name">${escapeHTML(p.name)}</div><div class="wishlist-row-meta">${escapeHTML(p.category)} · ${money(p.price)}</div>${inCart?'<div class="wishlist-row-status">ALREADY IN BAG</div>':''}</div><div class="wishlist-row-actions"><button class="wishlist-action" data-wish-add="${escapeHTML(p.id)}" type="button">${inCart?'VIEW BAG':'ADD TO BAG'}</button><button class="wishlist-action" data-wish-view="${escapeHTML(p.id)}" type="button">VIEW</button><button class="wishlist-action" data-wish-remove="${escapeHTML(p.id)}" type="button">REMOVE</button></div></div>`
+      return `<div class="wishlist-row"><div class="wishlist-row-main"><div class="wishlist-row-visual" aria-hidden="true">${productVisualCode(p.id)}</div><div class="wishlist-row-copy"><div class="wishlist-row-name">${escapeHTML(p.name)}</div><div class="wishlist-row-meta">${escapeHTML(p.category)} · ${money(p.price)}</div>${inCart?'<div class="wishlist-row-status">ALREADY IN BAG</div>':''}</div></div><div class="wishlist-row-actions"><button class="wishlist-action primary" data-wish-add="${escapeHTML(p.id)}" type="button">${inCart?'VIEW BAG':'ADD TO BAG'}</button><button class="wishlist-action" data-wish-view="${escapeHTML(p.id)}" type="button">VIEW</button><button class="wishlist-action" data-wish-remove="${escapeHTML(p.id)}" type="button">REMOVE</button></div></div>`
     }).join('');
     box.querySelectorAll('[data-wish-add]').forEach(btn=>btn.addEventListener('click',()=>{const p=products.find(x=>x.id===btn.dataset.wishAdd);if(!p)return;if(cart.some(i=>i.id===p.id)){closeWishlist();openCart()}else{closeWishlist();openProductOptions(p)}}));
     box.querySelectorAll('[data-wish-view]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();window.openStayUnknownProduct?.(btn.dataset.wishView);}));
@@ -1548,10 +1625,42 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   const checkoutStatus=document.getElementById('checkout-status');
   function renderCheckoutSummary(){
     const summary=document.getElementById('checkout-summary-items'),total=document.getElementById('checkout-summary-total');
-    if(!cart.length){summary.innerHTML='<div class="checkout-note">Your bag is empty.</div>';total.textContent=money(0);return}
+    if(!cart.length){summary.innerHTML='<div class="checkout-note">Your bag is empty.</div>';total.textContent=money(0);renderCheckoutPromo();return}
     summary.innerHTML=cart.map(i=>`<div class="checkout-summary-row"><span>${escapeHTML(i.name)}<br><small style="color:#777">${escapeHTML(i.size||'ONE SIZE')} · ${escapeHTML(i.color||'BLACK')} × ${i.quantity}</small></span><span>${money(i.price*i.quantity)}</span></div>`).join('');
-    total.textContent=money(cartSubtotal());
+    total.textContent=money(checkoutGrandTotal());
+    renderCheckoutPromo();
   }
+  let appliedPromo=null;
+  function promoItems(){return cart.map(i=>({id:i.id,price:Number(i.price||0),quantity:Number(i.quantity||1),collection:i.collection,category:i.category}))}
+  function promoDiscountAmount(){return Number(appliedPromo?.discount||0)}
+  function checkoutGrandTotal(){return Math.max(0,cartSubtotal()-promoDiscountAmount())}
+  function renderCheckoutPromo(){
+    const discount=promoDiscountAmount();
+    const row=document.getElementById('checkout-summary-discount');
+    const value=document.getElementById('checkout-summary-discount-value');
+    const totalRow=document.getElementById('checkout-summary-total-row');
+    if(row){row.style.display=discount>0?'flex':'none';if(value)value.textContent=`-${money(discount)}`}
+    if(totalRow)totalRow.classList.toggle('discounted',discount>0);
+    const applied=document.getElementById('checkout-promo-applied');
+    if(applied)applied.textContent=appliedPromo?.code||'';
+  }
+  window.stayunknownClearPromo=function(){appliedPromo=null;renderCheckoutPromo();const msg=document.getElementById('checkout-promo-message');if(msg)msg.textContent=''}
+  async function applyCheckoutPromo(){
+    const input=document.getElementById('checkout-promo-code'),msg=document.getElementById('checkout-promo-message');
+    const code=String(input?.value||'').trim().toUpperCase();
+    if(!code){if(msg)msg.textContent='ENTER A PROMO CODE.';return}
+    try{
+      const r=await fetch(`${BACKEND_URL}/api/promo/validate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,items:promoItems()})});
+      const data=await r.json();
+      if(!r.ok||!data.valid)throw new Error(data.error||'INVALID OR EXPIRED PROMO CODE.');
+      appliedPromo=data;
+      if(msg)msg.textContent=`${data.code} APPLIED — ${money(Number(data.discount||0))} OFF.`;
+      renderCheckoutPromo();renderCheckoutSummary();showStayUnknownToast('PROMO APPLIED');
+    }catch(e){appliedPromo=null;renderCheckoutPromo();if(msg)msg.textContent=e.message||'UNABLE TO APPLY PROMO.'}
+  }
+  document.getElementById('checkout-promo-apply')?.addEventListener('click',applyCheckoutPromo);
+  document.getElementById('checkout-promo-code')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyCheckoutPromo()}});
+
   async function openCheckout(){
     if(!cart.length){checkoutStatus.textContent='Your 404 Bag is empty.';return}
     closeCart();checkoutStatus.textContent='';checkoutOverlay.classList.add('open');checkoutOverlay.setAttribute('aria-hidden','false');renderCheckoutSummary();
@@ -1705,6 +1814,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
           email,
           phone,
           userId:window.__stayUnknownCurrentUser?.uid || '',
+          promoCode:appliedPromo?.code || '',
           callbackUrl:`${window.location.origin}${window.location.pathname}`,
           items:cart.map(item=>({
             productId:item.id,
@@ -2860,6 +2970,9 @@ onAuthStateChanged(auth, updateAccountUI);
     if(action==='admin-dashboard'){e.preventDefault();openAdminDashboardPage();}
   });
 
+  // Restore the persisted 404 Bag without blocking first paint.
+  requestAnimationFrame(()=>renderCart());
+
   /* Robust swipe-back: only when Cart or Checkout is actually open. */
   let sx=0,sy=0,swipe=false,swipeMode='';
   document.addEventListener('touchstart',e=>{
@@ -2893,7 +3006,7 @@ onAuthStateChanged(auth, updateAccountUI);
     if(!code){if(msg)msg.textContent='Enter a promo code.';return}
     try{
       const r=await fetch(`${window.BACKEND_URL||'/api'}/promo/validate`,{
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,items:(window.cart||window.cartItems||[]).map(i=>({id:i.id,price:Number(i.price||0),quantity:Number(i.quantity||1),collection:i.collection,category:i.category}))})
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,items:(window.stayUnknownGetCartItems?window.stayUnknownGetCartItems():[]).map(i=>({id:i.id,price:Number(i.price||0),quantity:Number(i.quantity||1),collection:i.collection,category:i.category}))})
       });
       const data=await r.json();
       if(!r.ok||!data.valid) throw new Error(data.error||'Invalid promo code.');
