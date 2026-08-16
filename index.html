@@ -1351,6 +1351,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     return true;
   }
   window.openStayUnknownProduct=openProductById;
+  window.openStayUnknownProductOptions=openProductOptions;
   window.stayUnknownProducts=products;
 
   /* ---------- CART ---------- */
@@ -2406,7 +2407,18 @@ onAuthStateChanged(auth, updateAccountUI);
     const items=ids.map(id=>products().find(p=>String(p.id)===String(id))).filter(Boolean);
     if(!items.length){body.innerHTML='<div class="account-subpage-empty">YOUR WISHLIST IS EMPTY.</div>';return}
     body.innerHTML=`<p class="account-subpage-note">${items.length} SAVED PIECE${items.length===1?'':'S'}.</p><div class="account-subpage-list">${items.map(p=>`<article class="account-subpage-row"><div class="account-subpage-row-main"><div class="account-subpage-row-name">${esc(p.name)}</div><div class="account-subpage-row-meta">${esc(p.category)} · ₦${Number(p.price||0).toLocaleString('en-NG')}</div></div><div class="account-subpage-row-actions"><button class="account-subpage-action primary" data-wish-view="${esc(p.id)}">VIEW</button><button class="account-subpage-action" data-wish-remove="${esc(p.id)}">REMOVE</button></div></article>`).join('')}</div>`;
-    body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const id=String(b.dataset.wishView||'');hideSubPage();closeAccountPage();window.openStayUnknownProduct?.(id);}));
+    body.querySelectorAll('[data-wish-view]').forEach(b=>b.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const id=String(b.dataset.wishView||'').trim();
+      const product=(window.stayUnknownProducts||[]).find(p=>String(p?.id||'').trim()===id);
+      if(!product)return;
+      hideSubPage();
+      accountPage.classList.remove('open');
+      accountPage.setAttribute('aria-hidden','true');
+      document.getElementById('wishlist-panel')?.classList.remove('open');
+      window.setTimeout(()=>window.openStayUnknownProductOptions?.(product),0);
+    }));
     body.querySelectorAll('[data-wish-remove]').forEach(b=>b.addEventListener('click',()=>{window.toggleStayUnknownWishlist?.(b.dataset.wishRemove);openWishlistPage()}));
     if(window.syncStayUnknownWishlist) void window.syncStayUnknownWishlist(user);
   }
