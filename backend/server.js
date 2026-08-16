@@ -1913,21 +1913,51 @@ function safeCustomerEmail(req){
   return req.user?.email || req.body?.email || '';
 }
 
-app.post('/api/support', authenticate, async (req,res)=>{
-  try{
-    const {subject='',message='',orderNumber=''}=req.body||{};
-    if(!String(message).trim()) return res.status(400).json({error:'Message is required.'});
-    const id=`SUP-${Date.now()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
-    const ticket={id,userId:req.user.uid,email:safeCustomerEmail(req),subject:String(subject).trim().slice(0,120),message:String(message).trim().slice(0,5000),orderNumber:String(orderNumber).trim().slice(0,80),status:'OPEN',createdAt:new Date().toISOString()};
-    supportTickets.set(id,ticket);
-    return res.json({ok:true,ticket});
-  }catch(e){return res.status(500).json({error:'Unable to create support request.'})}
-});
+function supportTicketDocId(id){ return String(id||'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,120); }
+function supportTicketData(t){ return {...t, replies:Array.isArray(t.replies)?t.replies:[]}; }
 
-app.get('/api/support', authenticate, async (req,res)=>{
-  const mine=[...supportTickets.values()].filter(t=>t.userId===req.user.uid);
-  res.json({tickets:mine});
-});
+async function persistSupportTicket(ticket){
+  const firestore=initFirebase();
+  if(!firestore){ supportTickets.set(ticket.id,ticket); return ticket; }
+  await firestore.collection('supportTickets').doc(supportTicketDocId(ticket.id)).set(supportTicketData(ticket),{merge:true});
+  return ticket;
+}
+async function getSupportTickets(){
+  const firestore=initFirebase();
+  if(!firestore) return [...supportTickets.values()];
+  const snap=await firestore.collection('supportTickets').orderBy('createdAt','desc').get();
+  return snap.docs.map(d=>supportTicketData(d.data()));
+}
+async function getSupportTicket(id){
+  const firestore=initFirebase();
+  if(!firestore) return supportTickets.get(String(id))||null;
+  const doc=await firestore.collection('supportTickets').doc(supportTicketDocId(id)).get();
+  return doc.exists?supportTicketData(doc.data()):null;
+}
+async function createSupportNotification({uid,ticketId,ticketSubject,message,title='NEW SUPPORT REQUEST'}){
+  const firestore=initFirebase();
+  if(!firestore) return null;
+  const notification={uid:String(uid||''),ticketId:String(ticketId||''),title,message,read:false,readAt:null,createdAt:new Date().toISOString(),type:'SUPPORT'};
+  if(!notification.uid) return null;
+  const doc=await firestore.collection('notifications').add(notification);
+  return {id:doc.id,...notification};
+}
+async function createAdminSupportNotification({ticketId,title,message}){
+  const firestore=initFirebase();
+  if(!firestore) return;
+  const notification={audience:'admin',ticketId:String(ticketId||''),title,message,read:false,readAt:null,createdAt:new Date().toISOString(),type:'SUPPORT'};
+  await firestore.collection('adminNotifications').add(notification);
+}
+async function sendSupportEmail({to,subject,heading,message,ticket}){
+  if(!process.env.RESEND_API_KEY || !to) return;
+  const safeSubject=escapeEmailHtml(subject);
+  const safeHeading=escapeEmailHtml(heading);
+  const safeMessage=escapeEmailHtml(message).replace(/\n/g,'<br>');
+  const safeTicket=escapeEmailHtml(ticket?.id||'');
+  try{
+    await sendResendEmail({to,subject:safeSubject,html:`<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;line-height:1.6"><h1>STAYUNKNOWN</h1><h2>${safeHeading}</h2><p><strong>Ticket:</strong> ${safeTicket}</p><p>${safeMessage}</p><p>Open STAYUNKNOWN Help Desk to continue the conversation.</p></div>`});
+  }catch(e){ console.error('Support email error:',e); }
+}
 
 app.post('/api/restock-subscriptions', async (req,res)=>{
   try{
