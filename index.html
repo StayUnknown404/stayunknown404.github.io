@@ -1400,7 +1400,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       return true;
     }catch(e){console.warn('Live catalogue unavailable:',e);return false}
   }
-  window.loadStayUnknownCatalog=loadLiveCatalog;
+  window.loadStayUnknownCatalog=loadLiveCatalog; window.loadLiveCatalog=loadLiveCatalog;
   loadLiveCatalog();
 
   let bestDown=false,bestStart=0,bestScroll=0;
