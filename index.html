@@ -484,6 +484,8 @@ body{background:#101010}
 .recently-viewed{border-top:1px solid #222;margin-top:18px;padding-top:15px}
 .notification-row{cursor:pointer;touch-action:manipulation}
 .notification-row-action{position:relative;z-index:2}
+
+.support-attachments{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.support-attachments a{display:block;width:84px;height:84px;border:1px solid #444;overflow:hidden;background:#171717}.support-attachments img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 
 <style id="account-dashboard-corrected-style">
@@ -2135,8 +2137,9 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
         if(n.ticketId){
           closeNotifications();
           if(n.audience==='admin'){
-            openAdminDashboardPage?.();
-            setTimeout(()=>document.querySelector(`[data-admin-action="support"]`)?.click(),300);
+            await openAdminDashboardPage();
+            await openAdminSection('support');
+            setTimeout(()=>document.querySelector(`[data-ticket-id="${CSS.escape(String(n.ticketId))}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),100);
             return;
           }
           const action=document.querySelector(`[data-account-action="help-desk"]`);
@@ -2653,6 +2656,27 @@ onAuthStateChanged(auth, updateAccountUI);
   }
 
 
+  async function prepareSupportAttachments(input){
+    const files=Array.from(input?.files||[]).slice(0,2);
+    if(!files.length)return [];
+    const out=[];
+    for(const file of files){
+      if(!file.type.startsWith('image/'))continue;
+      const dataUrl=await new Promise((resolve,reject)=>{
+        const reader=new FileReader(); reader.onload=()=>resolve(reader.result); reader.onerror=reject; reader.readAsDataURL(file);
+      });
+      const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=dataUrl});
+      const maxSide=1200, scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));canvas.height=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+      const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      let quality=.78, encoded=canvas.toDataURL('image/webp',quality);
+      if(!encoded.startsWith('data:image/webp'))encoded=canvas.toDataURL('image/jpeg',quality);
+      while(encoded.length>220000&&quality>.35){quality-=.08;encoded=canvas.toDataURL(encoded.startsWith('data:image/webp')?'image/webp':'image/jpeg',quality)}
+      if(encoded.length<=220000)out.push({name:file.name.slice(0,120),type:encoded.slice(5,encoded.indexOf(';')),dataUrl:encoded});
+    }
+    return out;
+  }
+
   async function openHelpDeskPage(){
     const user=window.__stayUnknownCurrentUser;
     if(!user){alert('Please sign in to contact STAYUNKNOWN support.');return}
@@ -2669,8 +2693,11 @@ onAuthStateChanged(auth, updateAccountUI);
           <p class="account-subpage-note">Use a ticket if you want STAYUNKNOWN to handle your request inside your account.</p>
           <form id="support-ticket-form" style="display:grid;gap:12px">
             <input id="support-subject" class="checkout-input" placeholder="SUBJECT" maxlength="120">
-            <input id="support-order-number" class="checkout-input" placeholder="ORDER NUMBER (OPTIONAL)" maxlength="80">
+            <select id="support-order-select" class="checkout-input"><option value="">NO ORDER ATTACHED</option></select>
+            <input id="support-order-number" type="hidden" value="">
             <textarea id="support-message" class="checkout-textarea" placeholder="TELL US HOW WE CAN HELP" maxlength="5000" required style="min-height:140px"></textarea>
+            <input id="support-attachments" class="checkout-input" type="file" accept="image/*" multiple>
+            <small id="support-attachment-note" class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small>
             <button class="account-subpage-action primary" type="submit">SEND SUPPORT REQUEST</button>
             <div id="support-ticket-message" class="account-subpage-note" aria-live="polite"></div>
           </form>
@@ -2681,7 +2708,17 @@ onAuthStateChanged(auth, updateAccountUI);
         </div>
       </div>`;
     const form=document.getElementById('support-ticket-form'), message=document.getElementById('support-ticket-message'), list=document.getElementById('customer-support-tickets');
-
+    const attachmentInput=document.getElementById('support-attachments');
+    const attachmentNote=document.getElementById('support-attachment-note');
+    const orderSelect=document.getElementById('support-order-select');
+    async function populateSupportOrders(){
+      try{
+        if(!Array.isArray(orderHistory)||!orderHistory.length){const token=await user.getIdToken(true);const r=await fetch(`${BACKEND_URL}/api/orders`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});const d=await r.json();if(r.ok)orderHistory=Array.isArray(d.orders)?d.orders:[]}
+      }catch(_){}
+      if(!orderSelect)return;
+      const orders=Array.isArray(orderHistory)?orderHistory:[];
+      orderSelect.innerHTML='<option value="">NO ORDER ATTACHED</option>'+orders.map(o=>{const id=String(o.id||o.reference||o.orderNumber||'');const label=String(o.orderNumber||o.reference||o.id||'ORDER');return id?`<option value="${esc(label)}">${esc(label)}${o.deliveryStatus?` · ${esc(o.deliveryStatus)}`:''}</option>`:''}).join('');
+    }
     async function loadTickets(){
       try{
         const token=await user.getIdToken(true);
@@ -2691,13 +2728,16 @@ onAuthStateChanged(auth, updateAccountUI);
         if(!tickets.length){list.innerHTML='<div class="account-subpage-empty">NO SUPPORT REQUESTS YET.</div>';return}
         list.innerHTML=tickets.map(t=>{
           const replies=Array.isArray(t.replies)?t.replies:[];
+          const renderAttachments=(atts)=>Array.isArray(atts)&&atts.length?`<div class="support-attachments">${atts.map(a=>`<a href="${esc(a.dataUrl||'#')}" target="_blank" rel="noopener"><img src="${esc(a.dataUrl||'')}" alt="Support attachment" loading="lazy"></a>`).join('')}</div>`:'';
           return `<article class="admin-ticket support-ticket-card" data-ticket-id="${esc(t.id)}">
             <strong>${esc(t.subject||'SUPPORT REQUEST')}</strong>
             <small>${esc(t.id||'')} · ${esc(t.orderNumber||'NO ORDER')} · ${esc(t.status||'OPEN')}</small>
-            <div style="margin-top:12px;padding:10px;border-left:2px solid #555"><small>CUSTOMER · ${esc(t.createdAt||'')}</small><p style="margin:5px 0 0">${esc(t.message||'')}</p></div>
-            ${replies.map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid ${r.from==='ADMIN'?'#888':'#555'}"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}
+            <div style="margin-top:12px;padding:10px;border-left:2px solid #555"><small>CUSTOMER · ${esc(t.createdAt||'')}</small><p style="margin:5px 0 0">${esc(t.message||'')}</p>${renderAttachments(t.attachments)}</div>
+            ${replies.map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid ${r.from==='ADMIN'?'#888':'#555'}"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p>${renderAttachments(r.attachments)}</div>`).join('')}
             <form class="support-reply-form" data-ticket-id="${esc(t.id)}" style="display:grid;gap:8px;margin-top:12px">
               <textarea class="checkout-textarea" name="message" maxlength="5000" placeholder="REPLY TO STAYUNKNOWN" required style="min-height:90px"></textarea>
+              <input class="checkout-input" name="attachments" type="file" accept="image/*" multiple>
+              <small class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small>
               <button class="account-subpage-action primary" type="submit">SEND REPLY</button>
             </form>
           </article>`;
@@ -2705,23 +2745,27 @@ onAuthStateChanged(auth, updateAccountUI);
         list.querySelectorAll('.support-reply-form').forEach(replyForm=>replyForm.addEventListener('submit',async e=>{
           e.preventDefault(); const button=replyForm.querySelector('button'); button.disabled=true;
           try{
+            const attachments=await prepareSupportAttachments(replyForm.attachments);
             const token=await user.getIdToken(true);
-            const r=await fetch(`${BACKEND_URL}/api/support/${encodeURIComponent(replyForm.dataset.ticketId)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:replyForm.message.value.trim()})});
+            const r=await fetch(`${BACKEND_URL}/api/support/${encodeURIComponent(replyForm.dataset.ticketId)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:replyForm.message.value.trim(),attachments})});
             const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to send reply.');
             await loadTickets();
           }catch(err){alert(err.message||'Unable to send reply.')}finally{button.disabled=false}
         }));
       }catch(e){list.innerHTML=`<div class="account-subpage-empty">${esc(e.message||'Unable to load support requests.')}</div>`}
     }
+    attachmentInput?.addEventListener('change',()=>{const count=Math.min(2,attachmentInput.files?.length||0);if(attachmentNote)attachmentNote.textContent=count?`${count} IMAGE${count===1?'':'S'} READY TO ATTACH.`:'ADD UP TO 2 IMAGES · JPG, PNG OR WEBP'});
     form?.addEventListener('submit',async e=>{
       e.preventDefault(); const submit=form.querySelector('button[type="submit"]'); submit.disabled=true; message.textContent='SENDING…';
       try{
+        const attachments=await prepareSupportAttachments(attachmentInput);
         const token=await user.getIdToken(true);
-        const r=await fetch(`${BACKEND_URL}/api/support`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({subject:document.getElementById('support-subject').value.trim(),orderNumber:document.getElementById('support-order-number').value.trim(),message:document.getElementById('support-message').value.trim()})});
+        const r=await fetch(`${BACKEND_URL}/api/support`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({subject:document.getElementById('support-subject').value.trim(),orderNumber:orderSelect?.value||document.getElementById('support-order-number')?.value.trim()||'',message:document.getElementById('support-message').value.trim(),attachments})});
         const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to create support request.');
-        message.textContent=`SUPPORT REQUEST CREATED — ${d.ticket?.id||''}`; form.reset(); await loadTickets();
+        message.textContent=`SUPPORT REQUEST CREATED — ${d.ticket?.id||''}`; form.reset(); if(attachmentNote)attachmentNote.textContent='ADD UP TO 2 IMAGES · JPG, PNG OR WEBP'; await populateSupportOrders(); await loadTickets();
       }catch(e){message.textContent=e.message||'Unable to create support request.'}finally{submit.disabled=false}
     });
+    await populateSupportOrders();
     await loadTickets();
   }
 
@@ -2983,14 +3027,15 @@ onAuthStateChanged(auth, updateAccountUI);
         const r=await fetch(`${BACKEND_URL}/api/admin/support`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
         const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to load support requests.');
         const tickets=Array.isArray(d.tickets)?d.tickets:[];
-        routeBody.innerHTML=tickets.length?`<p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS.</p><div class="admin-list">${tickets.map(t=>`<article class="admin-ticket admin-support-ticket" data-ticket-id="${esc(t.id)}"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small><p>${esc(t.message||'')}</p><div class="support-admin-replies">${(Array.isArray(t.replies)?t.replies:[]).map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p></div>`).join('')}</div><span>${esc(t.status||'OPEN')} · ${esc(t.updatedAt||t.createdAt||'')}</span><form class="admin-support-reply-form" data-ticket-id="${esc(t.id)}" style="display:grid;gap:8px;margin-top:12px"><textarea name="message" class="checkout-textarea" maxlength="5000" placeholder="REPLY TO CUSTOMER" required style="min-height:90px"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="account-subpage-action primary">SEND REPLY</button><button type="button" class="account-subpage-action" data-support-close="${esc(t.id)}">${String(t.status||'').toUpperCase()==='CLOSED'?'REOPEN':'CLOSE'}</button></div></form></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
+        const renderAdminAttachments=(atts)=>Array.isArray(atts)&&atts.length?`<div class="support-attachments">${atts.map(a=>`<a href="${esc(a.dataUrl||'#')}" target="_blank" rel="noopener"><img src="${esc(a.dataUrl||'')}" alt="Support attachment" loading="lazy"></a>`).join('')}</div>`:'';
+        routeBody.innerHTML=tickets.length?`<p class="account-subpage-note">CUSTOMER SUPPORT REQUESTS.</p><div class="admin-list">${tickets.map(t=>`<article class="admin-ticket admin-support-ticket" data-ticket-id="${esc(t.id)}"><strong>${esc(t.subject||'SUPPORT REQUEST')}</strong><small>${esc(t.email||'')} · ${esc(t.orderNumber||'NO ORDER')}</small>${t.orderNumber?`<div class="account-subpage-note" style="margin-top:8px">ORDER ATTACHED: ${esc(t.orderNumber)}</div>`:''}<p>${esc(t.message||'')}</p>${renderAdminAttachments(t.attachments)}<div class="support-admin-replies">${(Array.isArray(t.replies)?t.replies:[]).map(r=>`<div style="margin-top:10px;padding:10px;border-left:2px solid #555"><small>${esc(r.from||'ADMIN')} · ${esc(r.createdAt||'')}</small><p style="margin:5px 0 0">${esc(r.message||'')}</p>${renderAdminAttachments(r.attachments)}</div>`).join('')}</div><span>${esc(t.status||'OPEN')} · ${esc(t.updatedAt||t.createdAt||'')}</span><form class="admin-support-reply-form" data-ticket-id="${esc(t.id)}" style="display:grid;gap:8px;margin-top:12px"><textarea name="message" class="checkout-textarea" maxlength="5000" placeholder="REPLY TO CUSTOMER" required style="min-height:90px"></textarea><input name="attachments" class="checkout-input" type="file" accept="image/*" multiple><small class="account-subpage-note">ADD UP TO 2 IMAGES · JPG, PNG OR WEBP</small><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="account-subpage-action primary">SEND REPLY</button><button type="button" class="account-subpage-action" data-support-close="${esc(t.id)}">${String(t.status||'').toUpperCase()==='CLOSED'?'REOPEN':'CLOSE'}</button></div></form></article>`).join('')}</div>`:'<div class="account-subpage-empty">NO SUPPORT REQUESTS.</div>';
         routeBody.querySelectorAll('.admin-support-reply-form').forEach(f=>f.addEventListener('submit',async e=>{
           e.preventDefault(); const btn=f.querySelector('button[type="submit"]');btn.disabled=true;
-          try{const r=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(f.dataset.ticketId)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:f.message.value.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to send reply.');await loadAdminSection('support');}catch(err){alert(err.message||'Unable to send reply.')}finally{btn.disabled=false}
+          try{const r=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(f.dataset.ticketId)}/reply`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message:f.message.value.trim(),attachments:await prepareSupportAttachments(f.attachments)})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to send reply.');await openAdminSection('support');}catch(err){alert(err.message||'Unable to send reply.')}finally{btn.disabled=false}
         }));
         routeBody.querySelectorAll('[data-support-close]').forEach(btn=>btn.addEventListener('click',async()=>{
           const card=btn.closest('.admin-support-ticket');const current=card?.querySelector('span')?.textContent||'';const status=current.startsWith('CLOSED')?'OPEN':'CLOSED';
-          try{const r=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(btn.dataset.supportClose)}/status`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to update ticket.');await loadAdminSection('support');}catch(err){alert(err.message||'Unable to update ticket.')}
+          try{const r=await fetch(`${BACKEND_URL}/api/admin/support/${encodeURIComponent(btn.dataset.supportClose)}/status`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to update ticket.');await openAdminSection('support');}catch(err){alert(err.message||'Unable to update ticket.')}
         }));
         return;
       }
