@@ -1376,7 +1376,9 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
     </article>`;
   bindAddButtons(bestTrack);
 
+  const BACKEND_URL='https://stayunknown404-backend.onrender.com'; window.BACKEND_URL=BACKEND_URL;
   let liveCatalogPromise=null;
+  let liveCatalogLoaded=false;
   function catalogRequestWithTimeout(url,ms=12000){
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),ms);
@@ -1438,7 +1440,6 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   /* ---------- SEARCH ---------- */
   function normalize(value){return String(value||'').trim().toLowerCase()}
   let searchTimer=null;
-  let liveCatalogLoaded=false;
   function doSearch(query){
     const q=normalize(query);
     const results=document.getElementById('search-results');
@@ -1883,8 +1884,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
   document.getElementById('checkout-close').addEventListener('click',closeCheckout);
   checkoutOverlay.addEventListener('click',e=>{if(e.target===checkoutOverlay)closeCheckout()});
   /* ---------- SECURE PAYSTACK CHECKOUT ---------- */
-  const BACKEND_URL='https://stayunknown404-backend.onrender.com'; window.BACKEND_URL=BACKEND_URL;
-
+  
   async function saveCheckoutProfileForCurrentUser(phone,address){
     const user=window.__stayUnknownCurrentUser;
     if(!user)throw new Error('Sign in to save checkout information.');
