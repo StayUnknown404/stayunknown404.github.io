@@ -698,7 +698,8 @@ app.post(
         note = "",
         items,
         callbackUrl = "",
-        userId = ""
+        userId = "",
+        promoCode = ""
       } = req.body || {};
 
       const cleanEmail =
@@ -719,12 +720,37 @@ app.post(
       const trustedItems =
         buildTrustedItems(items);
 
-      const total =
+      const subtotal =
         trustedItems.reduce(
           (sum, item) =>
             sum + item.lineTotal,
           0
         );
+
+      let appliedPromo = null;
+      let discount = 0;
+      const cleanPromoCode = String(promoCode || "").trim().toUpperCase();
+      if (cleanPromoCode) {
+        const promo = promoCodes.get(cleanPromoCode);
+        if (!promo || !promoIsCurrentlyActive(promo)) {
+          return res.status(400).json({ error: "Invalid or expired promo code." });
+        }
+        const promoItems = trustedItems.map(item => ({
+          id: item.productId,
+          price: item.price,
+          quantity: item.quantity,
+          collection: item.collection,
+          category: item.category
+        }));
+        const promoResult = promoDiscount(promo, promoItems);
+        if (Number(promo.minOrder || 0) > promoResult.eligibleSubtotal) {
+          return res.status(400).json({ error: `Minimum eligible order is ₦${Number(promo.minOrder).toLocaleString()}.` });
+        }
+        discount = Math.min(subtotal, Number(promoResult.discount || 0));
+        appliedPromo = { code: promo.code, type: promo.type, value: promo.value, discount, eligibleSubtotal: promoResult.eligibleSubtotal };
+      }
+
+      const total = Math.max(0, subtotal - discount);
 
       const reference =
         `SU-${Date.now()}-${crypto
@@ -764,6 +790,8 @@ app.post(
 
         userId: cleanUserId,
 
+        promo: appliedPromo,
+
         items:
           trustedItems.map(item => ({
             productId: item.productId,
@@ -786,7 +814,8 @@ app.post(
         address: cleanAddress,
         note: cleanNote,
         items: trustedItems,
-        total
+        total,
+        promo: appliedPromo
       });
 
       const result =
