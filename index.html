@@ -559,6 +559,12 @@ body{background:#101010}
 button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{touch-action:manipulation}
 .admin-editor-page{max-width:1100px;margin:0 auto;padding:6px 0 40px}.admin-editor-page .admin-product-editor{margin-top:0!important;background:#111!important;border:1px solid #292929!important;padding:22px!important}.admin-editor-page .admin-product-editor>strong{font:32px/1 Anton,sans-serif;text-transform:uppercase}.admin-editor-page .collection-product-picker{max-height:320px}.admin-editor-page input,.admin-editor-page textarea,.admin-editor-page select{width:100%}
 #menu-collection-categories{display:none}.shop-category-menu#menu-collection-categories.open{display:grid}
+  #menu-collection-categories{gap:0;padding-left:12px}
+  #menu-collection-categories .collection-menu-empty{padding:9px 0;color:#777;font-size:10px;font-weight:700;text-transform:uppercase}
+  .visibility-switch{width:46px!important;height:26px!important;border-radius:999px!important;padding:3px!important;transition:background .18s ease,justify-content .18s ease!important}
+  .visibility-switch span{width:20px!important;height:20px!important;border-radius:50%!important;transition:transform .18s ease,background .18s ease!important}
+  .visibility-switch.is-off{justify-content:flex-start!important}.visibility-switch:not(.is-off){justify-content:flex-end!important}
+
 @media(max-width:700px){.admin-editor-page{padding:0 0 28px}.admin-editor-page .admin-product-editor{padding:16px!important}.admin-editor-page .admin-product-editor>strong{font-size:27px}}
 @media(max-width:520px){
   .admin-route-head span{font-size:23px}
@@ -615,25 +621,19 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
 <style id="stayunknown-collections-style">
 #collections-home{overflow:hidden;content-visibility:visible;contain:none}
-.collections-viewport{overflow:hidden;touch-action:pan-y;cursor:grab;min-height:360px}
-.collections-track{display:flex;gap:12px;will-change:transform;transition:transform .45s ease}
-.collection-slide{flex:0 0 calc((100% - 12px)/2);min-width:0;height:360px}
-.collection-card{position:relative;height:100%;min-height:360px;background:#111;border:1px solid #292929;overflow:hidden;cursor:pointer;pointer-events:auto;z-index:2}
-.collection-card-media{position:absolute;inset:0;background:#151515}
-.collection-card-media img{width:100%;height:100%;object-fit:cover;display:block}
+.collections-viewport{position:relative;overflow:hidden;touch-action:pan-y;cursor:grab;min-height:390px}.collections-viewport:active{cursor:grabbing}
+.collections-track{display:flex;gap:12px;width:100%;will-change:transform;transition:transform .45s cubic-bezier(.2,.75,.2,1)}
+.collection-slide{flex:0 0 calc((100% - 12px)/2);min-width:0;height:390px}
+.collection-card{position:relative;height:100%;min-height:390px;background:#171717;border:1px solid #292929;overflow:hidden;cursor:pointer;pointer-events:auto;z-index:2;display:flex;flex-direction:column}
+.collection-card-media{position:relative;flex:1 1 auto;min-height:0;background:radial-gradient(circle at 70% 25%,#292929,#141414 55%,#101010);display:grid;place-items:center;overflow:hidden}.collection-card-media img{width:100%;height:100%;object-fit:cover;display:block}
 .collection-card-fallback{width:100%;height:100%;display:grid;place-items:center;font:clamp(34px,7vw,72px)/.9 Anton,sans-serif;text-transform:uppercase;letter-spacing:-2px;text-align:center;padding:30px;color:#f3f3f0}
-.collection-card-overlay{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.05) 35%,rgba(0,0,0,.78) 100%);display:flex;align-items:flex-end;padding:22px}
-.collection-card-name{color:#f3f3f0;font:clamp(25px,4vw,44px)/.95 Anton,sans-serif;text-transform:uppercase;letter-spacing:.5px}
-.collection-card-meta{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#ccc;margin-top:7px}
-.collection-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
-.collection-dot{width:7px;height:7px;border-radius:50%;border:1px solid #777;background:transparent;padding:0;cursor:pointer}.collection-dot.active{background:#f3f3f0}
-#collection-view .shop-view-inner{max-width:1200px}
-.collection-page-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:22px;margin-bottom:26px;align-items:stretch}
-.collection-page-art{min-height:330px;background:#111;border:1px solid #292929;overflow:hidden}.collection-page-art img{width:100%;height:100%;object-fit:cover;display:block}.collection-page-copy{border:1px solid #292929;background:#111;padding:28px;display:flex;flex-direction:column;justify-content:flex-end}.collection-page-copy .eyebrow{margin-bottom:12px}.collection-page-copy h2{font:clamp(40px,7vw,76px)/.9 Anton,sans-serif;text-transform:uppercase;margin:0}.collection-page-copy p{color:#aaa;line-height:1.7;font-size:12px;margin:14px 0 0}.collection-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.collection-admin-card{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;border:1px solid #292929;padding:10px;background:#151515}.collection-admin-thumb{width:90px;height:90px;object-fit:cover;background:#111;border:1px solid #292929}.collection-admin-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.collection-product-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:240px;overflow:auto;border:1px solid #292929;padding:10px;background:#0e0e0e}.collection-product-picker label{font-size:10px;color:#bbb;display:flex;gap:7px;align-items:center;padding:7px;border:1px solid #222}
-@media(max-width:700px){.collection-slide{flex-basis:100%;height:330px}.collection-card{min-height:330px}.collection-page-hero{grid-template-columns:1fr}.collection-page-art{min-height:250px}.collection-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-admin-card{grid-template-columns:64px 1fr}.collection-admin-thumb{width:64px;height:64px}.collection-admin-actions{grid-column:1/-1;justify-content:flex-start}.collection-product-picker{grid-template-columns:1fr}}
+.collection-card-copy{padding:16px 18px 18px;background:#171717;border-top:1px solid #222;flex:0 0 auto}.collection-card-kicker{font-size:9px;color:#777;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}.collection-card-name{color:#f3f3f0;font:clamp(25px,4vw,44px)/.95 Anton,sans-serif;text-transform:uppercase;letter-spacing:.5px;margin:0}.collection-card-meta{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-top:7px}.collection-view-btn{width:100%;margin-top:14px;padding:12px;background:#f3f3f0;color:#111;border:0;font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.collection-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}.collection-dot{width:7px;height:7px;border-radius:50%;border:1px solid #777;background:transparent;padding:0;cursor:pointer}.collection-dot.active{background:#f3f3f0}
+#collection-view .shop-view-inner{max-width:1200px}.collection-page-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:22px;margin-bottom:26px;align-items:stretch}.collection-page-art{min-height:330px;background:#111;border:1px solid #292929;overflow:hidden}.collection-page-art img{width:100%;height:100%;object-fit:cover;display:block}.collection-page-copy{border:1px solid #292929;background:#111;padding:28px;display:flex;flex-direction:column;justify-content:flex-end}.collection-page-copy .eyebrow{margin-bottom:12px}.collection-page-copy h2{font:clamp(40px,7vw,76px)/.9 Anton,sans-serif;text-transform:uppercase;margin:0}.collection-page-copy p{color:#aaa;line-height:1.7;font-size:12px;margin:14px 0 0}.collection-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.collection-admin-card{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;border:1px solid #292929;padding:10px;background:#151515}.collection-admin-thumb{width:90px;height:90px;object-fit:cover;background:#111;border:1px solid #292929}.collection-product-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:240px;overflow:auto;border:1px solid #292929;padding:10px;background:#0e0e0e}.collection-product-picker label{font-size:10px;color:#bbb;display:flex;gap:7px;align-items:center;padding:7px;border:1px solid #222}
+@media(max-width:700px){.collection-slide{flex-basis:100%;height:390px}.collection-card{min-height:390px}.collection-page-hero{grid-template-columns:1fr}.collection-page-art{min-height:250px}.collection-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-admin-card{grid-template-columns:64px 1fr}.collection-admin-thumb{width:64px;height:64px}.collection-product-picker{grid-template-columns:1fr}}
 @media(min-width:701px){.collection-card:hover{border-color:#666;transform:translateY(-2px);transition:transform .2s ease,border-color .2s ease}}
 </style>
+
 
 
 <style id="stayunknown-full-page-navigation">
@@ -3008,6 +3008,7 @@ onAuthStateChanged(auth, updateAccountUI);
       orders:'ORDERS & DELIVERY',
       promos:'PROMO CODES',
       inventory:'INVENTORY / LOW STOCK',
+      collections:'COLLECTIONS',
       restock:'RESTOCK SUBSCRIPTIONS',
       support:'HELP & SUPPORT'
     };
@@ -3189,25 +3190,44 @@ onAuthStateChanged(auth, updateAccountUI);
       }
 
       if(section==='collections'){
-        await openAdminSection('inventory');
-        setTimeout(()=>document.getElementById('inventory-collections-tab')?.click(),0);
+        const [collectionResponse,productResponse]=await Promise.all([
+          fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'}),
+          fetch(`${BACKEND_URL}/api/admin/products?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})
+        ]);
+        const [cd,pd]=await Promise.all([collectionResponse.json(),productResponse.json()]);
+        if(!collectionResponse.ok)throw new Error(cd.error||'Unable to load collections.');
+        if(!productResponse.ok)throw new Error(pd.error||'Unable to load products.');
+        const collections=Array.isArray(cd.collections)?cd.collections:[];
+        const items=Array.isArray(pd.products)?pd.products:[];
+        let editingCollectionId=null;
+        const collectionRows=()=>collections.map(c=>{const count=items.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()).length;return `<button type="button" class="collection-admin-card admin-inventory-clickable" data-open-collection="${esc(c.id)}"><div class="collection-admin-thumb">${c.image?`<img src="${esc(c.image)}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:`<div style="height:100%;display:grid;place-items:center;font-weight:900">404</div>`}</div><div><strong>${esc(c.name)}</strong><small>${count} PRODUCT${count===1?'':'S'} · ${c.hidden?'HIDDEN':'VISIBLE'}${c.limited?' · LIMITED':''}</small><small>${esc(c.description||'')}</small></div><span class="inventory-chevron">›</span></button>`}).join('');
+        const collectionForm=(c={})=>`<div class="admin-product-editor" style="display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid #252525;background:#111"><strong>${editingCollectionId?'EDIT COLLECTION':'CREATE COLLECTION'}</strong><input id="admin-collection-name" class="checkout-input" placeholder="Collection name e.g. Summer Drops" value="${esc(c.name||'')}"><label><input id="admin-collection-limited" type="checkbox" ${c.limited?'checked':''}> LIMITED COLLECTION — products in this collection show a LIMITED tag</label><input id="admin-collection-image" class="checkout-input" type="url" placeholder="Collection artwork image URL (optional)" value="${esc(c.image||'')}"><label style="display:grid;gap:6px">COLLECTION PICTURE<input id="admin-collection-image-file" class="checkout-input" type="file" accept="image/*"></label><textarea id="admin-collection-description" class="checkout-input" rows="3" placeholder="Short collection description">${esc(c.description||'')}</textarea><input id="admin-collection-order" class="checkout-input" type="number" min="0" step="1" placeholder="Display order" value="${c.order??0}"><div class="collection-product-picker">${items.map(p=>`<label><input type="checkbox" value="${esc(p.id)}" ${String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()?'checked':''}> ${esc(p.name)}</label>`).join('')}</div>${editingCollectionId?`<div class="admin-visibility-row"><span><strong>${c.hidden?'HIDDEN FROM STORE':'VISIBLE IN STORE'}</strong><small>${c.hidden?'Customers cannot see this collection.':'Customers can see this collection.'}</small></span><button type="button" class="visibility-switch ${c.hidden?'is-off':''}" id="admin-collection-visibility" aria-label="${c.hidden?'Restore collection to store':'Hide collection from store'}"><span></span></button></div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="account-subpage-action primary" id="admin-collection-save">${editingCollectionId?'SAVE CHANGES':'CREATE COLLECTION'}</button><button type="button" class="account-subpage-action" id="admin-collection-cancel">CANCEL</button>${editingCollectionId?`<button type="button" class="account-subpage-action danger" id="admin-collection-delete">DELETE PERMANENTLY</button>`:''}</div><div id="admin-collection-message" class="account-subpage-note"></div></div>`;
+        const openCollectionEditor=(c=null)=>{
+          editingCollectionId=c?.id?String(c.id):null;
+          const editorBody=renderAdminRouteShell(editingCollectionId?'EDIT COLLECTION':'CREATE COLLECTION','<div class="account-subpage-empty">LOADING…</div>',()=>openAdminSection('collections'),'← COLLECTIONS');
+          editorBody.innerHTML=`<div class="admin-editor-page">${collectionForm(c||{})}</div>`;
+          const file=document.getElementById('admin-collection-image-file'),input=document.getElementById('admin-collection-image');
+          file?.addEventListener('change',async()=>{const f=file.files?.[0];if(!f)return;try{const src=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(String(rd.result||''));rd.onerror=reject;rd.readAsDataURL(f)});const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src});const max=1600,scale=Math.min(1,max/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);input.value=canvas.toDataURL('image/jpeg',.8)}catch(e){file.value='';alert('Unable to process that image.')}});
+          document.getElementById('admin-collection-cancel')?.addEventListener('click',()=>openAdminSection('collections'));
+          document.getElementById('admin-collection-visibility')?.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();const button=e.currentTarget;button.disabled=true;const nextHidden=!Boolean(c.hidden);try{const rr=await fetch(`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({hidden:nextHidden})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to update collection visibility.');c.hidden=nextHidden;button.classList.toggle('is-off',nextHidden);button.setAttribute('aria-label',nextHidden?'Restore collection to store':'Hide collection from store');const strong=button.parentElement?.querySelector('strong');const small=button.parentElement?.querySelector('small');if(strong)strong.textContent=nextHidden?'HIDDEN FROM STORE':'VISIBLE IN STORE';if(small)small.textContent=nextHidden?'Customers cannot see this collection.':'Customers can see this collection.';}catch(err){alert(err.message||'Unable to update collection visibility.')}finally{button.disabled=false}});
+          document.getElementById('admin-collection-delete')?.addEventListener('click',async()=>{if(!confirm(`Are you sure you want to permanently delete “${c.name||'this collection'}”? Products will remain but will be removed from this collection.`))return;const button=document.getElementById('admin-collection-delete');button.disabled=true;try{const rr=await fetch(`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});const dd=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(dd.error||'Unable to permanently delete collection.');await window.loadStayUnknownCatalog?.();await window.loadStayUnknownCollections?.();await openAdminSection('collections')}catch(err){alert(err.message||'Unable to permanently delete collection.');button.disabled=false}});
+          document.getElementById('admin-collection-save')?.addEventListener('click',async()=>{const btn=document.getElementById('admin-collection-save'),msg=document.getElementById('admin-collection-message');btn.disabled=true;try{const name=document.getElementById('admin-collection-name').value.trim();if(!name)throw new Error('Collection name is required.');const selected=[...document.querySelectorAll('.collection-product-picker input:checked')].map(x=>x.value);const payload={name,limited:document.getElementById('admin-collection-limited').checked,image:document.getElementById('admin-collection-image').value.trim(),description:document.getElementById('admin-collection-description').value.trim(),order:Number(document.getElementById('admin-collection-order').value||0),productIds:selected,hidden:Boolean(c.hidden)};const url=editingCollectionId?`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`:`${BACKEND_URL}/api/admin/collections`;const rr=await fetch(url,{method:editingCollectionId?'PATCH':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to save collection.');await window.loadStayUnknownCollections?.();await openAdminSection('collections')}catch(err){msg.textContent=err.message||'Unable to save collection.'}finally{btn.disabled=false}});
+        };
+        routeBody.innerHTML=`<p class="account-subpage-note">CREATE AND MANAGE THE COLLECTIONS SHOWN TO CUSTOMERS. COLLECTION MANAGEMENT IS SEPARATE FROM INVENTORY.</p><button type="button" class="account-subpage-action primary" id="admin-new-collection">+ CREATE COLLECTION</button><div class="admin-list" style="margin-top:14px">${collectionRows()||'<div class="account-subpage-empty">NO COLLECTIONS YET.</div>'}</div>`;
+        document.getElementById('admin-new-collection')?.addEventListener('click',()=>openCollectionEditor());
+        routeBody.querySelectorAll('[data-open-collection]').forEach(b=>b.addEventListener('click',()=>{const c=collections.find(x=>String(x.id)===String(b.dataset.openCollection));if(c)openCollectionEditor(c)}));
         return;
       }
-
       if(section==='inventory'){
         let editingId=null;
         let editingCollectionId=null;
         let inventoryMode='products';
         const renderManager=async()=>{
-          const [productResponse,collectionResponse]=await Promise.all([
-            fetch(`${BACKEND_URL}/api/admin/products?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'}),
-            fetch(`${BACKEND_URL}/api/admin/collections?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})
-          ]);
-          const [d,cd]=await Promise.all([productResponse.json(),collectionResponse.json()]);
+          const productResponse=await fetch(`${BACKEND_URL}/api/admin/products?ts=${Date.now()}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+          const d=await productResponse.json();
           if(!productResponse.ok)throw new Error(d.error||'Unable to load products.');
-          if(!collectionResponse.ok)throw new Error(cd.error||'Unable to load collections.');
           const items=Array.isArray(d.products)?d.products:[];
-          const collections=Array.isArray(cd.collections)?cd.collections:[];
+          const collections=[...new Set(items.map(p=>String(p.collection||'').trim()).filter(Boolean))].map(name=>({id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true}));
           const categories=[...new Set(items.map(p=>p.category).filter(Boolean))];
           const form=(p={})=>`<div class="admin-product-editor" style="display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid #252525;background:#111">
             <strong>${editingId?'EDIT PRODUCT':'ADD NEW PRODUCT'}</strong>
@@ -3243,7 +3263,7 @@ onAuthStateChanged(auth, updateAccountUI);
           const productList=items.length?`<div class="admin-list" style="margin-top:14px">${productRows}</div>`:'<div class="account-subpage-empty">NO PRODUCTS.</div>';
           const collectionRows=collections.map(c=>{const count=items.filter(p=>String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()).length;return `<button type="button" class="collection-admin-card admin-inventory-clickable" data-open-collection="${esc(c.id)}"><div class="collection-admin-thumb">${c.image?`<img src="${esc(c.image)}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:`<div style="height:100%;display:grid;place-items:center;font-weight:900">404</div>`}</div><div><strong>${esc(c.name)}</strong><small>${count} PRODUCT${count===1?'':'S'} · ${c.hidden?'HIDDEN':'VISIBLE'}${c.limited?' · LIMITED':''}</small><small>${esc(c.description||'')}</small></div><span class="inventory-chevron">›</span></button>`}).join('');
           const collectionForm=(c={})=>`<div class="admin-product-editor" style="display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid #252525;background:#111"><strong>${editingCollectionId?'EDIT COLLECTION':'CREATE COLLECTION'}</strong><input id="admin-collection-name" class="checkout-input" placeholder="Collection name e.g. Summer Drops" value="${esc(c.name||'')}"><label><input id="admin-collection-limited" type="checkbox" ${c.limited?'checked':''}> LIMITED COLLECTION — products in this collection show a LIMITED tag</label><input id="admin-collection-image" class="checkout-input" type="url" placeholder="Collection artwork image URL (optional)" value="${esc(c.image||'')}"/><input id="admin-collection-image-file" class="checkout-input" type="file" accept="image/*"><textarea id="admin-collection-description" class="checkout-input" rows="3" placeholder="Short collection description">${esc(c.description||'')}</textarea><input id="admin-collection-order" class="checkout-input" type="number" min="0" step="1" placeholder="Display order" value="${c.order??0}"><div class="collection-product-picker">${items.map(p=>`<label><input type="checkbox" value="${esc(p.id)}" ${Array.isArray(c.productIds)&&c.productIds.map(String).includes(String(p.id))||String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()?'checked':''}> ${esc(p.name)}</label>`).join('')}</div>${editingCollectionId?`<div class="admin-visibility-row"><span><strong>${c.hidden?'HIDDEN FROM STORE':'VISIBLE IN STORE'}</strong><small>${c.hidden?'Customers cannot see this collection.':'Customers can see this collection.'}</small></span><button type="button" class="visibility-switch ${c.hidden?'is-off':''}" id="admin-collection-visibility" aria-label="${c.hidden?'Restore collection to store':'Hide collection from store'}"><span></span></button></div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="account-subpage-action primary" id="admin-collection-save">${editingCollectionId?'SAVE CHANGES':'CREATE COLLECTION'}</button><button type="button" class="account-subpage-action" id="admin-collection-cancel">CANCEL</button>${editingCollectionId?`<button type="button" class="account-subpage-action danger" id="admin-collection-delete">DELETE PERMANENTLY</button>`:''}</div><div id="admin-collection-message" class="account-subpage-note"></div></div>`;
-          routeBody.innerHTML=`<p class="account-subpage-note">TAP A PRODUCT OR COLLECTION TO OPEN ITS MANAGEMENT PAGE. FROM THERE YOU CAN EDIT, HIDE/RESTORE, OR PERMANENTLY DELETE IT.</p><div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="account-subpage-action ${inventoryMode==='products'?'primary':''}" id="inventory-products-tab">PRODUCTS</button><button type="button" class="account-subpage-action ${inventoryMode==='collections'?'primary':''}" id="inventory-collections-tab">COLLECTIONS</button></div>${inventoryMode==='products'?`<div style="margin-top:14px"><div class="admin-stat-grid"><div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.filter(p=>!p.hidden).length}</strong></div><div class="admin-stat"><small>LOW STOCK</small><strong>${items.filter(p=>!p.hidden&&Number.isFinite(Number(p.stock))&&Number(p.stock)<=Number(p.lowStockThreshold??3)).length}</strong></div><div class="admin-stat"><small>COLLECTIONS</small><strong>${collections.length}</strong></div></div><button type="button" class="account-subpage-action primary" id="admin-new-product">+ ADD NEW PRODUCT</button>${productList}</div>`:`<div style="margin-top:14px"><button type="button" class="account-subpage-action primary" id="admin-new-collection">+ CREATE COLLECTION</button><div class="admin-list" style="margin-top:14px">${collectionRows||'<div class="account-subpage-empty">NO COLLECTIONS YET.</div>'}</div></div>`}`;
+          routeBody.innerHTML=`<p class="account-subpage-note">PRODUCT INVENTORY AND LOW-STOCK MANAGEMENT. COLLECTION MANAGEMENT HAS ITS OWN ADMIN PAGE.</p><div style="margin-top:14px"><div class="admin-stat-grid"><div class="admin-stat"><small>TOTAL PRODUCTS</small><strong>${items.filter(p=>!p.hidden).length}</strong></div><div class="admin-stat"><small>LOW STOCK</small><strong>${items.filter(p=>!p.hidden&&Number.isFinite(Number(p.stock))&&Number(p.stock)<=Number(p.lowStockThreshold??3)).length}</strong></div></div><button type="button" class="account-subpage-action primary" id="admin-new-product">+ ADD NEW PRODUCT</button>${productList}</div>`;
           document.getElementById('inventory-products-tab')?.addEventListener('click',()=>{inventoryMode='products';renderManager()});
           document.getElementById('inventory-collections-tab')?.addEventListener('click',()=>{inventoryMode='collections';renderManager()});
           const openProductEditor=async(p=null)=>{
@@ -3350,52 +3370,118 @@ onAuthStateChanged(auth, updateAccountUI);
     else document.getElementById('checkout-close')?.click();
   },{passive:true,capture:true});
 
+
   /* ---------- COLLECTIONS ---------- */
   let stayUnknownCollections=[];
-  let collectionIndex=0, collectionTimer=null, collectionStartX=0, collectionDragging=false;
+  let collectionIndex=0,collectionTimer=null,collectionStartX=0,collectionDragging=false,collectionsLoadPromise=null;
   const collectionsTrack=document.getElementById('collections-home-track');
   const collectionsDots=document.getElementById('collections-home-dots');
   const collectionsViewport=document.getElementById('collections-home-viewport');
   const collectionView=document.getElementById('collection-view');
   const collectionContent=document.getElementById('collection-view-content');
   const collectionTitle=document.getElementById('collection-view-title');
-  function collectionVisible(){return window.innerWidth>=701?2:1}
-  function collectionCardMarkup(c){const fallback=`<div class="collection-card-fallback" style="display:none">${escapeHTML(c.name)}</div>`;const media=c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">${fallback}`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`;return `<article class="collection-card" data-collection-id="${escapeHTML(c.id)}"><div class="collection-card-media">${media}</div><div class="collection-card-overlay"><div><div class="collection-card-name">${escapeHTML(c.name)}</div><div class="collection-card-meta">${Number(c.productCount||0)} PIECE${Number(c.productCount||0)===1?'':'S'}${c.limited?' · LIMITED':''} · VIEW COLLECTION ↗</div></div></div></article>`}
-  function updateCollections(index,animate=true){if(!collectionsTrack)return;const max=Math.max(0,stayUnknownCollections.length-collectionVisible());collectionIndex=Math.min(Math.max(index,0),max);collectionsTrack.style.transition=animate?'transform .45s ease':'none';collectionsTrack.style.transform=`translateX(-${collectionIndex*(100/collectionVisible())}%)`;collectionsDots?.querySelectorAll('.collection-dot').forEach((d,i)=>d.classList.toggle('active',i===collectionIndex));const count=document.getElementById('collections-home-count');if(count)count.textContent=`${String(Math.min(collectionIndex+1,Math.max(1,stayUnknownCollections.length))).padStart(2,'0')} / ${String(Math.max(1,stayUnknownCollections.length)).padStart(2,'0')}`}
-  function startCollectionTimer(){clearInterval(collectionTimer);if(stayUnknownCollections.length<=collectionVisible())return;collectionTimer=setInterval(()=>updateCollections(collectionIndex>=Math.max(0,stayUnknownCollections.length-collectionVisible())?0:collectionIndex+1),4600)}
-  function openCollectionPage(id){const c=stayUnknownCollections.find(x=>String(x.id)===String(id));if(!c)return;closeDrawer();closeCart();searchPanel.classList.remove('open');document.querySelector('.hero').style.display='none';document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');collectionTitle.textContent=c.name;const list=products.filter(p=>String(p.collection||'').toLowerCase()===String(c.name||'').toLowerCase()&&!p.hidden);collectionContent.innerHTML=`<div class="collection-page-hero"><div class="collection-page-art">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-page-copy"><div class="eyebrow">Collection</div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${list.length} PRODUCT${list.length===1?'':'S'}</div><div class="collection-product-grid">${list.length?list.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;bindAddButtons(collectionContent);window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collection-'+encodeURIComponent(c.id))}
-  window.openStayUnknownCollection=openCollectionPage;
-  window.loadStayUnknownCollections=async function(){try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);let r;try{r=await fetch(`${BACKEND_URL}/api/collections?ts=${Date.now()}`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}const d=await r.json();if(!r.ok||!Array.isArray(d.collections))return;stayUnknownCollections=d.collections;window.stayUnknownCollections=stayUnknownCollections;const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));products.forEach(p=>{p.__limitedCollection=limitedNames.has(String(p.collection||'').toLowerCase())});collectionsTrack.innerHTML=stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join('');collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.collectionId)));collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide));startCollectionTimer()}));renderCollectionMenu();updateCollections(0,false);startCollectionTimer();}catch(e){console.warn('Collections unavailable:',e)}};
   const menuCollectionCategories=document.getElementById('menu-collection-categories');
   const menuCollectionsToggle=document.getElementById('menu-collections-toggle');
   const menuCollectionsPlus=document.getElementById('menu-collections-plus');
-  function openCollectionsPage(){
-    closeDrawer();closeCart();searchPanel.classList.remove('open');document.querySelector('.hero').style.display='none';document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');collectionTitle.textContent='COLLECTIONS';collectionContent.innerHTML=`<div class="collection-product-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">${stayUnknownCollections.length?stayUnknownCollections.map(c=>`<article class="collection-card" data-all-collection-id="${escapeHTML(c.id)}"><div class="collection-card-media">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-card-overlay"><div><div class="collection-card-name">${escapeHTML(c.name)}</div><div class="collection-card-meta">${Number(c.productCount||0)} PIECE${Number(c.productCount||0)===1?'':'S'}${c.limited?' · LIMITED':''}</div></div></div></article>`).join(''):'<div class="no-products">NO COLLECTIONS YET.</div>'}</div>`;collectionContent.querySelectorAll('[data-all-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.allCollectionId)));window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collections');
-  }
 
+  function collectionVisible(){return window.innerWidth>=701?2:1}
+  function collectionCardMarkup(c){
+    const name=String(c?.name||'COLLECTION').trim()||'COLLECTION';
+    const image=String(c?.image||'').trim();
+    const media=image
+      ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><div class="collection-card-fallback" style="display:none">${escapeHTML(name)}</div>`
+      : `<div class="collection-card-fallback">${escapeHTML(name)}</div>`;
+    const count=Number(c?.productCount||0);
+    return `<article class="collection-card" data-collection-id="${escapeHTML(c?.id||'')}" tabindex="0" role="button">
+      <div class="collection-card-media">${media}</div>
+      <div class="collection-card-copy">
+        <div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div>
+        <h3 class="collection-card-name">${escapeHTML(name)}</h3>
+        <div class="collection-card-meta">${count} PIECE${count===1?'':'S'}${c?.limited?' · LIMITED':''}</div>
+        <button class="collection-view-btn" type="button" data-view-collection="${escapeHTML(c?.id||'')}">VIEW COLLECTION</button>
+      </div>
+    </article>`;
+  }
   function renderCollectionMenu(){
     if(!menuCollectionCategories)return;
-    menuCollectionCategories.innerHTML=stayUnknownCollections.map(c=>`<button type="button" class="collection-menu-item" data-collection-menu="${escapeHTML(c.id)}">${escapeHTML(c.name)}</button>`).join('');
+    if(!stayUnknownCollections.length){
+      menuCollectionCategories.innerHTML='<div class="collection-menu-empty">NO COLLECTIONS AVAILABLE.</div>';
+      return;
+    }
+    menuCollectionCategories.innerHTML=stayUnknownCollections.map(c=>`<button type="button" data-collection-menu="${escapeHTML(c.id)}">${escapeHTML(c.name)}</button>`).join('');
     menuCollectionCategories.querySelectorAll('[data-collection-menu]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeDrawer();openCollectionPage(b.dataset.collectionMenu)}));
-    if(!stayUnknownCollections.length){menuCollectionCategories.classList.remove('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent='+';}
+  }
+  function updateCollections(index,animate=true){
+    if(!collectionsTrack)return;
+    const visible=collectionVisible();
+    const max=Math.max(0,stayUnknownCollections.length-visible);
+    collectionIndex=Math.min(Math.max(Number(index)||0,0),max);
+    collectionsTrack.style.transition=animate?'transform .45s cubic-bezier(.2,.75,.2,1)':'none';
+    collectionsTrack.style.transform=`translate3d(-${collectionIndex*(100/visible)}%,0,0)`;
+    collectionsDots?.querySelectorAll('.collection-dot').forEach((d,i)=>d.classList.toggle('active',i===collectionIndex));
+    const count=document.getElementById('collections-home-count');
+    if(count)count.textContent=`${String(Math.min(collectionIndex+1,Math.max(1,stayUnknownCollections.length))).padStart(2,'0')} / ${String(Math.max(1,stayUnknownCollections.length)).padStart(2,'0')}`;
+  }
+  function startCollectionTimer(){
+    clearInterval(collectionTimer);
+    if(stayUnknownCollections.length<=collectionVisible())return;
+    collectionTimer=setInterval(()=>{const max=Math.max(0,stayUnknownCollections.length-collectionVisible());updateCollections(collectionIndex>=max?0:collectionIndex+1)},4600);
+  }
+  function openCollectionPage(id){
+    const c=stayUnknownCollections.find(x=>String(x.id)===String(id));
+    if(!c)return;
+    closeDrawer();closeCart();searchPanel.classList.remove('open');
+    document.querySelector('.hero').style.display='none';
+    document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');
+    shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');
+    collectionTitle.textContent=c.name;
+    const list=products.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()&&!isHiddenProduct(p));
+    collectionContent.innerHTML=`<div class="collection-page-hero"><div class="collection-page-art">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy" onerror="this.style.display='none'">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-page-copy"><div class="eyebrow">Collection</div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${list.length} PRODUCT${list.length===1?'':'S'}</div><div class="collection-product-grid">${list.length?list.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;
+    bindAddButtons(collectionContent);window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collection-'+encodeURIComponent(c.id));
+  }
+  window.openStayUnknownCollection=openCollectionPage;
+  async function loadStayUnknownCollections(){
+    if(collectionsLoadPromise)return collectionsLoadPromise;
+    collectionsLoadPromise=(async()=>{
+      try{
+        const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);let response;
+        try{response=await fetch(`${BACKEND_URL}/api/collections?ts=${Date.now()}`,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
+        const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
+        stayUnknownCollections=data.collections.filter(c=>c&&!c.hidden);
+      }catch(error){
+        console.warn('Collections endpoint unavailable:',error);
+        const seen=new Map();
+        products.filter(p=>!isHiddenProduct(p)).forEach(p=>{const name=String(p.collection||'').trim();if(!name)return;const key=name.toLowerCase();if(!seen.has(key))seen.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,productCount:0});seen.get(key).productCount++});
+        stayUnknownCollections=[...seen.values()];
+      }
+      window.stayUnknownCollections=stayUnknownCollections;
+      const limitedNames=new Set(stayUnknownCollections.filter(c=>c.limited).map(c=>String(c.name).toLowerCase()));
+      products.forEach(p=>{p.__limitedCollection=limitedNames.has(String(p.collection||'').toLowerCase())});
+      if(!collectionsTrack)return stayUnknownCollections;
+      collectionsTrack.innerHTML=stayUnknownCollections.length?stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join(''):'<div class="no-products" style="width:100%;min-height:390px;display:grid;place-items:center">NO COLLECTIONS YET.</div>';
+      collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');
+      collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('[data-view-collection]'))return;openCollectionPage(el.dataset.collectionId)}));
+      collectionsTrack.querySelectorAll('[data-view-collection]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openCollectionPage(btn.dataset.viewCollection)}));
+      collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCollectionPage(el.dataset.collectionId)}}));
+      collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide));startCollectionTimer()}));
+      renderCollectionMenu();updateCollections(0,false);startCollectionTimer();return stayUnknownCollections;
+    })().finally(()=>{collectionsLoadPromise=null});
+    return collectionsLoadPromise;
+  }
+  window.loadStayUnknownCollections=loadStayUnknownCollections;
+  function openCollectionsPage(){
+    if(!stayUnknownCollections.length){void loadStayUnknownCollections().then(openCollectionsPage);return;}
+    closeDrawer();closeCart();searchPanel.classList.remove('open');document.querySelector('.hero').style.display='none';document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');collectionTitle.textContent='COLLECTIONS';
+    collectionContent.innerHTML=`<div class="collection-product-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">${stayUnknownCollections.map(c=>`<article class="collection-card" data-all-collection-id="${escapeHTML(c.id)}"><div class="collection-card-media">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-card-copy"><div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div><h3 class="collection-card-name">${escapeHTML(c.name)}</h3><div class="collection-card-meta">${Number(c.productCount||0)} PIECE${Number(c.productCount||0)===1?'':'S'}</div><button class="collection-view-btn" type="button">VIEW COLLECTION</button></div></article>`).join('')}</div>`;
+    collectionContent.querySelectorAll('[data-all-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.allCollectionId)));window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collections');
   }
   if(menuCollectionsToggle&&!menuCollectionsToggle.dataset.bound){
-    menuCollectionsToggle.dataset.bound='1';
-    menuCollectionsToggle.addEventListener('click',e=>{
-      e.preventDefault();e.stopPropagation();
-      if(!stayUnknownCollections.length){openCollectionsPage();return;}
-      const isOpen=menuCollectionCategories.classList.toggle('open');
-      if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';
-    });
+    menuCollectionsToggle.dataset.bound='1';menuCollectionsToggle.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();if(!stayUnknownCollections.length)await loadStayUnknownCollections();if(!stayUnknownCollections.length){openCollectionsPage();return;}const isOpen=menuCollectionCategories.classList.toggle('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';if(isOpen)renderCollectionMenu()});
   }
   document.getElementById('collection-back-btn')?.addEventListener('click',()=>{if(location.hash==='#collections'){showHome();return}collectionView.classList.add('is-hidden');collectionView.setAttribute('aria-hidden','true');collectionView.style.display='';shopView.style.display='';showHome()});
-  window.loadStayUnknownCollections?.();
-  collectionsViewport?.addEventListener('click',e=>{const card=e.target.closest('[data-collection-id]');if(card){e.preventDefault();openCollectionPage(card.dataset.collectionId);}});
   collectionsViewport?.addEventListener('pointerdown',e=>{collectionDragging=true;collectionStartX=e.clientX;collectionsViewport.setPointerCapture?.(e.pointerId);clearInterval(collectionTimer)});
   collectionsViewport?.addEventListener('pointerup',e=>{if(!collectionDragging)return;collectionDragging=false;const dx=e.clientX-collectionStartX;if(Math.abs(dx)>45)updateCollections(collectionIndex+(dx<0?1:-1));startCollectionTimer()});
-  collectionsViewport?.addEventListener('pointercancel',()=>{collectionDragging=false;startCollectionTimer()});
-  collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);window.addEventListener('resize',()=>updateCollections(collectionIndex,false));
-  window.loadStayUnknownCollections();
+  collectionsViewport?.addEventListener('pointercancel',()=>{collectionDragging=false;startCollectionTimer()});collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);window.addEventListener('resize',()=>updateCollections(collectionIndex,false));void loadStayUnknownCollections();
 
 })();
 </script>
