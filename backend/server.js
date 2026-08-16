@@ -398,11 +398,14 @@ let mergedPublicCache=null, mergedPublicCacheAt=0, mergedPublicPromise=null;
 let mergedAdminCache=null, mergedAdminCacheAt=0, mergedAdminPromise=null;
 let publicCollectionsCache=null, publicCollectionsCacheAt=0, publicCollectionsPromise=null;
 let adminCollectionsCache=null, adminCollectionsCacheAt=0, adminCollectionsPromise=null;
+let adminOrdersCache=null, adminOrdersCacheAt=0, adminOrdersPromise=null;
 const CATALOG_CACHE_MS=30000;
+const COLLECTION_CACHE_MS=120000;
+const ADMIN_ORDERS_CACHE_MS=15000;
 function invalidateCatalogCaches(){
   mergedPublicCache=null;mergedAdminCache=null;publicCollectionsCache=null;adminCollectionsCache=null;
   mergedPublicCacheAt=0;mergedAdminCacheAt=0;publicCollectionsCacheAt=0;adminCollectionsCacheAt=0;
-  mergedPublicPromise=null;mergedAdminPromise=null;publicCollectionsPromise=null;adminCollectionsPromise=null;
+  mergedPublicPromise=null;mergedAdminPromise=null;publicCollectionsPromise=null;adminCollectionsPromise=null;adminOrdersCache=null;adminOrdersCacheAt=0;adminOrdersPromise=null;
 }
 
 /*
@@ -1578,67 +1581,32 @@ app.get(
   requireAdmin,
   async (_req, res) => {
     try {
-      const firestore =
-        initFirebase();
-
-      if (!firestore) {
-        return res.status(503).json({
-          error:
-            "Firebase is not configured."
-        });
+      const now=Date.now();
+      if(adminOrdersCache && now-adminOrdersCacheAt<ADMIN_ORDERS_CACHE_MS){
+        return res.json({ok:true,orders:adminOrdersCache.map(o=>({...o}))});
       }
-
-      const snapshot =
-        await firestore
-          .collection("orders")
-          .get();
-
-      const orders =
-        snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .filter(order => {
-            const paymentStatus =
-              String(
-                order.paymentStatus || ""
-              ).toUpperCase();
-
-            return (
-              paymentStatus === "PAID" ||
-              paymentStatus === "PROCESSING" ||
-              paymentStatus === "SHIPPED" ||
-              paymentStatus === "DELIVERED" ||
-              Boolean(
-                order.deliveryStatus
-              )
-            );
-          })
-          .sort((a, b) =>
-            String(
-              b.createdAt || ""
-            ).localeCompare(
-              String(
-                a.createdAt || ""
-              )
-            )
-          );
-
-      return res.json({
-        ok: true,
-        orders
-      });
-    } catch (error) {
-      console.error(
-        "Admin orders error:",
-        error
-      );
-
-      return res.status(500).json({
-        error:
-          "Unable to load delivery orders."
-      });
+      if(adminOrdersPromise){
+        const orders=await adminOrdersPromise;
+        return res.json({ok:true,orders:orders.map(o=>({...o}))});
+      }
+      const firestore=initFirebase();
+      if(!firestore)return res.status(503).json({error:"Firebase is not configured."});
+      adminOrdersPromise=(async()=>{
+        const snapshot=await firestore.collection("orders").get();
+        const orders=snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).filter(order=>{
+          const paymentStatus=String(order.paymentStatus||"").toUpperCase();
+          return paymentStatus==="PAID"||paymentStatus==="PROCESSING"||paymentStatus==="SHIPPED"||paymentStatus==="DELIVERED"||Boolean(order.deliveryStatus);
+        }).sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+        adminOrdersCache=orders;adminOrdersCacheAt=Date.now();
+        return orders;
+      })();
+      try{
+        const orders=await adminOrdersPromise;
+        return res.json({ok:true,orders:orders.map(o=>({...o}))});
+      }finally{adminOrdersPromise=null;}
+    } catch(error) {
+      console.error("Admin orders error:",error);
+      return res.status(500).json({error:"Unable to load delivery orders."});
     }
   }
 );
@@ -1780,6 +1748,10 @@ app.patch(
         deliveryNote: delivery.note,
         updatedAt: now
       };
+
+      adminOrdersCache=null;
+      adminOrdersCacheAt=0;
+      adminOrdersPromise=null;
 
       if (deliveryStatus !== previousStatus &&
           ["PROCESSING", "SHIPPED", "DELIVERED"].includes(deliveryStatus)) {
@@ -2330,15 +2302,16 @@ app.patch('/api/admin/products/:id', authenticate, async (req,res)=>{
 app.get('/api/collections', async (_req,res)=>{
   try{
     const now=Date.now();
-    if(publicCollectionsCache && now-publicCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
+    if(publicCollectionsCache && now-publicCollectionsCacheAt<COLLECTION_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
     if(publicCollectionsPromise)return res.json({collections:await publicCollectionsPromise});
-
     publicCollectionsPromise=(async()=>{
       const firestore=initFirebase();
-      const productPromise=getMergedProducts();
-      const collectionPromise=firestore?Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]):Promise.resolve(null);
-      const [products,snap]=await Promise.all([productPromise,collectionPromise.catch(()=>null)]);
-      const explicit=snap?snap.docs.map(d=>({id:d.id,...d.data()})):[];
+      const collectionPromise=firestore?firestore.collection('collections').get():Promise.resolve(null);
+      const productsPromise=getMergedProducts();
+      const [collectionResult,productsResult]=await Promise.allSettled([collectionPromise,productsPromise]);
+      const snap=collectionResult.status==='fulfilled'?collectionResult.value:null;
+      const products=productsResult.status==='fulfilled'?productsResult.value:[];
+      const explicit=snap?snap.docs.map(d=>({id:d.id,...d.data()})):[ ];
       const explicitByName=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
       const hiddenNames=new Set(explicit.filter(c=>c.hidden).map(c=>String(c.name||'').trim().toLowerCase()).filter(Boolean));
       const map=new Map();
@@ -2350,7 +2323,8 @@ app.get('/api/collections', async (_req,res)=>{
       for(const [key,c] of explicitByName){if(c.hidden)continue;if(!map.has(key))map.set(key,c);}
       const counts=new Map();for(const p of products){const key=String(p.collection||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1);}
       const list=[...map.values()].map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0})).filter(c=>c&&!c.hidden&&String(c.name||'').trim()).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
-      publicCollectionsCache=list;publicCollectionsCacheAt=Date.now();return list.map(c=>({...c}));
+      publicCollectionsCache=list;publicCollectionsCacheAt=Date.now();
+      return list.map(c=>({...c}));
     })();
     try{return res.json({collections:await publicCollectionsPromise});}
     finally{publicCollectionsPromise=null;}
