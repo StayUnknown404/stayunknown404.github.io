@@ -3514,35 +3514,41 @@ function normalizeStayUnknownCollectionList(value){
   return Array.isArray(list)?list.map((c,i)=>normalizeStayUnknownCollection(c,i)).filter(c=>c.name):[];
 }
 
-async function loadStayUnknownCollections(){
+async function loadStayUnknownCollections(options={}){
+    const force=Boolean(options&&options.force);
     if(collectionsLoadPromise)return collectionsLoadPromise;
-    // Collections must never depend on the shape or timing of the product array.
-    // Render any local product-derived collections when possible, but ALWAYS fetch
-    // the explicit collection records from the backend as the source of truth.
+    // Collections are explicit backend records. Do not let a browser/proxy cache hide
+    // a collection that was just created in the admin area.
     let derived=[];
     try{derived=deriveCollectionsFromProducts()}catch(error){console.warn('Local collection derivation skipped:',error)}
-    if(derived.length){stayUnknownCollections=derived;renderCollectionsUI();}
+    if(derived.length&&!stayUnknownCollections.length){stayUnknownCollections=derived;renderCollectionsUI();}
     collectionsLoadPromise=(async()=>{
       try{
         const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);let response;
-        try{response=await fetch(`${BACKEND_URL}/api/collections`,{cache:'default',signal:controller.signal})}finally{clearTimeout(timer)}
+        const cacheBust=force?`?fresh=${Date.now()}`:'';
+        try{response=await fetch(`${BACKEND_URL}/api/collections${cacheBust}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'},signal:controller.signal})}finally{clearTimeout(timer)}
         const data=await response.json();if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
         const remote=data.collections.filter(c=>c&&!(c.hidden===true||c.hidden===1||String(c.hidden||'').trim().toLowerCase()==='true')&&String(c.name||'').trim()).map(c=>({...c,productIds:Array.isArray(c.productIds)?c.productIds.map(String):[]}));
-        if(remote.length || !derived.length){stayUnknownCollections=remote;renderCollectionsUI();}
-      }catch(error){console.warn('Collections metadata unavailable; keeping local product-derived collections:',error)}
+        // A successful backend response is authoritative, including an empty list.
+        stayUnknownCollections=remote;
+        renderCollectionsUI();
+      }catch(error){
+        console.warn('Collections metadata unavailable; keeping last known collections:',error);
+        if(!stayUnknownCollections.length&&derived.length){stayUnknownCollections=derived;renderCollectionsUI();}
+      }
       return stayUnknownCollections;
     })().finally(()=>{collectionsLoadPromise=null});
     return collectionsLoadPromise;
   }
   window.loadStayUnknownCollections=loadStayUnknownCollections;
   function openCollectionsPage(){
-    if(!stayUnknownCollections.length){void loadStayUnknownCollections().then(openCollectionsPage);return;}
+    if(!stayUnknownCollections.length){void loadStayUnknownCollections({force:true}).then(openCollectionsPage);return;}
     closeDrawer();closeCart();searchPanel.classList.remove('open');document.querySelector('.hero').style.display='none';document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');collectionTitle.textContent='COLLECTIONS';
     collectionContent.innerHTML=`<div class="collection-product-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">${stayUnknownCollections.map(c=>`<article class="collection-card" data-all-collection-id="${escapeHTML(c.id)}"><div class="collection-card-media">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-card-copy"><div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div><h3 class="collection-card-name">${escapeHTML(c.name)}</h3><div class="collection-card-meta">${Number(c.productCount||0)} PIECE${Number(c.productCount||0)===1?'':'S'}</div><button class="collection-view-btn" type="button">VIEW COLLECTION</button></div></article>`).join('')}</div>`;
     collectionContent.querySelectorAll('[data-all-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.allCollectionId)));window.scrollTo({top:0,behavior:'smooth'});history.replaceState(null,'','#collections');
   }
   if(menuCollectionsToggle&&!menuCollectionsToggle.dataset.bound){
-    menuCollectionsToggle.dataset.bound='1';menuCollectionsToggle.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();const isOpen=menuCollectionCategories.classList.toggle('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';if(!isOpen)return;renderCollectionMenu();if(!stayUnknownCollections.length){menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';try{await loadStayUnknownCollections()}catch(_){}renderCollectionMenu();}});
+    menuCollectionsToggle.dataset.bound='1';menuCollectionsToggle.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();const isOpen=menuCollectionCategories.classList.toggle('open');if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';if(!isOpen)return;menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';try{await loadStayUnknownCollections({force:true})}catch(_){}renderCollectionMenu();});
   }
   document.getElementById('collection-back-btn')?.addEventListener('click',()=>{if(location.hash==='#collections'){showHome();return}collectionView.classList.add('is-hidden');collectionView.setAttribute('aria-hidden','true');collectionView.style.display='';shopView.style.display='';showHome()});
   let collectionPointerDown=false,collectionPointerStartX=0;
@@ -3558,7 +3564,7 @@ async function loadStayUnknownCollections(){
     const next=Math.max(0,Math.min(Math.round(collectionsViewport.scrollLeft/step),Math.max(0,stayUnknownCollections.length-collectionVisible())));
     if(next!==collectionIndex){collectionIndex=next;collectionsDots?.querySelectorAll('.collection-dot').forEach((d,i)=>d.classList.toggle('active',i===collectionIndex));const count=document.getElementById('collections-home-count');if(count)count.textContent=`${String(Math.min(collectionIndex+1,Math.max(1,stayUnknownCollections.length))).padStart(2,'0')} / ${String(Math.max(1,stayUnknownCollections.length)).padStart(2,'0')}`;}
   },{passive:true});
-  collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);window.addEventListener('resize',()=>updateCollections(collectionIndex,false));void loadStayUnknownCollections().catch(error=>console.warn('Initial collections load failed:',error));
+  collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);window.addEventListener('resize',()=>updateCollections(collectionIndex,false));void loadStayUnknownCollections({force:true}).catch(error=>console.warn('Initial collections load failed:',error));
 
 })();
 </script>
