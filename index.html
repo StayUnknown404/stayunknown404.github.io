@@ -3788,8 +3788,8 @@ function renderStayUnknownRestockBox(product){
 .su-ch-track{display:flex;gap:14px;width:max-content;min-height:440px}
 .su-ch-slide{width:min(88vw,620px);flex:0 0 min(88vw,620px);scroll-snap-align:start;min-height:440px}
 .su-ch-card{width:100%;height:440px;background:#151515;border:1px solid #333;display:flex;flex-direction:column;cursor:pointer;overflow:hidden}
-.su-ch-media{height:300px;min-height:300px;background:#111;display:grid;place-items:center;overflow:hidden}
-.su-ch-media img{width:100%;height:100%;object-fit:cover;display:block}
+.su-ch-media{position:relative;height:300px;min-height:300px;background:#111;display:block;overflow:hidden}
+.su-ch-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .su-ch-fallback{width:100%;height:100%;display:grid;place-items:center;text-align:center;padding:30px;color:#f3f3f0;font:clamp(40px,9vw,90px)/.9 Anton,sans-serif;text-transform:uppercase}
 .su-ch-copy{padding:18px;display:grid;gap:7px;flex:1}
 .su-ch-kicker{font-size:9px;letter-spacing:2px;color:#777;text-transform:uppercase}
