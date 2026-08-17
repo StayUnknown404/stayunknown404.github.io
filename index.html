@@ -633,12 +633,15 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
 
 <style id="stayunknown-collections-final-fix">
-#collections-home{overflow:hidden!important}
-#collections-home-viewport{display:block!important;visibility:visible!important;opacity:1!important;overflow:hidden!important;min-height:430px!important;height:430px!important}
-#collections-home-track{display:flex!important;visibility:visible!important;opacity:1!important;gap:12px!important;width:max-content!important;min-width:100%!important;min-height:430px!important;height:430px!important}
-#collections-home-track .collection-slide{display:block!important;visibility:visible!important;opacity:1!important;flex:0 0 calc(100vw - 36px)!important;width:calc(100vw - 36px)!important;height:430px!important;min-height:430px!important}
-#collections-home-track .collection-card{display:flex!important;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-card-media,#collections-home-track .collection-card-copy{visibility:visible!important;opacity:1!important}
+#collections-home{content-visibility:visible!important;contain:none!important;overflow:hidden!important}
+#collections-home-viewport{display:block!important;position:relative!important;width:100%!important;height:430px!important;min-height:430px!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x mandatory!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x!important}
+#collections-home-viewport::-webkit-scrollbar{display:none!important}
+#collections-home-track{display:flex!important;position:relative!important;gap:12px!important;width:max-content!important;min-width:100%!important;height:430px!important;min-height:430px!important;transform:none!important;will-change:auto!important;visibility:visible!important;opacity:1!important}
+#collections-home-track .collection-slide{display:block!important;position:relative!important;flex:0 0 calc(100vw - 36px)!important;width:calc(100vw - 36px)!important;height:430px!important;min-height:430px!important;scroll-snap-align:start!important;visibility:visible!important;opacity:1!important}
+#collections-home-track .collection-card{display:flex!important;position:relative!important;width:100%!important;height:430px!important;min-height:430px!important;background:#171717!important;color:#fff!important;border:1px solid #444!important;visibility:visible!important;opacity:1!important}
+#collections-home-track .collection-card-media{display:grid!important;position:relative!important;height:270px!important;min-height:270px!important;flex:0 0 270px!important;background:#171717!important;overflow:hidden!important;visibility:visible!important;opacity:1!important}
+#collections-home-track .collection-card-copy{display:flex!important;position:relative!important;flex:1 1 auto!important;visibility:visible!important;opacity:1!important;background:#171717!important;z-index:3!important}
+.collection-empty-state{width:100%;height:430px;display:grid;place-items:center;border:1px solid #292929;color:#888;font-size:12px;letter-spacing:2px}
 @media(min-width:701px){#collections-home-track .collection-slide{flex-basis:calc((100vw - 48px)/2)!important;width:calc((100vw - 48px)/2)!important}}
 </style>
 <style id="stayunknown-full-page-navigation">
@@ -1433,7 +1436,7 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
       // separate request and must never be allowed to block Shop/Search.
       liveCatalogLoaded=true;
       if(!shopView.classList.contains('is-hidden'))renderShop();
-      if(typeof window.loadStayUnknownCollections==='function') void window.loadStayUnknownCollections();
+      if(typeof window.loadStayUnknownCollections==='function') void window.loadStayUnknownCollections({force:true});
       return true;
     }catch(e){
       console.warn('Live catalogue unavailable:',e);
@@ -3317,7 +3320,7 @@ onAuthStateChanged(auth, updateAccountUI);
             const file=document.getElementById('admin-collection-image-file'),input=document.getElementById('admin-collection-image');file?.addEventListener('change',async()=>{const f=file.files?.[0];if(!f)return;try{const src=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(String(rd.result||''));rd.onerror=reject;rd.readAsDataURL(f)});const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src});const max=1600,scale=Math.min(1,max/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);input.value=canvas.toDataURL('image/jpeg',.8)}catch(e){file.value='';alert('Unable to process that image.')}});
             document.getElementById('admin-collection-visibility')?.addEventListener('click',async()=>{const button=document.getElementById('admin-collection-visibility');button.disabled=true;try{const rr=await fetch(`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({hidden:!Boolean(currentCollection.hidden)})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to update collection visibility.');await window.loadStayUnknownCollections?.();await openAdminSection('inventory')}catch(e){alert(e.message||'Unable to update collection visibility.');button.disabled=false}});
             document.getElementById('admin-collection-delete')?.addEventListener('click',async()=>{if(!confirm(`Are you sure you want to permanently delete “${currentCollection.name||'this collection'}”? Products will remain in the store but will be removed from this collection.`))return;const button=document.getElementById('admin-collection-delete');button.disabled=true;try{const rr=await fetch(`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to permanently delete collection.');await window.loadStayUnknownCatalog?.();await window.loadStayUnknownCollections?.();await openAdminSection('inventory')}catch(e){alert(e.message||'Unable to permanently delete collection.');button.disabled=false}});
-            document.getElementById('admin-collection-save')?.addEventListener('click',async()=>{const btn=document.getElementById('admin-collection-save'),msg=document.getElementById('admin-collection-message');btn.disabled=true;try{const name=document.getElementById('admin-collection-name').value.trim();if(!name)throw new Error('Collection name is required.');const selected=[...document.querySelectorAll('.collection-product-picker input:checked')].map(x=>x.value);const payload={name,limited:document.getElementById('admin-collection-limited').checked,image:document.getElementById('admin-collection-image').value.trim(),description:document.getElementById('admin-collection-description').value.trim(),order:Number(document.getElementById('admin-collection-order').value||0),productIds:selected,hidden:Boolean(currentCollection.hidden)};const url=editingCollectionId?`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`:`${BACKEND_URL}/api/admin/collections`;const rr=await fetch(url,{method:editingCollectionId?'PATCH':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to save collection.');try{await window.loadStayUnknownCollections?.()}catch(_){}await openAdminSection('inventory')}catch(e){msg.textContent=e.message||'Unable to save collection.'}finally{btn.disabled=false}});
+            document.getElementById('admin-collection-save')?.addEventListener('click',async()=>{const btn=document.getElementById('admin-collection-save'),msg=document.getElementById('admin-collection-message');btn.disabled=true;try{const name=document.getElementById('admin-collection-name').value.trim();if(!name)throw new Error('Collection name is required.');const selected=[...document.querySelectorAll('.collection-product-picker input:checked')].map(x=>x.value);const payload={name,limited:document.getElementById('admin-collection-limited').checked,image:document.getElementById('admin-collection-image').value.trim(),description:document.getElementById('admin-collection-description').value.trim(),order:Number(document.getElementById('admin-collection-order').value||0),productIds:selected,hidden:Boolean(c?.hidden)};const url=editingCollectionId?`${BACKEND_URL}/api/admin/collections/${encodeURIComponent(editingCollectionId)}`:`${BACKEND_URL}/api/admin/collections`;const rr=await fetch(url,{method:editingCollectionId?'PATCH':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Unable to save collection.');try{await window.loadStayUnknownCollections?.()}catch(_){}await openAdminSection('inventory')}catch(e){msg.textContent=e.message||'Unable to save collection.'}finally{btn.disabled=false}});
           }
         };
         await renderManager();
@@ -3435,15 +3438,14 @@ onAuthStateChanged(auth, updateAccountUI);
   }
 
   function updateCollections(index=0,animate=true){
-    if(!collectionsTrack)return;
+    if(!collectionsTrack||!collectionsViewport)return;
     const visible=collectionVisible();
     const max=Math.max(0,stayUnknownCollections.length-visible);
     collectionIndex=Math.max(0,Math.min(Number(index)||0,max));
-    const step=collectionsViewport?.clientWidth
-      ? (collectionsViewport.clientWidth-(visible-1)*12)/visible+12
-      : Math.max(1,window.innerWidth-36+12);
-    collectionsTrack.style.transition=animate?'transform .42s ease':'none';
-    collectionsTrack.style.transform=`translate3d(${-collectionIndex*step}px,0,0)`;
+    const slide=collectionsTrack.querySelector('.collection-slide');
+    const gap=12;
+    const step=slide ? slide.getBoundingClientRect().width+gap : Math.max(1,collectionsViewport.clientWidth);
+    collectionsViewport.scrollTo({left:collectionIndex*step,behavior:animate?'smooth':'auto'});
     collectionsDots?.querySelectorAll('.collection-dot').forEach((d,i)=>d.classList.toggle('active',i===collectionIndex));
     setCollectionCounter();
   }
@@ -3495,7 +3497,15 @@ onAuthStateChanged(auth, updateAccountUI);
     collectionsTrack.querySelectorAll('[data-collection-id]').forEach(card=>card.addEventListener('keydown',e=>{
       if(e.key==='Enter'||e.key===' '){e.preventDefault();openCollectionsPage();}
     }));
-    requestAnimationFrame(()=>{updateCollections(0,false);startCollectionTimer();});
+    requestAnimationFrame(()=>{
+      updateCollections(0,false);
+      if(stayUnknownCollections.length && !collectionsTrack.querySelector('.collection-card')){
+        collectionsTrack.innerHTML=stayUnknownCollections.map(c=>`<div class="collection-slide"><article class="collection-card" data-collection-id="${escapeHTML(c.id)}" style="display:flex!important;visibility:visible!important;opacity:1!important;flex-direction:column!important;"><div class="collection-card-media" style="display:grid!important;place-items:center!important;min-height:270px!important;background:#171717!important"><div class="collection-card-fallback" style="display:grid!important;place-items:center!important;width:100%!important;height:100%!important;color:#fff!important">${escapeHTML(c.name)}</div></div><div class="collection-card-copy" style="display:flex!important;visibility:visible!important;opacity:1!important"><h3 class="collection-card-name">${escapeHTML(c.name)}</h3><button class="collection-view-btn" type="button" data-view-collection="${escapeHTML(c.id)}">VIEW COLLECTION</button></div></article></div>`).join('');
+        collectionsTrack.querySelectorAll('[data-view-collection]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openCollectionPage(btn.dataset.viewCollection)}));
+        collectionsTrack.querySelectorAll('[data-collection-id]').forEach(card=>card.addEventListener('click',e=>{if(!e.target.closest('button'))openCollectionPage(card.dataset.collectionId)}));
+      }
+      startCollectionTimer();
+    });
     renderCollectionMenu();
   }
 
@@ -3521,6 +3531,22 @@ onAuthStateChanged(auth, updateAccountUI);
     };
   }
 
+  // Accept the backend's {collections:[...]} response as well as a raw array.
+  // This function is intentionally global within the main application scope because
+  // both the customer collection loader and the admin collection manager use it.
+  function normalizeStayUnknownCollectionList(value){
+    let list=value;
+    if(list&&typeof list==='object'&&!Array.isArray(list)){
+      list=list.collections??list.data??list.items??[];
+    }
+    if(typeof list==='string'){
+      try{list=JSON.parse(list)}catch(_){list=[]}
+    }
+    return Array.isArray(list)
+      ? list.map((c,i)=>normalizeStayUnknownCollection(c,i)).filter(c=>c.name)
+      : [];
+  }
+
   function deriveCollectionsFromProducts(){
     const seen=new Map();
     const productList=Array.isArray(products)?products:(products&&Array.isArray(products.products)?products.products:[]);
@@ -3543,7 +3569,7 @@ onAuthStateChanged(auth, updateAccountUI);
       const controller=new AbortController();
       const timer=setTimeout(()=>controller.abort(),timeoutMs);
       try{
-        const url=`${BACKEND_URL}/api/collections${force?'?fresh='+Date.now():''}`;
+        const url=`${BACKEND_URL}/api/collections?ts=${Date.now()}${force?'&fresh=1':''}`;
         const response=await fetch(url,{cache:'no-store',headers:{'Cache-Control':'no-cache, no-store'},signal:controller.signal});
         const data=await response.json();
         if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
@@ -3603,8 +3629,7 @@ onAuthStateChanged(auth, updateAccountUI);
       const isOpen=menuCollectionCategories.classList.toggle('open');
       if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';
       if(!isOpen)return;
-      if(stayUnknownCollections.length)renderCollectionMenu();
-      else menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';
+      menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';
       const result=await loadStayUnknownCollections({force:true});
       if(!result.length)menuCollectionCategories.innerHTML='<div class="collection-menu-empty">NO COLLECTIONS AVAILABLE.</div>';
       else renderCollectionMenu();
@@ -3612,8 +3637,9 @@ onAuthStateChanged(auth, updateAccountUI);
   }
 
   document.getElementById('collection-back-btn')?.addEventListener('click',()=>{
-    if(location.hash==='#collections'){showHome();return;}
+    if(location.hash==='#collections'){showHome();void loadStayUnknownCollections({force:true});return;}
     collectionView.classList.add('is-hidden');collectionView.setAttribute('aria-hidden','true');collectionView.style.display='';shopView.style.display='';showHome();
+    void loadStayUnknownCollections({force:true});
   });
 
   let collectionPointerDown=false,collectionPointerStartX=0;
