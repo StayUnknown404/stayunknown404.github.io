@@ -399,9 +399,8 @@ let mergedAdminCache=null, mergedAdminCacheAt=0, mergedAdminPromise=null;
 let publicCollectionsCache=null, publicCollectionsCacheAt=0, publicCollectionsPromise=null;
 let adminCollectionsCache=null, adminCollectionsCacheAt=0, adminCollectionsPromise=null;
 const CATALOG_CACHE_MS=30000;
-let publicCollectionDocsCache=null, publicCollectionDocsCacheAt=0, publicCollectionDocsPromise=null;
 function invalidateCatalogCaches(){
-  mergedPublicCache=null;mergedAdminCache=null;publicCollectionsCache=null;adminCollectionsCache=null;publicCollectionDocsCache=null;publicCollectionDocsCacheAt=0;publicCollectionDocsPromise=null;
+  mergedPublicCache=null;mergedAdminCache=null;publicCollectionsCache=null;adminCollectionsCache=null;
   mergedPublicCacheAt=0;mergedAdminCacheAt=0;publicCollectionsCacheAt=0;adminCollectionsCacheAt=0;
   mergedPublicPromise=null;mergedAdminPromise=null;publicCollectionsPromise=null;adminCollectionsPromise=null;
 }
@@ -554,31 +553,10 @@ async function getMergedProducts({includeHidden=false}={}){
   try{return await load;}finally{if(includeHidden)mergedAdminPromise=null;else mergedPublicPromise=null;}
 }
 
-async function getPublicCollectionDocs(){
-  const now=Date.now();
-  if(publicCollectionDocsCache && now-publicCollectionDocsCacheAt<CATALOG_CACHE_MS) return publicCollectionDocsCache.map(c=>({...c,productIds:Array.isArray(c.productIds)?[...c.productIds]:[]}));
-  if(publicCollectionDocsPromise) return publicCollectionDocsPromise;
-  publicCollectionDocsPromise=(async()=>{
-    const firestore=initFirebase();
-    if(!firestore) return [];
-    try{
-      const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),8000))]);
-      const list=snap.docs.map(d=>({id:d.id,...(d.data()||{})})).filter(c=>String(c.name||'').trim() && !(c.hidden===true || c.hidden===1 || String(c.hidden||'').trim().toLowerCase()==='true'));
-      publicCollectionDocsCache=list; publicCollectionDocsCacheAt=Date.now();
-      return list.map(c=>({...c,productIds:Array.isArray(c.productIds)?[...c.productIds]:[]}));
-    }catch(e){
-      console.warn('Public collection metadata read failed:',e.message||e);
-      return publicCollectionDocsCache?publicCollectionDocsCache.map(c=>({...c,productIds:Array.isArray(c.productIds)?[...c.productIds]:[]})):[];
-    }
-  })();
-  try{return await publicCollectionDocsPromise;}finally{publicCollectionDocsPromise=null;}
-}
-
 app.get("/api/catalog", async (_req, res) => {
   try {
     res.set('Cache-Control','no-store, max-age=0');
-    const products=await getMergedProducts();
-    res.json({products});
+    res.json({products:await getMergedProducts()});
   } catch(error){
     console.error('Catalog error:',error);
     // Never leave the storefront waiting for a database error.
@@ -2354,26 +2332,28 @@ app.get('/api/collections', async (_req,res)=>{
     const now=Date.now();
     if(publicCollectionsCache && now-publicCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
     if(publicCollectionsPromise)return res.json({collections:await publicCollectionsPromise});
+
     publicCollectionsPromise=(async()=>{
-      const explicit=await getPublicCollectionDocs();
+      const firestore=initFirebase();
+      const productPromise=getMergedProducts();
+      const collectionPromise=firestore?Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]):Promise.resolve(null);
+      const [products,snap]=await Promise.all([productPromise,collectionPromise.catch(()=>null)]);
+      const explicit=snap?snap.docs.map(d=>({id:d.id,...d.data()})):[];
+      const explicitByName=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
+      const hiddenNames=new Set(explicit.filter(c=>c.hidden).map(c=>String(c.name||'').trim().toLowerCase()).filter(Boolean));
       const map=new Map();
-      for(const c of explicit){
-        const key=String(c.name||'').trim().toLowerCase();
-        if(!key)continue;
-        const productIds=Array.isArray(c.productIds)?c.productIds.map(String).filter(Boolean):[];
-        map.set(key,{...c,productIds,productCount:Number.isFinite(Number(c.productCount))?Number(c.productCount):productIds.length});
+      for(const p of products){
+        const name=String(p.collection||'').trim();if(!name)continue;
+        const key=name.toLowerCase();if(hiddenNames.has(key))continue;
+        if(!map.has(key))map.set(key,explicitByName.get(key)||{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});
       }
-      if(mergedPublicCache && mergedPublicCache.length){
-        const counts=new Map();
-        for(const p of mergedPublicCache){const key=String(p.collection||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1)}
-        for(const [key,c] of map){if(!Array.isArray(c.productIds)||!c.productIds.length)c.productCount=counts.get(key)||0;map.set(key,c)}
-        for(const [key,count] of counts){if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(key)}`,name:key,image:'',description:'',order:9999,hidden:false,derived:true,productCount:count,productIds:[]})}
-      }
-      const list=[...map.values()].filter(c=>c&&!c.hidden&&String(c.name||'').trim()).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
-      publicCollectionsCache=list;publicCollectionsCacheAt=Date.now();
-      return list.map(c=>({...c}));
+      for(const [key,c] of explicitByName){if(c.hidden)continue;if(!map.has(key))map.set(key,c);}
+      const counts=new Map();for(const p of products){const key=String(p.collection||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1);}
+      const list=[...map.values()].map(c=>({...c,productCount:counts.get(String(c.name||'').trim().toLowerCase())||0})).filter(c=>c&&!c.hidden&&String(c.name||'').trim()).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+      publicCollectionsCache=list;publicCollectionsCacheAt=Date.now();return list.map(c=>({...c}));
     })();
-    try{return res.json({collections:await publicCollectionsPromise});}finally{publicCollectionsPromise=null}
+    try{return res.json({collections:await publicCollectionsPromise});}
+    finally{publicCollectionsPromise=null;}
   }catch(e){
     console.error('Collections load error:',e);
     if(publicCollectionsCache)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
@@ -2385,53 +2365,47 @@ app.get('/api/admin/collections', authenticate, async (req,res)=>{
   try{
     const firestore=await requireAdminUser(req,res);if(!firestore)return;
     const now=Date.now();
-    if(adminCollectionsCache && now-adminCollectionsCacheAt<CATALOG_CACHE_MS){
-      return res.json({collections:adminCollectionsCache.map(c=>({...c}))});
-    }
-    // Collections are metadata. Do NOT load the full product catalogue here.
-    // The admin UI already requests /api/admin/products separately, and waiting
-    // for products here was the source of the 2–8 second admin slowdown.
-    const snap=await Promise.race([
-      firestore.collection('collections').get(),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))
-    ]);
+    if(adminCollectionsCache && now-adminCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:adminCollectionsCache.map(c=>({...c})),products:await getMergedProducts({includeHidden:true})});
+    const products=await getMergedProducts({includeHidden:true});
+    const snap=await Promise.race([firestore.collection('collections').get(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore collections timeout')),2500))]);
     const explicit=snap.docs.map(d=>({id:d.id,...d.data()}));
-    const list=explicit
-      .filter(c=>String(c.name||'').trim())
-      .map(c=>({...c,productIds:Array.isArray(c.productIds)?c.productIds.map(String):[]}))
-      .sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
+    const map=new Map(explicit.filter(c=>String(c.name||'').trim()).map(c=>[String(c.name).trim().toLowerCase(),c]));
+    for(const p of products){const name=String(p.collection||'').trim();if(!name)continue;const key=name.toLowerCase();if(!map.has(key))map.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,derived:true});}
+    const list=[...map.values()].map(c=>({...c,productCount:products.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()).length})).sort((a,b)=>Number(a.order||0)-Number(b.order||0)||String(a.name).localeCompare(String(b.name)));
     adminCollectionsCache=list;adminCollectionsCacheAt=Date.now();
-    return res.json({collections:list.map(c=>({...c}))});
+    return res.json({collections:list.map(c=>({...c})),products});
   }catch(e){console.error('Admin collections load error:',e);res.status(500).json({error:'Unable to load collections.'})}
 });
 
-async function syncCollectionProducts(firestore,name,productIds,previousProductIds=[]){
-  const ids=new Set((Array.isArray(productIds)?productIds:[]).map(String).filter(Boolean));
-  const previous=new Set((Array.isArray(previousProductIds)?previousProductIds:[]).map(String).filter(Boolean));
-  const batch=firestore.batch();
-  const now=new Date().toISOString();
-  for(const id of ids)batch.set(firestore.collection('products').doc(id),{id,collection:name,updatedAt:now},{merge:true});
-  for(const id of previous){if(!ids.has(id))batch.set(firestore.collection('products').doc(id),{id,collection:'',updatedAt:now},{merge:true});}
-  if(ids.size||previous.size)await batch.commit();
-}
-
 app.post('/api/admin/collections', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const name=String(req.body?.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});const productIds=Array.isArray(req.body?.productIds)?[...new Set(req.body.productIds.map(String).filter(Boolean))]:[];const id=`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;const collection={name,image:String(req.body?.image||'').trim(),description:String(req.body?.description||'').trim().slice(0,1000),order:Math.max(0,Number(req.body?.order||0)),hidden:false,limited:Boolean(req.body?.limited),productIds,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};await firestore.collection('collections').doc(id).set(collection);await syncCollectionProducts(firestore,name,productIds,[]);invalidateCatalogCaches();res.json({ok:true,collection:{id,...collection}});}
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const name=String(req.body?.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});const id=`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;const collection={name,image:String(req.body?.image||'').trim(),description:String(req.body?.description||'').trim().slice(0,1000),order:Math.max(0,Number(req.body?.order||0)),hidden:false,limited:Boolean(req.body?.limited),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};await firestore.collection('collections').doc(id).set(collection);if(Array.isArray(req.body?.productIds))await assignProductsToCollection(firestore,name,req.body.productIds);invalidateCatalogCaches();res.json({ok:true,collection:{id,...collection}});}
   catch(e){console.error('Create collection error:',e);res.status(500).json({error:'Unable to create collection.'})}
 });
 
+async function assignProductsToCollection(firestore,name,productIds){
+  const ids=new Set((Array.isArray(productIds)?productIds:[]).map(String));
+  const products=await getMergedProducts({includeHidden:true});
+  const batch=firestore.batch();
+  for(const p of products){const ref=firestore.collection('products').doc(String(p.id));if(ids.has(String(p.id)))batch.set(ref,{id:String(p.id),collection:name,updatedAt:new Date().toISOString()},{merge:true});else if(String(p.collection||'').toLowerCase()===String(name).toLowerCase())batch.set(ref,{id:String(p.id),collection:'',updatedAt:new Date().toISOString()},{merge:true});}
+  await batch.commit();
+  invalidateCatalogCaches();
+}
+
 app.patch('/api/admin/collections/:id', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'');const ref=firestore.collection('collections').doc(id);const snap=await ref.get();const old=snap.exists?(snap.data()||{}):{};const name=String(req.body?.name||old.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});if(!snap.exists && !id.startsWith('derived-'))return res.status(404).json({error:'Collection not found.'});const previousProductIds=Array.isArray(old.productIds)?old.productIds.map(String):[];const productIds=Array.isArray(req.body?.productIds)?[...new Set(req.body.productIds.map(String).filter(Boolean))]:previousProductIds;const next={...old,name,image:req.body?.image!==undefined?String(req.body.image||'').trim():old.image||'',description:req.body?.description!==undefined?String(req.body.description||'').trim().slice(0,1000):old.description||'',order:req.body?.order!==undefined?Math.max(0,Number(req.body.order||0)):Number(old.order||0),hidden:req.body?.hidden!==undefined?Boolean(req.body.hidden):Boolean(old.hidden),limited:req.body?.limited!==undefined?Boolean(req.body.limited):Boolean(old.limited),productIds,updatedAt:new Date().toISOString()};const targetId=snap.exists?id:`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;await firestore.collection('collections').doc(targetId).set(next,{merge:true});if(Array.isArray(req.body?.productIds))await syncCollectionProducts(firestore,name,productIds,previousProductIds);invalidateCatalogCaches();res.json({ok:true,collection:{id:targetId,...next}});}
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'');const ref=firestore.collection('collections').doc(id);const snap=await ref.get();const old=snap.exists?(snap.data()||{}):{};const name=String(req.body?.name||old.name||'').trim().slice(0,120);if(!name)return res.status(400).json({error:'Collection name is required.'});if(!snap.exists && !id.startsWith('derived-'))return res.status(404).json({error:'Collection not found.'});const next={...old,name,image:req.body?.image!==undefined?String(req.body.image||'').trim():old.image||'',description:req.body?.description!==undefined?String(req.body.description||'').trim().slice(0,1000):old.description||'',order:req.body?.order!==undefined?Math.max(0,Number(req.body.order||0)):Number(old.order||0),hidden:req.body?.hidden!==undefined?Boolean(req.body.hidden):Boolean(old.hidden),limited:req.body?.limited!==undefined?Boolean(req.body.limited):Boolean(old.limited),updatedAt:new Date().toISOString()};const targetId=snap.exists?id:`col-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;await firestore.collection('collections').doc(targetId).set(next,{merge:true});if(Array.isArray(req.body?.productIds))await assignProductsToCollection(firestore,name,req.body.productIds);invalidateCatalogCaches();res.json({ok:true,collection:{id:targetId,...next}});}
   catch(e){console.error('Update collection error:',e);res.status(500).json({error:'Unable to update collection.'})}
 });
+
+
 
 app.delete('/api/admin/collections/:id', authenticate, async (req,res)=>{
   try{
     const firestore=await requireAdminUser(req,res);if(!firestore)return;
     const id=String(req.params.id||'');const ref=firestore.collection('collections').doc(id);const snap=await ref.get();
-    let productIds=[];
-    if(snap.exists){const data=snap.data()||{};productIds=Array.isArray(data.productIds)?data.productIds.map(String).filter(Boolean):[];await ref.delete();}
-    if(productIds.length){const batch=firestore.batch();const now=new Date().toISOString();for(const productId of productIds)batch.set(firestore.collection('products').doc(productId),{id:productId,collection:'',updatedAt:now},{merge:true});await batch.commit();}
+    let name='';
+    if(snap.exists){name=String((snap.data()||{}).name||'').trim();await ref.delete();}
+    else if(id.startsWith('derived-')){try{name=decodeURIComponent(id.slice(8));}catch(_){name='';}}
+    if(name){const products=await getMergedProducts({includeHidden:true});const batch=firestore.batch();for(const p of products){if(String(p.collection||'').trim().toLowerCase()===name.toLowerCase())batch.set(firestore.collection('products').doc(String(p.id)),{id:String(p.id),collection:'',updatedAt:new Date().toISOString()},{merge:true});}await batch.commit();}
     invalidateCatalogCaches();res.json({ok:true});
   }catch(e){console.error('Delete collection error:',e);res.status(500).json({error:'Unable to delete collection.'})}
 });
