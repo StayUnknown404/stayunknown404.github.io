@@ -2413,6 +2413,7 @@ app.delete('/api/admin/products/:id', authenticate, async (req,res)=>{
 
 app.get('/api/collections', async (_req,res)=>{
   try{
+    res.set('Cache-Control','no-store, max-age=0, must-revalidate');
     const now=Date.now();
     if(publicCollectionsCache && now-publicCollectionsCacheAt<CATALOG_CACHE_MS)return res.json({collections:publicCollectionsCache.map(c=>({...c}))});
     if(publicCollectionsPromise)return res.json({collections:await publicCollectionsPromise});
