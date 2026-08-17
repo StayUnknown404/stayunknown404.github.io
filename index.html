@@ -620,30 +620,6 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 </style>
 <div id="su-toast" class="su-toast" aria-live="polite"></div>
 
-<style id="stayunknown-collections-style">
-#collections-home{overflow:hidden;content-visibility:visible;contain:none}
-.collections-viewport{position:relative;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;cursor:grab;min-height:430px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}.collections-viewport::-webkit-scrollbar{display:none}.collections-viewport:active{cursor:grabbing}
-.collections-track{display:flex;gap:12px;width:max-content;min-width:100%;min-height:430px;will-change:auto;transition:none}
-.collection-slide{flex:0 0 calc((100vw - 12px)/2);min-width:0;height:430px;display:block}.collection-card{position:relative;width:100%;height:100%;min-height:430px;background:#171717;border:1px solid #444;overflow:hidden;cursor:pointer;pointer-events:auto;z-index:2;display:flex;flex-direction:column;visibility:visible;opacity:1}.collection-card-media{position:relative;flex:0 0 275px;height:275px;background:radial-gradient(circle at 70% 25%,#303030,#171717 55%,#101010);display:grid;place-items:center;overflow:hidden}.collection-card-media img{width:100%;height:100%;object-fit:cover;display:block}.collection-card-fallback{width:100%;height:100%;display:grid;place-items:center;font:clamp(34px,7vw,72px)/.9 Anton,sans-serif;text-transform:uppercase;letter-spacing:-2px;text-align:center;padding:30px;color:#f3f3f0}.collection-card-copy{padding:16px 18px 18px;background:#171717;border-top:1px solid #333;flex:1 1 auto;min-height:150px;display:flex;flex-direction:column;justify-content:flex-start}.collection-card-kicker{font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}.collection-card-name{color:#fff;font:clamp(25px,4vw,44px)/.95 Anton,sans-serif;text-transform:uppercase;letter-spacing:.5px;margin:0}.collection-card-meta{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#aaa;margin-top:7px}.collection-view-btn{width:100%;margin-top:auto;padding:12px;background:#f3f3f0;color:#111;border:0;font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:block;min-height:38px}.collection-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}.collection-dot{width:7px;height:7px;border-radius:50%;border:1px solid #777;background:transparent;padding:0;cursor:pointer}.collection-dot.active{background:#f3f3f0}
-#collection-view .shop-view-inner{max-width:1200px}.collection-page-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:22px;margin-bottom:26px;align-items:stretch}.collection-page-art{min-height:330px;background:#111;border:1px solid #292929;overflow:hidden}.collection-page-art img{width:100%;height:100%;object-fit:cover;display:block}.collection-page-copy{border:1px solid #292929;background:#111;padding:28px;display:flex;flex-direction:column;justify-content:flex-end}.collection-page-copy .eyebrow{margin-bottom:12px}.collection-page-copy h2{font:clamp(40px,7vw,76px)/.9 Anton,sans-serif;text-transform:uppercase;margin:0}.collection-page-copy p{color:#aaa;line-height:1.7;font-size:12px;margin:14px 0 0}.collection-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.collection-admin-card{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;border:1px solid #292929;padding:10px;background:#151515}.collection-admin-thumb{width:90px;height:90px;object-fit:cover;background:#111;border:1px solid #292929}.collection-product-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:240px;overflow:auto;border:1px solid #292929;padding:10px;background:#0e0e0e}.collection-product-picker label{font-size:10px;color:#bbb;display:flex;gap:7px;align-items:center;padding:7px;border:1px solid #222}
-@media(max-width:700px){.collection-slide{flex-basis:calc(100vw - 36px);height:430px}.collection-card{min-height:430px}.collection-card-media{flex-basis:270px;height:270px}.collection-page-hero{grid-template-columns:1fr}.collection-page-art{min-height:250px}.collection-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-admin-card{grid-template-columns:64px 1fr}.collection-admin-thumb{width:64px;height:64px}.collection-product-picker{grid-template-columns:1fr}}
-@media(min-width:701px){.collection-card:hover{border-color:#666;transform:translateY(-2px);transition:transform .2s ease,border-color .2s ease}}
-</style>
-
-
-
-<style id="stayunknown-collections-final-fix">
-#collections-home{content-visibility:visible!important;contain:none!important;overflow:hidden!important}
-#collections-home-viewport{display:block!important;position:relative!important;width:100%!important;height:430px!important;min-height:430px!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x mandatory!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x!important}
-#collections-home-viewport::-webkit-scrollbar{display:none!important}
-#collections-home-track{display:flex!important;position:relative!important;gap:12px!important;width:max-content!important;min-width:100%!important;height:430px!important;min-height:430px!important;transform:none!important;will-change:auto!important;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-slide{display:block!important;position:relative!important;flex:0 0 calc(100vw - 36px)!important;width:calc(100vw - 36px)!important;height:430px!important;min-height:430px!important;scroll-snap-align:start!important;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-card{display:flex!important;position:relative!important;width:100%!important;height:430px!important;min-height:430px!important;background:#171717!important;color:#fff!important;border:1px solid #444!important;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-card-media{display:grid!important;position:relative!important;height:270px!important;min-height:270px!important;flex:0 0 270px!important;background:#171717!important;overflow:hidden!important;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-card-copy{display:flex!important;position:relative!important;flex:1 1 auto!important;visibility:visible!important;opacity:1!important;background:#171717!important;z-index:3!important}
-.collection-empty-state{width:100%;height:430px;display:grid;place-items:center;border:1px solid #292929;color:#888;font-size:12px;letter-spacing:2px}
-@media(min-width:701px){#collections-home-track .collection-slide{flex-basis:calc((100vw - 48px)/2)!important;width:calc((100vw - 48px)/2)!important}}
-</style>
 <style id="stayunknown-full-page-navigation">
 /* STAYUNKNOWN navigation rule: anything that opens a view uses a true full-screen page. */
 #search-panel{position:fixed;inset:0;top:0;z-index:5400;height:100vh;min-height:100dvh;max-width:none;width:100%;padding:96px 5% 34px;background:#111;border:0;overflow-y:auto;box-shadow:none}
@@ -701,17 +677,39 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 </style>
 
 
-<style id="stayunknown-collections-v4">
-#collections-home{content-visibility:visible!important;contain:none!important;overflow:visible!important}
-#collections-home-viewport{display:block!important;position:relative!important;overflow:hidden!important;min-height:430px!important;height:430px!important;width:100%!important}
-#collections-home-track{display:flex!important;position:relative!important;gap:12px!important;width:max-content!important;min-width:0!important;height:430px!important;min-height:430px!important;transform:translate3d(0,0,0);will-change:transform;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-slide{display:block!important;flex:0 0 calc(100vw - 36px)!important;width:calc(100vw - 36px)!important;height:430px!important;min-height:430px!important;visibility:visible!important;opacity:1!important}
-#collections-home-track .collection-card{display:flex!important;position:relative!important;visibility:visible!important;opacity:1!important;width:100%!important;height:430px!important;min-height:430px!important;background:#171717!important;color:#fff!important;border:1px solid #444!important}
-#collections-home-track .collection-card-media{display:grid!important;position:relative!important;visibility:visible!important;opacity:1!important;height:270px!important;min-height:270px!important;flex:0 0 270px!important;background:#171717!important;overflow:hidden!important}
-#collections-home-track .collection-card-copy{display:flex!important;visibility:visible!important;opacity:1!important;background:#171717!important;z-index:3!important}
-.collection-empty-state{width:100%;height:430px;display:grid;place-items:center;border:1px solid #292929;color:#888;font-size:12px;letter-spacing:2px}
-.all-collections-grid .collection-card{min-height:430px}
-@media(min-width:701px){#collections-home-track .collection-slide{flex-basis:calc((100% - 12px)/2)!important;width:calc((100% - 12px)/2)!important}}
+<style id="stayunknown-collections-rebuilt">
+#collections-home{overflow:hidden!important;content-visibility:visible!important;contain:none!important}
+#collections-home-viewport{position:relative!important;width:100%!important;height:470px!important;min-height:470px!important;overflow:hidden!important}
+#collections-home-track{display:flex!important;gap:12px!important;width:max-content!important;height:470px!important;min-height:470px!important;transform:translate3d(0,0,0);will-change:transform}
+.su-col-slide{flex:0 0 calc(100vw - 36px);width:calc(100vw - 36px);height:470px;min-height:470px}
+.su-col-card{width:100%;height:100%;background:#151515;border:1px solid #333;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;color:#fff;box-sizing:border-box}
+.su-col-image{height:285px;min-height:285px;position:relative;overflow:hidden;background:#1b1b1b;display:grid;place-items:center}
+.su-col-image img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.su-col-image-fallback{position:relative;z-index:0;width:100%;height:100%;display:grid;place-items:center;text-align:center;padding:25px;box-sizing:border-box;font:clamp(34px,8vw,70px)/.9 Anton,sans-serif;text-transform:uppercase;color:#f3f3f0}
+.su-col-image img + .su-col-image-fallback{display:grid;opacity:.08}
+.su-col-info{padding:18px;display:flex;flex-direction:column;flex:1;min-height:0}
+.su-col-kicker{font-size:9px;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:7px}
+.su-col-info h3{font:clamp(30px,7vw,58px)/.92 Anton,sans-serif;text-transform:uppercase;margin:0}
+.su-col-info p{font-size:11px;line-height:1.55;color:#aaa;margin:10px 0 14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.su-col-button{margin-top:auto;width:100%;min-height:44px;border:0;background:#f3f3f0;color:#111;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer}
+.su-col-empty{width:calc(100vw - 36px);height:470px;border:1px solid #292929;display:grid;place-items:center;color:#888;font-size:11px;letter-spacing:2px}
+#collections-home-dots{display:flex!important;justify-content:center;gap:6px;margin-top:12px}
+.su-col-dot{width:7px;height:7px;border-radius:50%;border:1px solid #777;background:transparent;padding:0}
+.su-col-dot.active{background:#f3f3f0}
+.su-menu-col{display:flex;width:100%;justify-content:space-between;align-items:center;background:none;border:0;color:#aaa;text-align:left;padding:10px 0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer}
+.su-menu-col span{color:#777}
+.su-col-detail{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-bottom:24px}
+.su-col-detail-art{min-height:330px;border:1px solid #292929;background:#151515;position:relative;overflow:hidden;display:grid;place-items:center}
+.su-col-detail-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.su-col-detail-art .su-col-image-fallback{z-index:0}
+.su-col-detail-copy{border:1px solid #292929;background:#151515;padding:28px;display:flex;flex-direction:column;justify-content:flex-end}
+.su-col-detail-copy h2{font:clamp(42px,8vw,80px)/.9 Anton,sans-serif;text-transform:uppercase;margin:0}
+.su-col-detail-copy p{font-size:12px;line-height:1.7;color:#aaa;margin:14px 0 0}
+.su-col-products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.su-col-all-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.su-col-all-grid .su-col-card{min-height:470px}
+@media(max-width:700px){.su-col-detail{grid-template-columns:1fr}.su-col-detail-art{min-height:260px}.su-col-products{grid-template-columns:repeat(2,minmax(0,1fr))}.su-col-all-grid{grid-template-columns:1fr}}
+@media(min-width:701px){.su-col-slide{flex-basis:calc((100% - 12px)/2);width:calc((100% - 12px)/2)}}
 </style>
 </head>
 <body class="intro-active">
@@ -3218,7 +3216,7 @@ onAuthStateChanged(auth, updateAccountUI);
         const [cd,pd]=await Promise.all([collectionResponse.json().catch(()=>({})),productResponse.json().catch(()=>({}))]);
         if(!collectionResponse.ok)throw new Error(cd.error||'Unable to load collections.');
         if(!productResponse.ok)throw new Error(pd.error||'Unable to load products.');
-        const collections=normalizeStayUnknownCollectionList(cd);
+        const collections=(Array.isArray(cd?.collections)?cd.collections:[]).map((raw,i)=>{const x=(raw&&typeof raw==='object')?raw:{};let ids=x.productIds;if(typeof ids==='string'){try{ids=JSON.parse(ids)}catch(_){ids=ids.split(',').map(v=>v.trim()).filter(Boolean)}}if(!Array.isArray(ids))ids=[];return {...x,id:String(x.id??i),name:String(x.name??x.title??'').trim(),title:String(x.title??x.name??'').trim(),description:String(x.description??'').trim(),image:String(x.image??x.imageUrl??x.artwork??'').trim(),productIds:[...new Set(ids.map(v=>String(v?.id??v??'').trim()).filter(Boolean))],hidden:x.hidden===true||x.hidden===1||String(x.hidden??'').toLowerCase()==='true',limited:x.limited===true||x.limited===1||String(x.limited??'').toLowerCase()==='true',order:Number.isFinite(Number(x.order))?Number(x.order):0}}).filter(x=>x.name).sort((a,b)=>a.order-b.order);
         const items=Array.isArray(pd.products)?pd.products:(pd&&Array.isArray(pd.data)?pd.data:[]);
         let editingCollectionId=null;
         const collectionRows=()=>collections.map(c=>{const ids=new Set(Array.isArray(c.productIds)?c.productIds.map(String):[]);const count=ids.size?items.filter(p=>ids.has(String(p.id))).length:items.filter(p=>String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase()).length;return `<button type="button" class="collection-admin-card admin-inventory-clickable" data-open-collection="${esc(c.id)}"><div class="collection-admin-thumb">${c.image?`<img src="${esc(c.image)}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:`<div style="height:100%;display:grid;place-items:center;font-weight:900">404</div>`}</div><div><strong>${esc(c.name)}</strong><small>${count} PRODUCT${count===1?'':'S'} · ${c.hidden?'HIDDEN':'VISIBLE'}${c.limited?' · LIMITED':''}</small><small>${esc(c.description||'')}</small></div><span class="inventory-chevron">›</span></button>`}).join('');
@@ -3392,275 +3390,191 @@ onAuthStateChanged(auth, updateAccountUI);
   },{passive:true,capture:true});
 
 
-  /* ---------- COLLECTIONS ---------- */
-  let stayUnknownCollections=[];
-  let collectionIndex=0,collectionTimer=null,collectionsLoadPromise=null;
-  const collectionsTrack=document.getElementById('collections-home-track');
-  const collectionsDots=document.getElementById('collections-home-dots');
-  const collectionsViewport=document.getElementById('collections-home-viewport');
-  const collectionView=document.getElementById('collection-view');
-  const collectionContent=document.getElementById('collection-view-content');
-  const collectionTitle=document.getElementById('collection-view-title');
-  const menuCollectionCategories=document.getElementById('menu-collection-categories');
-  const menuCollectionsToggle=document.getElementById('menu-collections-toggle');
-  const menuCollectionsPlus=document.getElementById('menu-collections-plus');
+  /* ---------- STAYUNKNOWN COLLECTIONS — REBUILT ---------- */
+  const SUCollections=(()=>{
+    const state={items:[],index:0,timer:null,loading:null,dragX:null};
+    const homeViewport=document.getElementById('collections-home-viewport');
+    const homeTrack=document.getElementById('collections-home-track');
+    const homeDots=document.getElementById('collections-home-dots');
+    const homeCounter=document.getElementById('collections-home-count');
+    const menuList=document.getElementById('menu-collection-categories');
+    const menuToggle=document.getElementById('menu-collections-toggle');
+    const menuPlus=document.getElementById('menu-collections-plus');
+    const view=document.getElementById('collection-view');
+    const content=document.getElementById('collection-view-content');
+    const title=document.getElementById('collection-view-title');
 
-  function collectionVisible(){return window.innerWidth>=701?2:1;}
-  function collectionCardMarkup(c){
-    const id=String(c?.id||'');
-    const name=String(c?.name||c?.title||'COLLECTION').trim()||'COLLECTION';
-    const image=String(c?.image||c?.imageUrl||'').trim();
-    const count=Number.isFinite(Number(c?.productCount))?Number(c.productCount):(Array.isArray(c?.productIds)?c.productIds.length:0);
-    const safeId=escapeHTML(id), safeName=escapeHTML(name);
-    const media=image
-      ? `<img src="${escapeHTML(image)}" alt="${safeName}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">`
-      : '';
-    return `<article class="collection-card" data-collection-id="${safeId}" tabindex="0" role="button">
-      <div class="collection-card-media">
-        ${media}
-        <div class="collection-card-fallback" style="${image?'display:none;':''}">${safeName}</div>
-      </div>
-      <div class="collection-card-copy">
-        <div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div>
-        <h3 class="collection-card-name">${safeName}</h3>
-        <div class="collection-card-meta">${count} PIECE${count===1?'':'S'}${c?.limited?' · LIMITED':''}</div>
-        <button class="collection-view-btn" type="button" data-view-collection="${safeId}">VIEW COLLECTION</button>
-      </div>
-    </article>`;
-  }
-
-  function setCollectionCounter(){
-    const count=document.getElementById('collections-home-count');
-    if(!count)return;
-    const total=Math.max(1,stayUnknownCollections.length);
-    const current=Math.min(collectionIndex+1,total);
-    count.textContent=`${String(current).padStart(2,'0')} / ${String(total).padStart(2,'0')}`;
-  }
-
-  function updateCollections(index=0,animate=true){
-    if(!collectionsTrack||!collectionsViewport)return;
-    const visible=collectionVisible();
-    const max=Math.max(0,stayUnknownCollections.length-visible);
-    collectionIndex=Math.max(0,Math.min(Number(index)||0,max));
-    const slide=collectionsTrack.querySelector('.collection-slide');
-    const gap=12;
-    const step=slide ? slide.getBoundingClientRect().width+gap : Math.max(1,collectionsViewport.clientWidth);
-    collectionsViewport.scrollTo({left:collectionIndex*step,behavior:animate?'smooth':'auto'});
-    collectionsDots?.querySelectorAll('.collection-dot').forEach((d,i)=>d.classList.toggle('active',i===collectionIndex));
-    setCollectionCounter();
-  }
-
-  function startCollectionTimer(){
-    clearInterval(collectionTimer);
-    const max=Math.max(0,stayUnknownCollections.length-collectionVisible());
-    if(max<=0)return;
-    collectionTimer=setInterval(()=>updateCollections(collectionIndex>=max?0:collectionIndex+1,true),4600);
-  }
-
-  function renderCollectionMenu(){
-    if(!menuCollectionCategories)return;
-    if(!stayUnknownCollections.length){
-      menuCollectionCategories.innerHTML='<div class="collection-menu-empty">NO COLLECTIONS AVAILABLE.</div>';
-      return;
-    }
-    menuCollectionCategories.innerHTML=stayUnknownCollections.map(c=>`<button type="button" data-collection-menu="${escapeHTML(c.id)}">${escapeHTML(c.name)}</button>`).join('');
-    menuCollectionCategories.querySelectorAll('[data-collection-menu]').forEach(btn=>btn.addEventListener('click',e=>{
-      e.preventDefault();e.stopPropagation();
-      closeDrawer();
-      openCollectionPage(btn.dataset.collectionMenu);
-    }));
-  }
-
-  function renderCollectionsUI(){
-    window.stayUnknownCollections=stayUnknownCollections;
-    if(!collectionsTrack)return;
-    if(!stayUnknownCollections.length){
-      collectionsTrack.innerHTML='<div class="collection-empty-state">NO COLLECTIONS YET.</div>';
-      if(collectionsDots)collectionsDots.innerHTML='';
-      setCollectionCounter();
-      renderCollectionMenu();
-      return;
-    }
-    collectionsTrack.innerHTML=stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join('');
-    if(collectionsDots){
-      const pages=Math.max(1,stayUnknownCollections.length-collectionVisible()+1);
-      collectionsDots.innerHTML=Array.from({length:pages},(_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection ${i+1}"></button>`).join('');
-      collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide),true);startCollectionTimer();}));
-    }
-    collectionsTrack.querySelectorAll('[data-collection-id]').forEach(card=>card.addEventListener('click',e=>{
-      if(e.target.closest('button,a,input,select,textarea'))return;
-      openCollectionsPage();
-    }));
-    collectionsTrack.querySelectorAll('[data-view-collection]').forEach(btn=>btn.addEventListener('click',e=>{
-      e.preventDefault();e.stopPropagation();openCollectionPage(btn.dataset.viewCollection);
-    }));
-    collectionsTrack.querySelectorAll('[data-collection-id]').forEach(card=>card.addEventListener('keydown',e=>{
-      if(e.key==='Enter'||e.key===' '){e.preventDefault();openCollectionsPage();}
-    }));
-    requestAnimationFrame(()=>{
-      updateCollections(0,false);
-      if(stayUnknownCollections.length && !collectionsTrack.querySelector('.collection-card')){
-        collectionsTrack.innerHTML=stayUnknownCollections.map(c=>`<div class="collection-slide"><article class="collection-card" data-collection-id="${escapeHTML(c.id)}" style="display:flex!important;visibility:visible!important;opacity:1!important;flex-direction:column!important;"><div class="collection-card-media" style="display:grid!important;place-items:center!important;min-height:270px!important;background:#171717!important"><div class="collection-card-fallback" style="display:grid!important;place-items:center!important;width:100%!important;height:100%!important;color:#fff!important">${escapeHTML(c.name)}</div></div><div class="collection-card-copy" style="display:flex!important;visibility:visible!important;opacity:1!important"><h3 class="collection-card-name">${escapeHTML(c.name)}</h3><button class="collection-view-btn" type="button" data-view-collection="${escapeHTML(c.id)}">VIEW COLLECTION</button></div></article></div>`).join('');
-        collectionsTrack.querySelectorAll('[data-view-collection]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openCollectionPage(btn.dataset.viewCollection)}));
-        collectionsTrack.querySelectorAll('[data-collection-id]').forEach(card=>card.addEventListener('click',e=>{if(!e.target.closest('button'))openCollectionPage(card.dataset.collectionId)}));
-      }
-      startCollectionTimer();
-    });
-    renderCollectionMenu();
-  }
-
-  function normalizeStayUnknownCollection(raw,idFallback=''){
-    const c=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:{};
-    let ids=c.productIds;
-    if(typeof ids==='string'){try{ids=JSON.parse(ids)}catch(_){ids=ids.split(',').map(x=>x.trim()).filter(Boolean)}}
-    if(ids&&typeof ids==='object'&&!Array.isArray(ids))ids=Object.values(ids);
-    const productIds=Array.isArray(ids)?ids.map(x=>String(x?.id??x??'').trim()).filter(Boolean):[];
-    return {
-      ...c,
-      id:String(c.id??idFallback??'').trim(),
-      name:String(c.name??c.title??'').trim(),
-      title:String(c.title??c.name??'').trim(),
-      description:String(c.description??'').trim(),
-      image:String(c.image??c.imageUrl??c.artwork??'').trim(),
-      imageUrl:String(c.imageUrl??c.image??c.artwork??'').trim(),
-      productIds:[...new Set(productIds)],
-      hidden:c.hidden===true||c.hidden===1||String(c.hidden??'').trim().toLowerCase()==='true',
-      limited:c.limited===true||c.limited===1||String(c.limited??'').trim().toLowerCase()==='true',
-      order:Number.isFinite(Number(c.order))?Number(c.order):0,
-      productCount:Number.isFinite(Number(c.productCount))?Number(c.productCount):productIds.length
+    const text=v=>String(v??'').trim();
+    const safe=v=>escapeHTML(text(v));
+    const normalize=(raw,fallback='')=>{
+      const x=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:{};
+      let ids=x.productIds;
+      if(typeof ids==='string'){try{ids=JSON.parse(ids)}catch(_){ids=ids.split(',').map(v=>v.trim()).filter(Boolean)}}
+      if(!Array.isArray(ids))ids=[];
+      return {
+        ...x,
+        id:text(x.id??fallback),
+        name:text(x.name??x.title),
+        title:text(x.title??x.name),
+        image:text(x.image??x.imageUrl??x.artwork),
+        description:text(x.description),
+        productIds:[...new Set(ids.map(v=>text(v?.id??v)).filter(Boolean))],
+        hidden:x.hidden===true||x.hidden===1||text(x.hidden).toLowerCase()==='true',
+        limited:x.limited===true||x.limited===1||text(x.limited).toLowerCase()==='true',
+        order:Number.isFinite(Number(x.order))?Number(x.order):0
+      };
     };
-  }
 
-  // Accept the backend's {collections:[...]} response as well as a raw array.
-  // This function is intentionally global within the main application scope because
-  // both the customer collection loader and the admin collection manager use it.
-  function normalizeStayUnknownCollectionList(value){
-    let list=value;
-    if(list&&typeof list==='object'&&!Array.isArray(list)){
-      list=list.collections??list.data??list.items??[];
+    const listFromResponse=data=>{
+      const raw=Array.isArray(data)?data:(data&&Array.isArray(data.collections)?data.collections:(data&&Array.isArray(data.data)?data.data:[]));
+      return raw.map((x,i)=>normalize(x,i)).filter(x=>x.id&&x.name&&!x.hidden).sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name));
+    };
+
+    function visiblePerPage(){return window.innerWidth>=900?2:1;}
+    function maxIndex(){return Math.max(0,state.items.length-visiblePerPage());}
+
+    function setCounter(){
+      if(!homeCounter)return;
+      const total=state.items.length;
+      homeCounter.textContent=`${String(total?Math.min(state.index+1,total):0).padStart(2,'0')} / ${String(total).padStart(2,'0')}`;
     }
-    if(typeof list==='string'){
-      try{list=JSON.parse(list)}catch(_){list=[]}
+
+    function card(c){
+      const image=safe(c.image),name=safe(c.name),id=safe(c.id);
+      return `<article class="su-col-card" data-su-collection="${id}" tabindex="0" role="button">
+        <div class="su-col-image">${image?`<img src="${image}" alt="${name}" loading="lazy" onerror="this.remove();this.parentElement.classList.add('no-image')">`:''}<div class="su-col-image-fallback">${name}</div></div>
+        <div class="su-col-info"><div class="su-col-kicker">STAYUNKNOWN COLLECTION</div><h3>${name}</h3><p>${safe(c.description||'Explore the collection.')}</p><button type="button" class="su-col-button" data-su-open="${id}">VIEW COLLECTION</button></div>
+      </article>`;
     }
-    return Array.isArray(list)
-      ? list.map((c,i)=>normalizeStayUnknownCollection(c,i)).filter(c=>c.name)
-      : [];
-  }
 
-  function deriveCollectionsFromProducts(){
-    const seen=new Map();
-    const productList=Array.isArray(products)?products:(products&&Array.isArray(products.products)?products.products:[]);
-    productList.filter(p=>!isHiddenProduct(p)).forEach(p=>{
-      const name=String(p.collection||'').trim();if(!name)return;
-      const key=name.toLowerCase();
-      if(!seen.has(key))seen.set(key,{id:`derived-${encodeURIComponent(name)}`,name,image:'',description:'',order:9999,hidden:false,productCount:0,productIds:[]});
-      const item=seen.get(key);item.productCount++;if(p.id)item.productIds.push(String(p.id));
-    });
-    return [...seen.values()];
-  }
-
-  async function loadStayUnknownCollections(options={}){
-    const force=Boolean(options.force);
-    if(collectionsLoadPromise)return collectionsLoadPromise;
-    const localDerived=(()=>{try{return deriveCollectionsFromProducts()}catch(_){return []}})();
-    if(localDerived.length&&!stayUnknownCollections.length){stayUnknownCollections=localDerived;renderCollectionsUI();}
-    collectionsLoadPromise=(async()=>{
-      const timeoutMs=6500;
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),timeoutMs);
-      try{
-        const url=`${BACKEND_URL}/api/collections?ts=${Date.now()}${force?'&fresh=1':''}`;
-        const response=await fetch(url,{cache:'no-store',headers:{'Cache-Control':'no-cache, no-store'},signal:controller.signal});
-        const data=await response.json();
-        if(!response.ok||!Array.isArray(data.collections))throw new Error(data.error||'Unable to load collections.');
-        const remote=data.collections.map((c,i)=>normalizeStayUnknownCollection(c,i)).filter(c=>c.name&&!c.hidden);
-        stayUnknownCollections=remote;
-        renderCollectionsUI();
-        return remote;
-      }catch(error){
-        console.warn('Collections load failed:',error);
-        if(!stayUnknownCollections.length&&localDerived.length){stayUnknownCollections=localDerived;renderCollectionsUI();}
-        return stayUnknownCollections;
-      }finally{
-        clearTimeout(timer);
+    function renderHome(){
+      if(!homeTrack)return;
+      if(!state.items.length){
+        homeTrack.innerHTML='<div class="su-col-empty">NO COLLECTIONS YET.</div>';
+        if(homeDots)homeDots.innerHTML='';
+        setCounter();
+        return;
       }
-    })().finally(()=>{collectionsLoadPromise=null});
-    return collectionsLoadPromise;
-  }
-  window.loadStayUnknownCollections=loadStayUnknownCollections;
-
-  function openCollectionPage(id){
-    const c=stayUnknownCollections.find(x=>String(x.id)===String(id));
-    if(!c)return;
-    closeDrawer();closeCart();searchPanel.classList.remove('open');
-    document.querySelector('.hero').style.display='none';
-    document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');
-    shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');
-    collectionTitle.textContent=c.name;
-    const ids=new Set(Array.isArray(c.productIds)?c.productIds.map(String):[]);
-    const productList=Array.isArray(products)?products:(products&&Array.isArray(products.products)?products.products:[]);
-    const list=productList.filter(p=>(ids.size?ids.has(String(p.id)):String(p.collection||'').trim().toLowerCase()===String(c.name||'').trim().toLowerCase())&&!isHiddenProduct(p));
-    collectionContent.innerHTML=`<div class="collection-page-hero"><div class="collection-page-art">${c.image?`<img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy" onerror="this.style.display='none'">`:`<div class="collection-card-fallback">${escapeHTML(c.name)}</div>`}</div><div class="collection-page-copy"><div class="eyebrow">Collection</div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${list.length} PRODUCT${list.length===1?'':'S'}</div><div class="collection-product-grid">${list.length?list.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;
-    bindAddButtons(collectionContent);
-    window.scrollTo({top:0,behavior:'smooth'});
-    history.replaceState(null,'','#collection-'+encodeURIComponent(c.id));
-  }
-  window.openStayUnknownCollection=openCollectionPage;
-
-  function openCollectionsPage(){
-    if(!stayUnknownCollections.length){
-      loadStayUnknownCollections({force:true}).then(()=>openCollectionsPage());
-      return;
+      state.index=Math.min(state.index,maxIndex());
+      homeTrack.innerHTML=state.items.map(c=>`<div class="su-col-slide">${card(c)}</div>`).join('');
+      if(homeDots){
+        const pages=Math.max(1,maxIndex()+1);
+        homeDots.innerHTML=Array.from({length:pages},(_,i)=>`<button type="button" class="su-col-dot${i===state.index?' active':''}" data-su-page="${i}" aria-label="Collection ${i+1}"></button>`).join('');
+        homeDots.querySelectorAll('[data-su-page]').forEach(b=>b.addEventListener('click',()=>go(Number(b.dataset.suPage),true)));
+      }
+      homeTrack.querySelectorAll('[data-su-collection]').forEach(el=>{
+        el.addEventListener('click',e=>{if(e.target.closest('button'))return;openOne(el.dataset.suCollection)});
+        el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openOne(el.dataset.suCollection)}});
+      });
+      homeTrack.querySelectorAll('[data-su-open]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openOne(b.dataset.suOpen)}));
+      requestAnimationFrame(()=>go(state.index,false));
     }
-    closeDrawer();closeCart();searchPanel.classList.remove('open');
-    document.querySelector('.hero').style.display='none';
-    document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');
-    shopView.style.display='none';collectionView.style.display='';collectionView.classList.remove('is-hidden');collectionView.setAttribute('aria-hidden','false');collectionTitle.textContent='COLLECTIONS';
-    collectionContent.innerHTML=`<div class="collection-product-grid all-collections-grid">${stayUnknownCollections.map(c=>`<article class="collection-card" data-all-collection-id="${escapeHTML(c.id)}">${c.image?`<div class="collection-card-media"><img src="${escapeHTML(c.image)}" alt="${escapeHTML(c.name)}" loading="lazy" onerror="this.style.display='none'"></div>`:`<div class="collection-card-media"><div class="collection-card-fallback">${escapeHTML(c.name)}</div></div>`}<div class="collection-card-copy"><div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div><h3 class="collection-card-name">${escapeHTML(c.name)}</h3><div class="collection-card-meta">${Number(c.productCount||0)} PIECE${Number(c.productCount||0)===1?'':'S'}</div><button class="collection-view-btn" type="button">VIEW COLLECTION</button></div></article>`).join('')}</div>`;
-    collectionContent.querySelectorAll('[data-all-collection-id]').forEach(el=>el.addEventListener('click',()=>openCollectionPage(el.dataset.allCollectionId)));
-    window.scrollTo({top:0,behavior:'smooth'});
-    history.replaceState(null,'','#collections');
-  }
 
-  if(menuCollectionsToggle&&!menuCollectionsToggle.dataset.bound){
-    menuCollectionsToggle.dataset.bound='1';
-    menuCollectionsToggle.addEventListener('click',async e=>{
+    function go(index,animate){
+      if(!homeTrack)return;
+      state.index=Math.max(0,Math.min(Number(index)||0,maxIndex()));
+      const width=homeViewport?.clientWidth||0;
+      const first=homeTrack.querySelector('.su-col-slide');
+      const gap=12;
+      const step=first?first.getBoundingClientRect().width+gap:width;
+      homeTrack.style.transform=`translate3d(${-state.index*step}px,0,0)`;
+      homeTrack.style.transition=animate?'transform .45s ease':'none';
+      homeDots?.querySelectorAll('.su-col-dot').forEach((d,i)=>d.classList.toggle('active',i===state.index));
+      setCounter();
+    }
+
+    function restartTimer(){
+      clearInterval(state.timer);
+      if(state.items.length<=visiblePerPage())return;
+      state.timer=setInterval(()=>go(state.index>=maxIndex()?0:state.index+1,true),5000);
+    }
+
+    function renderMenu(){
+      if(!menuList)return;
+      menuList.innerHTML=state.items.length?state.items.map(c=>`<button type="button" class="su-menu-col" data-su-menu="${safe(c.id)}">${safe(c.name)}<span>↗</span></button>`).join(''):'<div class="collection-menu-empty">NO COLLECTIONS AVAILABLE.</div>';
+      menuList.querySelectorAll('[data-su-menu]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeDrawer();openOne(b.dataset.suMenu)}));
+    }
+
+    async function load(force=true){
+      if(state.loading)return state.loading;
+      state.loading=(async()=>{
+        try{
+          const url=`${BACKEND_URL}/api/collections?fresh=1&ts=${Date.now()}`;
+          const r=await fetch(url,{cache:'no-store',headers:{'Cache-Control':'no-cache, no-store'}});
+          const data=await r.json().catch(()=>({}));
+          if(!r.ok)throw new Error(data.error||'Unable to load collections.');
+          state.items=listFromResponse(data);
+          window.stayUnknownCollections=state.items;
+          renderHome();renderMenu();restartTimer();
+          return state.items;
+        }catch(err){
+          console.warn('STAYUNKNOWN collections:',err);
+          renderHome();renderMenu();
+          return state.items;
+        }finally{state.loading=null}
+      })();
+      return state.loading;
+    }
+
+    function hideHomeForView(){
+      closeDrawer();closeCart();searchPanel.classList.remove('open');
+      document.querySelector('.hero')?.style.setProperty('display','none');
+      document.querySelectorAll('body > .section, body > .statement, body > .about, body > .contact, body > footer, body > .home-shop-all').forEach(el=>el.style.display='none');
+      shopView.style.display='none';view.style.display='';view.classList.remove('is-hidden');view.setAttribute('aria-hidden','false');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function openOne(id){
+      const c=state.items.find(x=>String(x.id)===String(id));
+      if(!c)return;
+      hideHomeForView();
+      title.textContent=c.name;
+      const catalog=Array.isArray(products)?products:(products&&Array.isArray(products.products)?products.products:[]);
+      const ids=new Set(c.productIds.map(String));
+      const items=catalog.filter(p=>!isHiddenProduct(p)&&(ids.size?ids.has(String(p.id)):text(p.collection).toLowerCase()===c.name.toLowerCase()));
+      content.innerHTML=`<div class="su-col-detail"><div class="su-col-detail-art">${c.image?`<img src="${safe(c.image)}" alt="${safe(c.name)}" onerror="this.remove()">`:''}<div class="su-col-image-fallback">${safe(c.name)}</div></div><div class="su-col-detail-copy"><div class="su-col-kicker">COLLECTION</div><h2>${safe(c.name)}</h2><p>${safe(c.description||'Explore the pieces in this STAYUNKNOWN collection.')}</p></div></div><div class="shop-count">${items.length} PRODUCT${items.length===1?'':'S'}</div><div class="su-col-products">${items.length?items.map(p=>cardMarkup(p)).join(''):'<div class="no-products">NO PRODUCTS IN THIS COLLECTION YET.</div>'}</div>`;
+      bindAddButtons(content);
+      history.replaceState(null,'','#collection-'+encodeURIComponent(c.id));
+    }
+
+    function openAll(){
+      if(!state.items.length){load(true).then(()=>openAll());return;}
+      hideHomeForView();title.textContent='COLLECTIONS';
+      content.innerHTML=`<div class="su-col-all-grid">${state.items.map(c=>card(c).replace('data-su-collection','data-su-all')).join('')}</div>`;
+      content.querySelectorAll('[data-su-all]').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('button'))return;openOne(el.dataset.suAll)}));
+      content.querySelectorAll('[data-su-open]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openOne(b.dataset.suOpen)}));
+      history.replaceState(null,'','#collections');
+    }
+
+    function showHomeFromCollection(){
+      view.classList.add('is-hidden');view.setAttribute('aria-hidden','true');view.style.display='none';shopView.style.display='';showHome();load(true);
+    }
+
+    menuToggle?.addEventListener('click',async e=>{
       e.preventDefault();e.stopPropagation();
-      const isOpen=menuCollectionCategories.classList.toggle('open');
-      if(menuCollectionsPlus)menuCollectionsPlus.textContent=isOpen?'−':'+';
-      if(!isOpen)return;
-      menuCollectionCategories.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';
-      const result=await loadStayUnknownCollections({force:true});
-      if(!result.length)menuCollectionCategories.innerHTML='<div class="collection-menu-empty">NO COLLECTIONS AVAILABLE.</div>';
-      else renderCollectionMenu();
+      const open=menuList?.classList.toggle('open');
+      if(menuPlus)menuPlus.textContent=open?'−':'+';
+      if(open){menuList.innerHTML='<div class="collection-menu-empty">LOADING COLLECTIONS…</div>';await load(true);renderMenu();}
     });
-  }
 
-  document.getElementById('collection-back-btn')?.addEventListener('click',()=>{
-    if(location.hash==='#collections'){showHome();void loadStayUnknownCollections({force:true});return;}
-    collectionView.classList.add('is-hidden');collectionView.setAttribute('aria-hidden','true');collectionView.style.display='';shopView.style.display='';showHome();
-    void loadStayUnknownCollections({force:true});
-  });
+    document.getElementById('collection-back-btn')?.addEventListener('click',()=>{
+      if(location.hash==='#collections'||location.hash.startsWith('#collections'))showHomeFromCollection();
+      else showHomeFromCollection();
+    });
 
-  let collectionPointerDown=false,collectionPointerStartX=0;
-  collectionsViewport?.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse'&&e.button!==0)return;
-    collectionPointerDown=true;collectionPointerStartX=e.clientX;clearInterval(collectionTimer);
-    collectionsViewport.setPointerCapture?.(e.pointerId);
-  });
-  collectionsViewport?.addEventListener('pointerup',e=>{
-    if(!collectionPointerDown)return;
-    collectionPointerDown=false;
-    const dx=e.clientX-collectionPointerStartX;
-    if(Math.abs(dx)>45)updateCollections(collectionIndex+(dx<0?1:-1),true);
-    startCollectionTimer();
-  });
-  collectionsViewport?.addEventListener('pointercancel',()=>{collectionPointerDown=false;startCollectionTimer()});
-  collectionsViewport?.addEventListener('mouseenter',()=>clearInterval(collectionTimer));
-  collectionsViewport?.addEventListener('mouseleave',startCollectionTimer);
-  window.addEventListener('resize',()=>updateCollections(collectionIndex,false));
-  window.addEventListener('pageshow',()=>loadStayUnknownCollections({force:true}));
-  void loadStayUnknownCollections({force:true}).catch(error=>console.warn('Initial collections load failed:',error));
+    homeViewport?.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;state.dragX=e.clientX;clearInterval(state.timer)});
+    homeViewport?.addEventListener('pointerup',e=>{if(state.dragX==null)return;const dx=e.clientX-state.dragX;state.dragX=null;if(Math.abs(dx)>45)go(state.index+(dx<0?1:-1),true);restartTimer()});
+    homeViewport?.addEventListener('pointercancel',()=>{state.dragX=null;restartTimer()});
+    window.addEventListener('resize',()=>go(state.index,false));
+    window.addEventListener('pageshow',()=>load(true));
+
+    window.loadStayUnknownCollections=(opts={})=>load(Boolean(opts.force));
+    window.openStayUnknownCollection=openOne;
+    window.openStayUnknownCollections=openAll;
+    window.stayUnknownCollections=state.items;
+    requestAnimationFrame(()=>load(true));
+    return {load,openOne,openAll,state};
+  })();
 
 })();
 </script>
