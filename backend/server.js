@@ -577,8 +577,9 @@ async function getMergedProducts({includeHidden=false}={}){
       return {...p,image:mergedImages[0]||image,image2:mergedImages[1]||image2,images:mergedImages};
     });
     const isTrue=value=>value===true||value===1||String(value||'').trim().toLowerCase()==='true';
-    const isHiddenProduct=p=>isTrue(p.hidden)||(Object.prototype.hasOwnProperty.call(p,'visibleInStore')&&!isTrue(p.visibleInStore));
-    const result=includeHidden?list:list.filter(p=>!isHiddenProduct(p));
+    const isDeletedProduct=p=>isTrue(p.deleted);
+    const isHiddenProduct=p=>isDeletedProduct(p)||isTrue(p.hidden)||(Object.prototype.hasOwnProperty.call(p,'visibleInStore')&&!isTrue(p.visibleInStore));
+    const result=includeHidden?list.filter(p=>!isDeletedProduct(p)):list.filter(p=>!isHiddenProduct(p));
     if(includeHidden){mergedAdminCache=result;mergedAdminCacheAt=Date.now()}else{mergedPublicCache=result;mergedPublicCacheAt=Date.now()}
     return result.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
   })();
@@ -2372,13 +2373,42 @@ function cleanProductPayload(body,id){
 }
 
 app.post('/api/admin/products', authenticate, async (req,res)=>{
-  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const p=cleanProductPayload(req.body,req.body?.id||`product-${Date.now()}`);if(!p.name||!p.category||!Number.isFinite(p.price)||p.price<0)return res.status(400).json({error:'Name, category and valid price are required.'});const ref=firestore.collection('products').doc(p.id);if((await ref.get()).exists)return res.status(409).json({error:'Product ID already exists.'});await ref.set(p);invalidateCatalogCaches();res.json({ok:true,product:p});}
+  try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const p=cleanProductPayload(req.body,req.body?.id||`product-${Date.now()}`);if(!p.name||!p.category||!Number.isFinite(p.price)||p.price<0)return res.status(400).json({error:'Name, category and valid price are required.'});const ref=firestore.collection('products').doc(p.id);const existing=await ref.get();if(existing.exists&&!existing.data()?.deleted)return res.status(409).json({error:'Product ID already exists.'});await ref.set({...p,deleted:false});invalidateCatalogCaches();res.json({ok:true,product:p});}
   catch(e){console.error('Create product error:',e);res.status(500).json({error:'Unable to create product.'})}
 });
 
 app.patch('/api/admin/products/:id', authenticate, async (req,res)=>{
   try{const firestore=await requireAdminUser(req,res);if(!firestore)return;const id=String(req.params.id||'').trim();const ref=firestore.collection('products').doc(id);const snap=await ref.get();const base=await findProduct(id);if(!base&&!snap.exists)return res.status(404).json({error:'Product not found.'});const p=cleanProductPayload({...base,...(snap.exists?snap.data():{}),...(req.body||{})},id);await ref.set(p,{merge:true});invalidateCatalogCaches();res.json({ok:true,product:p});}
   catch(e){console.error('Update product error:',e);res.status(500).json({error:'Unable to update product.'})}
+});
+
+app.delete('/api/admin/products/:id', authenticate, async (req,res)=>{
+  try{
+    const firestore=await requireAdminUser(req,res);if(!firestore)return;
+    const id=String(req.params.id||'').trim();
+    if(!id)return res.status(400).json({error:'Product ID is required.'});
+    const ref=firestore.collection('products').doc(id);
+    const now=new Date().toISOString();
+    await ref.set({id,deleted:true,hidden:true,visibleInStore:false,updatedAt:now},{merge:true});
+    const collectionSnap=await firestore.collection('collections').get();
+    const batch=firestore.batch();
+    let changed=false;
+    collectionSnap.docs.forEach(doc=>{
+      const data=doc.data()||{};
+      const ids=Array.isArray(data.productIds)?data.productIds.map(String):[];
+      const nextIds=ids.filter(productId=>productId!==id);
+      if(nextIds.length!==ids.length){
+        batch.update(doc.ref,{productIds:nextIds,updatedAt:now});
+        changed=true;
+      }
+    });
+    if(changed)await batch.commit();
+    invalidateCatalogCaches();
+    res.json({ok:true});
+  }catch(e){
+    console.error('Delete product error:',e);
+    res.status(500).json({error:'Unable to permanently delete product.'});
+  }
 });
 
 app.get('/api/collections', async (_req,res)=>{
