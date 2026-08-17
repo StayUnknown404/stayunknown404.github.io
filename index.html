@@ -632,6 +632,15 @@ button,.account-dashboard-card,.account-subpage-action,.wishlist-btn,.add-cart{t
 
 
 
+<style id="stayunknown-collections-final-fix">
+#collections-home{overflow:hidden!important}
+#collections-home-viewport{display:block!important;visibility:visible!important;opacity:1!important;overflow:hidden!important;min-height:430px!important;height:430px!important}
+#collections-home-track{display:flex!important;visibility:visible!important;opacity:1!important;gap:12px!important;width:max-content!important;min-width:100%!important;min-height:430px!important;height:430px!important}
+#collections-home-track .collection-slide{display:block!important;visibility:visible!important;opacity:1!important;flex:0 0 calc(100vw - 36px)!important;width:calc(100vw - 36px)!important;height:430px!important;min-height:430px!important}
+#collections-home-track .collection-card{display:flex!important;visibility:visible!important;opacity:1!important}
+#collections-home-track .collection-card-media,#collections-home-track .collection-card-copy{visibility:visible!important;opacity:1!important}
+@media(min-width:701px){#collections-home-track .collection-slide{flex-basis:calc((100vw - 48px)/2)!important;width:calc((100vw - 48px)/2)!important}}
+</style>
 <style id="stayunknown-full-page-navigation">
 /* STAYUNKNOWN navigation rule: anything that opens a view uses a true full-screen page. */
 #search-panel{position:fixed;inset:0;top:0;z-index:5400;height:100vh;min-height:100dvh;max-width:none;width:100%;padding:96px 5% 34px;background:#111;border:0;overflow-y:auto;box-shadow:none}
@@ -3386,12 +3395,12 @@ onAuthStateChanged(auth, updateAccountUI);
     const image=String(c?.image||'').trim();
     const count=Number(c?.productCount||0);
     const id=String(c?.id||'');
-    return `<article class="collection-card" data-collection-id="${escapeHTML(id)}" tabindex="0" role="button">
-      <div class="collection-card-media">
-        <div class="collection-card-fallback">${escapeHTML(name)}</div>
-        ${image?`<img class="collection-card-image-lazy" data-collection-image="${escapeHTML(image)}" alt="${escapeHTML(name)}" loading="lazy" style="display:none" onerror="this.style.display='none'">`:''}
+    return `<article class="collection-card" data-collection-id="${escapeHTML(id)}" tabindex="0" role="button" style="display:flex!important;visibility:visible!important;opacity:1!important;min-height:430px;height:430px;background:#171717;color:#fff;position:relative;overflow:hidden;flex-direction:column;">
+      <div class="collection-card-media" style="position:relative;display:grid!important;visibility:visible!important;opacity:1!important;place-items:center;flex:0 0 270px;height:270px;background:#171717;overflow:hidden;">
+        <div class="collection-card-fallback" style="display:grid!important;visibility:visible!important;opacity:1!important;position:relative;z-index:1;width:100%;height:100%;place-items:center;color:#fff;background:#171717;font-size:clamp(34px,7vw,72px);font-family:Anton,sans-serif;text-transform:uppercase;text-align:center;padding:30px;">${escapeHTML(name)}</div>
+        ${image?`<img class="collection-card-image-lazy" src="${escapeHTML(image)}" alt="${escapeHTML(name)}" loading="lazy" style="position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:cover;display:block;opacity:1;" onerror="this.style.display='none'">`:''}
       </div>
-      <div class="collection-card-copy">
+      <div class="collection-card-copy" style="position:relative;z-index:3;display:flex!important;visibility:visible!important;opacity:1!important;flex:1;padding:16px 18px 18px;background:#171717;flex-direction:column;">
         <div class="collection-card-kicker">STAYUNKNOWN COLLECTION</div>
         <h3 class="collection-card-name">${escapeHTML(name)}</h3>
         <div class="collection-card-meta">${count} PIECE${count===1?'':'S'}${c?.limited?' · LIMITED':''}</div>
@@ -3474,11 +3483,11 @@ onAuthStateChanged(auth, updateAccountUI);
     if(!collectionsTrack)return;
     collectionsTrack.innerHTML=stayUnknownCollections.length?stayUnknownCollections.map(c=>`<div class="collection-slide">${collectionCardMarkup(c)}</div>`).join(''):'<div class="no-products" style="width:100%;min-height:390px;display:grid;place-items:center">NO COLLECTIONS YET.</div>';
     collectionsDots.innerHTML=stayUnknownCollections.map((_,i)=>`<button class="collection-dot${i===0?' active':''}" data-collection-slide="${i}" aria-label="Go to collection slide ${i+1}"></button>`).join('');
-    collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();openCollectionsPage()}));
+    collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();if(e.target.closest('button,a,input,select,textarea'))return;openCollectionsPage()}));
     collectionsTrack.querySelectorAll('[data-view-collection]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openCollectionsPage()}));
     collectionsTrack.querySelectorAll('[data-collection-id]').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCollectionsPage()}}));
     collectionsDots.querySelectorAll('[data-collection-slide]').forEach(d=>d.addEventListener('click',()=>{updateCollections(Number(d.dataset.collectionSlide));startCollectionTimer()}));
-    renderCollectionMenu();updateCollections(0,false);hydrateCollectionImages();startCollectionTimer();
+    renderCollectionMenu();requestAnimationFrame(()=>{updateCollections(0,false);hydrateCollectionImages();startCollectionTimer();});
   }
   
 function normalizeStayUnknownCollection(raw,idFallback=''){
