@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
+const { Expo } = require("expo-server-sdk");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -475,6 +476,55 @@ function initFirebase() {
   return db;
 }
 
+const expo = new Expo();
+
+async function sendPushNotification({ uid, title, body, data = {} }) {
+  const firestore = initFirebase();
+  if (!firestore || !uid) return;
+
+  const userRef = firestore.collection("users").doc(String(uid));
+  const snap = await userRef.get();
+  if (!snap.exists) return;
+
+  const user = snap.data() || {};
+  const tokens = Array.isArray(user.expoPushTokens)
+    ? [...new Set(user.expoPushTokens.map(String).filter(Boolean))]
+    : [];
+  const validTokens = tokens.filter((token) => Expo.isExpoPushToken(token));
+  if (!validTokens.length) return;
+
+  const messages = validTokens.map((to) => ({
+    to,
+    sound: "default",
+    title: String(title || "STAYUNKNOWN"),
+    body: String(body || ""),
+    data: data && typeof data === "object" ? data : {}
+  }));
+
+  const invalidTokens = new Set();
+  for (const chunk of expo.chunkPushNotifications(messages)) {
+    try {
+      const receipts = await expo.sendPushNotificationsAsync(chunk);
+      receipts.forEach((receipt, index) => {
+        if (receipt?.status === "error" && receipt?.details?.error === "DeviceNotRegistered") {
+          const token = chunk[index]?.to;
+          if (token) invalidTokens.add(token);
+        }
+      });
+    } catch (error) {
+      console.error("Expo push send error:", error);
+    }
+  }
+
+  if (invalidTokens.size) {
+    const cleaned = validTokens.filter((token) => !invalidTokens.has(token));
+    await userRef.set({
+      expoPushTokens: cleaned,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  }
+}
+
 /*
   Firebase authentication middleware.
 */
@@ -528,6 +578,38 @@ async function requireFirebaseUser(req, res, next) {
     });
   }
 }
+
+app.post("/api/push-token", requireFirebaseUser, async (req, res) => {
+  try {
+    const firestore = initFirebase();
+    if (!firestore) return res.status(503).json({ error: "Firebase is not configured." });
+
+    const uid = String(req.firebaseUser?.uid || "").trim();
+    const token = String(req.body?.token || "").trim();
+    if (!uid) return res.status(401).json({ error: "Authentication required." });
+    if (!Expo.isExpoPushToken(token)) {
+      return res.status(400).json({ error: "Invalid Expo push token." });
+    }
+
+    const ref = firestore.collection("users").doc(uid);
+    const snap = await ref.get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    const existing = Array.isArray(data.expoPushTokens)
+      ? data.expoPushTokens.map(String).filter(Boolean)
+      : [];
+    const expoPushTokens = [...new Set([...existing, token])].slice(-5);
+
+    await ref.set({
+      expoPushTokens,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Push token registration error:", error);
+    return res.status(500).json({ error: "Unable to register push token." });
+  }
+});
 
 /*
   Health check
@@ -1847,6 +1929,24 @@ app.patch(
         } catch (emailError) {
           console.error("Order status email error:", emailError);
         }
+        try {
+          await sendPushNotification({
+            uid: String(updatedOrder?.customer?.uid || ""),
+            title: deliveryStatusLabel(deliveryStatus),
+            body: deliveryStatus === "PROCESSING"
+              ? "Your STAYUNKNOWN order is now being prepared."
+              : deliveryStatus === "SHIPPED"
+                ? "Your STAYUNKNOWN order has been shipped and is on the way."
+                : "Your STAYUNKNOWN order has been marked as delivered.",
+            data: {
+              type: "order",
+              orderId: String(updatedOrder?.id || ""),
+              orderNumber: String(updatedOrder?.orderNumber || updatedOrder?.paymentReference || updatedOrder?.id || "")
+            }
+          });
+        } catch (pushError) {
+          console.error("Order push error:", pushError);
+        }
       }
 
       return res.json({
@@ -2296,6 +2396,12 @@ app.post('/api/admin/support/:ticketId/reply', authenticate, async (req,res)=>{
     await saveSupportTicket(ticket);
     if(ticket.email) await sendSupportEmail(ticket.email,ticket.subject,'STAYUNKNOWN has replied to your support ticket.',ticket).catch(e=>console.error('Support customer reply email error:',e));
     await createSupportNotification({uid:String(ticket.userId||ticket.uid||''),ticketId:ticket.id,title:'SUPPORT TICKET REPLY',message:'STAYUNKNOWN replied to your support ticket.',audience:'customer',orderNumber:ticket.orderNumber}).catch(()=>{});
+    await sendPushNotification({
+      uid: String(ticket.userId || ticket.uid || ''),
+      title: 'SUPPORT TICKET REPLY',
+      body: 'STAYUNKNOWN replied to your support ticket.',
+      data: { type: 'support', ticketId: String(ticket.id || '') }
+    }).catch(e=>console.error('Support push error:',e));
     return res.json({ok:true,ticket});
   }catch(e){console.error('Support admin reply error:',e);return res.status(500).json({error:'Unable to send reply.'})}
 });
@@ -2309,7 +2415,15 @@ app.patch('/api/admin/support/:ticketId/status', authenticate, async (req,res)=>
     if(!['OPEN','CLOSED'].includes(status))return res.status(400).json({error:'Invalid ticket status.'});
     ticket.status=status;ticket.updatedAt=new Date().toISOString();
     await saveSupportTicket(ticket);
-    if(ticket.userId) await createSupportNotification({uid:String(ticket.userId),ticketId:ticket.id,title:`SUPPORT TICKET ${status}`,message:`Your support ticket is now ${status.toLowerCase()}.`,audience:'customer',orderNumber:ticket.orderNumber}).catch(()=>{});
+    if(ticket.userId) {
+      await createSupportNotification({uid:String(ticket.userId),ticketId:ticket.id,title:`SUPPORT TICKET ${status}`,message:`Your support ticket is now ${status.toLowerCase()}.`,audience:'customer',orderNumber:ticket.orderNumber}).catch(()=>{});
+      await sendPushNotification({
+        uid: String(ticket.userId),
+        title: `SUPPORT TICKET ${status}`,
+        body: `Your support ticket is now ${status.toLowerCase()}.`,
+        data: { type: 'support', ticketId: String(ticket.id || ''), status }
+      }).catch(e=>console.error('Support status push error:',e));
+    }
     return res.json({ok:true,ticket});
   }catch(e){console.error('Support status error:',e);return res.status(500).json({error:'Unable to update ticket.'})}
 });
